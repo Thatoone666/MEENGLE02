@@ -1,0 +1,138 @@
+/* Protected Button Styles */
+
+.protected-button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Primary Variant */
+.protected-button.primary {
+  background: linear-gradient(135deg, #ff6b6b, #ff5252);
+  color: white;
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+}
+
+.protected-button.primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255, 107, 107, 0.4);
+}
+
+/* Secondary Variant */
+.protected-button.secondary {
+  background: transparent;
+  color: #ff6b6b;
+  border: 2px solid #ff6b6b;
+}
+
+.protected-button.secondary:hover:not(:disabled) {
+  background: rgba(255, 107, 107, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Outline Variant */
+.protected-button.outline {
+  background: transparent;
+  color: #666;
+  border: 1px solid #ddd;
+}
+
+.protected-button.outline:hover:not(:disabled) {
+  border-color: #ff6b6b;
+  color: #ff6b6b;
+  transform: translateY(-2px);
+}
+
+/* Small Variant */
+.protected-button.small {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+/* Large Variant */
+.protected-button.large {
+  padding: 14px 28px;
+  font-size: 16px;
+}
+
+/* Locked State */
+.protected-button.locked {
+  opacity: 0.9;
+  position: relative;
+}
+
+.lock-icon {
+  font-size: 16px;
+}
+
+.protected-button.locked::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  animation: shimmer 2s infinite;
+}
+
+/* Disabled State */
+.protected-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Shimmer Animation */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Dark Theme Support */
+@media (prefers-color-scheme: dark) {
+  .protected-button.primary {
+    background: linear-gradient(135deg, #ff6b6b, #ff5252);
+  }
+
+  .protected-button.secondary {
+    color: #ff8787;
+    border-color: #ff8787;
+  }
+
+  .protected-button.outline {
+    border-color: #444;
+    color: #ccc;
+  }
+
+  .protected-button.outline:hover:not(:disabled) {
+    border-color: #ff6b6b;
+    color: #ff6b6b;
+  }
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .protected-button {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+
+  .protected-button.large {
+    padding: 12px 24px;
+    font-size: 14px;
+  }
+}

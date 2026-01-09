@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile - MEENGLE</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+      color: #333;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 30px;
+      border-bottom: 2px solid #667eea;
+      padding-bottom: 20px;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      color: #667eea;
+    }
+
+    .back-btn {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #667eea;
+    }
+
+    .profile-section {
+      margin-bottom: 30px;
+    }
+
+    .profile-section h2 {
+      font-size: 18px;
+      color: #444;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: #333;
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+      transition: border-color 0.3s;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .form-group textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .photo-upload {
+      border: 2px dashed #667eea;
+      border-radius: 6px;
+      padding: 30px;
+      text-align: center;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .photo-upload:hover {
+      background: #f0f4ff;
+    }
+
+    .photo-upload input {
+      display: none;
+    }
+
+    .photo-upload p {
+      color: #667eea;
+      font-weight: 500;
+      margin: 10px 0 0 0;
+    }
+
+    .photo-preview {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .photo-item {
+      position: relative;
+      width: 100px;
+      height: 100px;
+      border-radius: 6px;
+      overflow: hidden;
+      background: #f0f0f0;
+    }
+
+    .photo-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .photo-item .delete-btn {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      background: #e74c3c;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 25px;
+      height: 25px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 30px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .btn-save {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .btn-save:hover {
+      transform: scale(1.02);
+    }
+
+    .btn-cancel {
+      background: #eee;
+      color: #666;
+    }
+
+    .btn-cancel:hover {
+      background: #ddd;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #f3f3f3;
+      border-top-color: #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 10px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .message {
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .message.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+      display: block;
+    }
+
+    .message.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+      display: block;
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        padding: 20px;
+      }
+
+      .header h1 {
+        font-size: 24px;
+      }
+
+      .button-group {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>?? Edit Profile</h1>
+      <button class="back-btn" onclick="window.history.back()">?</button>
+    </div>
+
+    <div id="message" class="message"></div>
+    <div id="loading" class="loading">
+      <div class="spinner"></div>
+      <p>Saving your profile...</p>
+    </div>
+
+    <form id="profileForm">
+      <!-- Basic Information -->
+      <div class="profile-section">
+        <h2>Basic Information</h2>
+
+        <div class="form-group">
+          <label for="name">Full Name</label>
+          <input 
+            type="text" 
+            id="name" 
+            required 
+            placeholder="Your full name"
+            maxlength="100"
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input 
+            type="email" 
+            id="email" 
+            required 
+            placeholder="your@email.com"
+            readonly
+          >
+          <small style="color: #999;">Email cannot be changed</small>
+        </div>
+
+        <div class="form-group">
+          <label for="dateOfBirth">Date of Birth</label>
+          <input 
+            type="date" 
+            id="dateOfBirth" 
+            required
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="phone">Phone Number</label>
+          <input 
+            type="tel" 
+            id="phone" 
+            placeholder="+27 123 456 7890"
+            maxlength="20"
+          >
+        </div>
+      </div>
+
+      <!-- Profile Details -->
+      <div class="profile-section">
+        <h2>Profile Details</h2>
+
+        <div class="form-group">
+          <label for="gender">Gender</label>
+          <select id="gender" required>
+            <option value="">Select your gender</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="non-binary">Non-binary</option>
+            <option value="prefer-not-to-say">Prefer not to say</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="bio">Bio (About You)</label>
+          <textarea 
+            id="bio" 
+            placeholder="Tell us about yourself..."
+            maxlength="500"
+          ></textarea>
+          <small id="bioCount" style="color: #999;">0/500</small>
+        </div>
+
+        <div class="form-group">
+          <label for="interests">Interests</label>
+          <input 
+            type="text" 
+            id="interests" 
+            placeholder="e.g., Hiking, Music, Travel (comma-separated)"
+            maxlength="200"
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="location">Location (City/Town)</label>
+          <input 
+            type="text" 
+            id="location" 
+            placeholder="e.g., Johannesburg, Cape Town"
+            maxlength="100"
+          >
+        </div>
+      </div>
+
+      <!-- Photos -->
+      <div class="profile-section">
+        <h2>Photos</h2>
+        <div class="photo-upload" onclick="document.getElementById('photoInput').click()">
+          <div style="font-size: 32px;">??</div>
+          <p>Click to upload photos</p>
+          <small style="color: #999;">PNG, JPG, GIF up to 5MB</small>
+          <input 
+            type="file" 
+            id="photoInput" 
+            accept="image/*" 
+            multiple
+            onchange="handlePhotoUpload(event)"
+          >
+        </div>
+        <div id="photoPreview" class="photo-preview"></div>
+      </div>
+
+      <!-- Preferences -->
+      <div class="profile-section">
+        <h2>Preferences</h2>
+
+        <div class="form-group">
+          <label for="lookingFor">Looking For</label>
+          <select id="lookingFor">
+            <option value="">Select what you're looking for</option>
+            <option value="dating">Dating</option>
+            <option value="relationship">Relationship</option>
+            <option value="friends">Friends</option>
+            <option value="unsure">Unsure</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="verified"> 
+            Verify my identity with government ID
+          </label>
+          <small style="color: #999;">Increases trust with other users</small>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="button-group">
+        <button type="button" class="btn btn-cancel" onclick="window.history.back()">Cancel</button>
+        <button type="submit" class="btn btn-save">Save Changes</button>
+      </div>
+    </form>
+  </div>
+
+  <script src="/assets/js/api-client.js"></script>
+  <script>
+    // Load user profile data
+    async function loadProfile() {
+      try {
+        const user = await window.apiClient.getProfile();
+        document.getElementById('name').value = user.name || '';
+        document.getElementById('email').value = user.email || '';
+        document.getElementById('dateOfBirth').value = user.dateOfBirth || '';
+        document.getElementById('phone').value = user.phone || '';
+        document.getElementById('gender').value = user.gender || '';
+        document.getElementById('bio').value = user.bio || '';
+        document.getElementById('interests').value = user.interests?.join(', ') || '';
+        document.getElementById('location').value = user.location || '';
+        document.getElementById('lookingFor').value = user.lookingFor || '';
+        document.getElementById('verified').checked = user.verified || false;
+
+        // Load photos
+        if (user.photos && user.photos.length > 0) {
+          displayPhotos(user.photos);
+        }
+      } catch (error) {
+        console.error('Failed to load profile:', error);
+        showMessage('Failed to load your profile. Please try again.', 'error');
+      }
+    }
+
+    function handlePhotoUpload(event) {
+      const files = event.target.files;
+      for (let file of files) {
+        if (file.size > 5 * 1024 * 1024) {
+          showMessage('Photo must be smaller than 5MB', 'error');
+          continue;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const preview = document.getElementById('photoPreview');
+          const div = document.createElement('div');
+          div.className = 'photo-item';
+          div.innerHTML = `
+            <img src="${e.target.result}" alt="preview">
+            <button type="button" class="delete-btn" onclick="this.parentElement.remove()">?</button>
+          `;
+          preview.appendChild(div);
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function displayPhotos(photos) {
+      const preview = document.getElementById('photoPreview');
+      photos.forEach(photo => {
+        const div = document.createElement('div');
+        div.className = 'photo-item';
+        div.innerHTML = `
+          <img src="${photo}" alt="profile">
+          <button type="button" class="delete-btn" onclick="this.parentElement.remove()">?</button>
+        `;
+        preview.appendChild(div);
+      });
+    }
+
+    // Bio character counter
+    document.getElementById('bio').addEventListener('input', (e) => {
+      document.getElementById('bioCount').textContent = `${e.target.value.length}/500`;
+    });
+
+    // Form submission
+    document.getElementById('profileForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const loading = document.getElementById('loading');
+      loading.style.display = 'block';
+
+      try {
+        const formData = {
+          name: document.getElementById('name').value,
+          dateOfBirth: document.getElementById('dateOfBirth').value,
+          phone: document.getElementById('phone').value,
+          gender: document.getElementById('gender').value,
+          bio: document.getElementById('bio').value,
+          interests: document.getElementById('interests').value.split(',').map(i => i.trim()).filter(i => i),
+          location: document.getElementById('location').value,
+          lookingFor: document.getElementById('lookingFor').value,
+          verified: document.getElementById('verified').checked
+        };
+
+        await window.apiClient.updateProfile(formData);
+        showMessage('Profile updated successfully!', 'success');
+
+        setTimeout(() => {
+          window.history.back();
+        }, 1500);
+      } catch (error) {
+        console.error('Failed to update profile:', error);
+        showMessage(error.message || 'Failed to update profile. Please try again.', 'error');
+      } finally {
+        loading.style.display = 'none';
+      }
+    });
+
+    function showMessage(text, type) {
+      const msg = document.getElementById('message');
+      msg.textContent = text;
+      msg.className = `message ${type}`;
+      setTimeout(() => {
+        msg.className = 'message';
+      }, 5000);
+    }
+
+    // Load profile on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!window.apiClient || !localStorage.getItem('authToken')) {
+        window.location.href = '/pages/login.html';
+      } else {
+        loadProfile();
+      }
+    });
+  </script>
+</body>
+</html>

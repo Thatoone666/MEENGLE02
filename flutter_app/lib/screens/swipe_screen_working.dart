@@ -1,0 +1,228 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_card_swiper/flutter_card_swiper.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../services/api_service.dart';
+
+class SwipeScreen extends StatefulWidget {
+  const SwipeScreen({super.key});
+
+  @override
+  State<SwipeScreen> createState() => _SwipeScreenState();
+}
+
+class _SwipeScreenState extends State<SwipeScreen> {
+  late CardSwiperController _controller;
+  List<Map<String, dynamic>> _matches = [];
+  bool _loading = true;
+  int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = CardSwiperController();
+    _loadMatches();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadMatches() async {
+    setState(() => _loading = true);
+    try {
+      final matches = await APIService.getPotentialMatches();
+      setState(() {
+        _matches = matches;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() => _loading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _onSwipe(int previousIndex, int? currentIndex, CardSwiperAction action) async {
+    if (previousIndex >= _matches.length) return;
+
+    final user = _matches[previousIndex];
+    final targetUserId = user['id'] ?? user['_id'];
+
+    if (action == CardSwiperAction.right) {
+      // Like
+      final isMutual = await APIService.likeUser(targetUserId);
+      if (isMutual && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("?? It's a match!"),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } else if (action == CardSwiperAction.left) {
+      // Pass
+      await APIService.passUser(targetUserId);
+    }
+
+    // Load more if running low
+    if (_matches.length - previousIndex < 3) {
+      _loadMatches();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Meengle')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_matches.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Meengle')),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text('No more profiles', style: TextStyle(fontSize: 18)),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _loadMatches,
+                child: const Text('Refresh'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Meengle'),
+        centerTitle: true,
+        elevation: 0,
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: CardSwiper(
+              controller: _controller,
+              cardsCount: _matches.length,
+              onSwipe: _onSwipe,
+              cardBuilder: (context, index, percentThresholdExceeded) {
+                final user = _matches[index];
+                final imageUrl = user['photos'] != null && (user['photos'] as List).isNotEmpty
+                    ? APIService.resolveAssetUrl(user['photos'][0])
+                    : null;
+
+                return Card(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Stack(
+                    children: [
+                      // Background image
+                      if (imageUrl != null)
+                        CachedNetworkImage(
+                          imageUrl: imageUrl,
+                          fit: BoxFit.cover,
+                          placeholder: (_, __) =>
+                              const Center(child: CircularProgressIndicator()),
+                        )
+                      else
+                        Container(
+                          color: Colors.grey[300],
+                          child: const Icon(Icons.person, size: 100),
+                        ),
+
+                      // Gradient overlay
+                      Positioned.fill(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.bottomCenter,
+                              end: Alignment.topCenter,
+                              colors: [Colors.black87, Colors.transparent],
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // User info
+                      Positioned(
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${user['name'] ?? 'Unknown'}, ${user['age'] ?? '?'}',
+                                style: const TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              if (user['bio'] != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: Text(
+                                    user['bio'],
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.white70,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+
+          // Action buttons
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                // Pass button
+                FloatingActionButton(
+                  heroTag: 'pass',
+                  onPressed: () => _controller.swipeLeft(),
+                  backgroundColor: Colors.red,
+                  child: const Icon(Icons.close),
+                ),
+
+                // Like button
+                FloatingActionButton(
+                  heroTag: 'like',
+                  onPressed: () => _controller.swipeRight(),
+                  backgroundColor: Colors.green,
+                  child: const Icon(Icons.favorite),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

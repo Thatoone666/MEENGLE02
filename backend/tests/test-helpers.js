@@ -1,0 +1,54 @@
+import { MongoMemoryServer } from 'mongodb-memory-server';
+import mongoose from 'mongoose';
+import express from 'express';
+import { fileURLToPath } from 'url';
+import path from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+let mongoServer;
+let app;
+
+export const helpers = {
+  start: async () => {
+    // Retry logic: sometimes the binary download or spawn can fail transiently.
+    const maxAttempts = 5;
+    let attempt = 0;
+    let lastErr = null;
+    while (attempt < maxAttempts) {
+      attempt += 1;
+      try {
+        mongoServer = await MongoMemoryServer.create();
+        const uri = mongoServer.getUri();
+        await mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+        
+        // Create a basic Express app with routes for testing
+        if (!app) {
+          app = express();
+          app.use(express.json());
+          
+          // Import and mount auth routes
+          const { authRouter } = await import('../routes/auth.js');
+          app.use('/api/auth', authRouter);
+        }
+        
+        return { app, uri };
+      } catch (err) {
+        lastErr = err;
+        // Wait a little before retrying
+        const waitMs = 2000 * attempt;
+        console.warn(`MongoMemoryServer create attempt ${attempt} failed, retrying in ${waitMs}ms`);
+        await new Promise(r => setTimeout(r, waitMs));
+      }
+    }
+    // If we exhausted attempts, throw the last error
+    throw lastErr || new Error('Failed to start MongoMemoryServer');
+  },
+  stop: async () => {
+    await mongoose.disconnect();
+    if (mongoServer) await mongoServer.stop();
+  }
+};
+
+export default helpers;

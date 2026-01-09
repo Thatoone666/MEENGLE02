@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meengle - Select Your Area</title>
+    <link rel="stylesheet" href="frontend/assets/css/main.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <a href="create-profile.html" class="header-icon" aria-label="Go back"><i data-feather="arrow-left"></i></a>
+            <h1 class="header-title">Select Your Area</h1>
+            <div class="header-icon"></div>
+        </header>
+
+        <main class="main-content-centered">
+            <div class="content-card" data-aos="fade-up">
+                <form id="area-form" class="space-y-6">
+                    <div>
+                        <label for="area" class="form-label">Choose your area</label>
+                        <select id="area" name="area" required class="form-input">
+                            <option value="">Select an area...</option>
+                            <option value="Johannesburg">Johannesburg</option>
+                            <option value="Cape Town">Cape Town</option>
+                            <option value="Durban">Durban</option>
+                            <option value="Pretoria">Pretoria</option>
+                            <option value="Port Elizabeth">Port Elizabeth</option>
+                            <option value="Bloemfontein">Bloemfontein</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-full">See Who's Near You</button>
+                </form>
+                <div id="response-message" class="mt-4 text-center"></div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            AOS.init();
+            feather.replace();
+
+            const areaForm = document.getElementById('area-form');
+            const responseMessage = document.getElementById('response-message');
+
+            areaForm.addEventListener('submit', async function(event) {
+                event.preventDefault();
+                const area = document.getElementById('area').value;
+
+                if (!area) {
+                    responseMessage.textContent = 'Please select an area.';
+                    responseMessage.className = 'text-danger';
+                    return;
+                }
+
+                try {
+                    const token = localStorage.getItem('token');
+                    // We assume the profile update endpoint can handle just the location
+                    const response = await fetch('/api/profile', {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ location: area })
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        responseMessage.textContent = 'Location updated successfully!';
+                        responseMessage.className = 'text-success';
+                        setTimeout(() => {
+                            window.location.href = 'home.html';
+                        }, 1500);
+                    } else {
+                        throw new Error(result.message || 'Failed to update location.');
+                    }
+                } catch (error) {
+                    responseMessage.textContent = `Error: ${error.message}`;
+                    responseMessage.className = 'text-danger';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

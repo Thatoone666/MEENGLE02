@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meengle - Payment Canceled</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="frontend/assets/css/main.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+    <div class="w-full max-w-md content-card text-center" data-aos="fade-up">
+        <h2 class="text-3xl font-bold mb-4 text-red-500">Payment Canceled</h2>
+        <p class="muted mb-6">Your payment was canceled. You can try again or return to the home page.</p>
+        <a href="payment.html" class="btn btn-primary">Try Again</a>
+    </div>
+    <script>
+        AOS.init({
+            duration: 800,
+            easing: 'ease-in-out',
+            once: true
+        });
+    </script>
+</body>
+</html>

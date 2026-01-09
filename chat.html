@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meengle - Chat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <link rel="stylesheet" href="frontend/assets/css/main.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+</head>
+<body class="text-white">
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-30">
+        <div class="container mx-auto px-6 py-3 flex justify-between items-center content-card mt-4">
+            <a href="matches.html" class="nav-icon" title="Back to Matches"><i data-feather="arrow-left"></i></a>
+            <h1 id="chat-header" class="text-xl font-bold gradient-text">Chat</h1>
+            <div id="onlineStatus" class="w-24 text-right text-xs"></div>
+        </div>
+    </nav>
+
+    <main class="pt-24 pb-10 px-4 flex items-center justify-center min-h-screen">
+        <div class="w-full max-w-md content-card flex flex-col h-[80vh]" data-aos="fade-up">
+            <div id="chatWindow" class="flex-1 overflow-y-auto p-4 space-y-4">
+                <!-- Messages will appear here -->
+            </div>
+            <div class="p-4 border-t border-white/10">
+                <form id="chatForm" class="flex items-center gap-2">
+                    <input type="file" id="fileInput" class="hidden">
+                    <button type="button" onclick="document.getElementById('fileInput').click()" class="btn-icon"><i data-feather="paperclip"></i></button>
+                    
+                    <input type="text" id="chatInput" class="form-input flex-1" placeholder="Type a message..." required>
+                    
+                    <button type="button" id="voiceBtn" class="btn-icon"><i data-feather="mic"></i></button>
+                    <button type="submit" class="btn-icon bg-pink-500 text-white"><i data-feather="send"></i></button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Replace with actual user/match IDs from your app logic
+        const userId = localStorage.getItem('userId');
+        const matchId = localStorage.getItem('matchId');
+        const socket = io('http://localhost:3000');
+        socket.emit('join', { userId, matchId });
+        socket.on('message', ({ from, text }) => {
+            const chatWindow = document.getElementById('chatWindow');
+            const msgDiv = document.createElement('div');
+            msgDiv.textContent = (from === userId ? 'You: ' : 'Match: ') + text;
+            msgDiv.className = 'mb-2';
+            chatWindow.appendChild(msgDiv);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        });
+        // Load chat history
+        socket.on('history', (messages) => {
+            const chatWindow = document.getElementById('chatWindow');
+            chatWindow.innerHTML = '';
+            messages.forEach(msg => {
+                const msgDiv = document.createElement('div');
+                msgDiv.textContent = (msg.from === userId ? 'You: ' : 'Match: ') + msg.text;
+                msgDiv.className = 'mb-2';
+                chatWindow.appendChild(msgDiv);
+            });
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        });
+        // Typing indicator
+        socket.on('typing', ({ from }) => {
+            const chatWindow = document.getElementById('chatWindow');
+            let typingDiv = document.getElementById('typing-indicator');
+            if (!typingDiv) {
+                typingDiv = document.createElement('div');
+                typingDiv.id = 'typing-indicator';
+                typingDiv.className = 'text-xs text-gray-400 mb-2';
+                chatWindow.appendChild(typingDiv);
+            }
+            typingDiv.textContent = 'Match is typing...';
+            setTimeout(() => { typingDiv.textContent = ''; }, 1500);
+        });
+        // Read receipts
+        socket.on('read', ({ from }) => {
+            // Optionally show read status in UI
+        });
+        document.getElementById('chatForm').onsubmit = function(e) {
+            e.preventDefault();
+            const text = document.getElementById('chatInput').value;
+            socket.emit('message', { from: userId, to: matchId, text });
+            document.getElementById('chatInput').value = '';
+        };
+        document.getElementById('chatInput').addEventListener('input', function() {
+            socket.emit('typing', { from: userId, to: matchId });
+        });
+        // Mark messages as read when chat window is focused
+        document.getElementById('chatWindow').addEventListener('mouseenter', function() {
+            socket.emit('read', { from: userId, to: matchId });
+        });
+        // Handle message edit in chat UI
+        socket.on('messageEdited', ({ id, text }) => {
+            const chatWindow = document.getElementById('chatWindow');
+            const msgDivs = chatWindow.querySelectorAll('[data-msg-id]');
+            msgDivs.forEach(div => {
+                if (div.dataset.msgId === id) {
+                    div.querySelector('.ml-2').textContent = text;
+                }
+            });
+        });
+        // Show image/file preview in chat
+        function renderMessage(msg) {
+            const chatWindow = document.getElementById('chatWindow');
+            const msgDiv = document.createElement('div');
+            msgDiv.dataset.msgId = msg._id;
+            const sender = msg.from === userId ? 'You' : 'Match';
+            const profileImg = msg.from === userId ? localStorage.getItem('userImg') : localStorage.getItem('matchImg');
+            let content = msg.text;
+            // If message contains a file link, show preview
+            if (msg.text.startsWith('📎 <a')) {
+                const urlMatch = msg.text.match(/href='([^']+)'/);
+                if (urlMatch && urlMatch[1].match(/\.(jpg|jpeg|png|gif)$/i)) {
+                    content += `<br><img src='${urlMatch[1]}' class='mt-2 max-h-32 rounded'>`;
+                }
+            }
+            msgDiv.innerHTML = `<div class="flex items-center mb-2">
+                <img src="${profileImg || 'https://i.pravatar.cc/40'}" class="w-8 h-8 rounded-full mr-2">
+                <span class="font-bold">${sender}:</span> <span class="ml-2">${content}</span>
+                ${msg.from === userId ? `<button onclick="editMessage('${msg._id}', '${msg.text}')" class="ml-2 text-xs text-blue-500">Edit</button> <button onclick="deleteMessage('${msg._id}')" class="ml-2 text-xs text-red-500">Delete</button>` : ''}
+            </div>`;
+            chatWindow.appendChild(msgDiv);
+        }
+        // Delete message function
+        window.deleteMessage = async function(id) {
+            const token = localStorage.getItem('token');
+            await fetch(`http://localhost:3000/api/message/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+        }
+        // Listen for messageDeleted event
+        socket.on('messageDeleted', ({ id }) => {
+            const chatWindow = document.getElementById('chatWindow');
+            const msgDivs = chatWindow.querySelectorAll('[data-msg-id]');
+            msgDivs.forEach(div => {
+                if (div.dataset.msgId === id) {
+                    div.remove();
+                }
+            });
+        });
+        // Show notification in-app
+        function showInAppNotification(message) {
+            const notif = document.createElement('div');
+            notif.className = 'fixed top-4 right-4 bg-pink-500 text-white px-4 py-2 rounded shadow-lg z-50';
+            notif.textContent = message;
+            document.body.appendChild(notif);
+            setTimeout(() => notif.remove(), 3000);
+        }
+        // Call showInAppNotification('You have a new match!') when needed
+        // Update history and message handlers to use renderMessage
+        socket.on('history', (messages) => {
+            const chatWindow = document.getElementById('chatWindow');
+            chatWindow.innerHTML = '';
+            messages.forEach(renderMessage);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        });
+        socket.on('message', (msg) => {
+            renderMessage(msg);
+            document.getElementById('chatWindow').scrollTop = document.getElementById('chatWindow').scrollHeight;
+        });
+        // Online status indicator
+        socket.emit('userOnline', userId);
+        socket.on('onlineStatus', (users) => {
+            const statusDiv = document.getElementById('onlineStatus');
+            if (statusDiv) {
+                statusDiv.textContent = users[matchId] ? 'Online' : 'Offline';
+                statusDiv.className = users[matchId] ? 'text-green-400' : 'text-gray-400';
+            }
+        });
+        // Emoji support: allow emojis in input and display
+        // File sharing UI
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.className = 'mb-2';
+        fileInput.onchange = async function() {
+            const file = fileInput.files[0];
+            if (!file) return;
+            const token = localStorage.getItem('token');
+            const formData = new FormData();
+            formData.append('file', file);
+            const res = await fetch('http://localhost:3000/api/upload', {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + token },
+                body: formData
+            });
+            const data = await res.json();
+            if (data.url) {
+                socket.emit('message', { from: userId, to: matchId, text: `📎 <a href='${data.url}' target='_blank'>${file.name}</a>` });
+            }
+        };
+        document.getElementById('chatForm').prepend(fileInput);
+        // --- VIDEO CALLING UI & LOGIC ---
+        const videoCallBtn = document.createElement('button');
+        videoCallBtn.textContent = 'Start Video Call';
+        videoCallBtn.className = 'mb-2 px-4 py-2 bg-blue-500 text-white rounded';
+        videoCallBtn.onclick = startVideoCall;
+        document.getElementById('chatForm').prepend(videoCallBtn);
+        let mediaRecorder, audioChunks = [];
+        async function startVideoCall() {
+            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            const videoContainer = document.createElement('div');
+            videoContainer.className = 'flex gap-2 mb-2';
+            videoContainer.innerHTML = `<video id='localVideo' autoplay muted class='w-32 h-24 rounded'></video><video id='remoteVideo' autoplay class='w-32 h-24 rounded'></video>`;
+            document.querySelector('.max-w-md').prepend(videoContainer);
+            document.getElementById('localVideo').srcObject = localStream;
+            peerConnection = new RTCPeerConnection();
+            localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+            peerConnection.ontrack = event => {
+                document.getElementById('remoteVideo').srcObject = event.streams[0];
+            };
+            peerConnection.onicecandidate = event => {
+                if (event.candidate) {
+                    socket.emit('videoCandidate', { to: matchId, candidate: event.candidate });
+                }
+            };
+            socket.emit('videoOffer', { to: matchId });
+        }
+        socket.on('videoOffer', async () => {
+            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            peerConnection = new RTCPeerConnection();
+            localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+            peerConnection.ontrack = event => {
+                document.getElementById('remoteVideo').srcObject = event.streams[0];
+            };
+            peerConnection.onicecandidate = event => {
+                if (event.candidate) {
+                    socket.emit('videoCandidate', { to: matchId, candidate: event.candidate });
+                }
+            };
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+            socket.emit('videoAnswer', { to: matchId, sdp: offer });
+        });
+        socket.on('videoAnswer', async ({ sdp }) => {
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(sdp));
+        });
+        socket.on('videoCandidate', async ({ candidate }) => {
+            await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+        });
+        // --- VOICE MESSAGE UI & LOGIC ---
+        const voiceBtn = document.createElement('button');
+        voiceBtn.textContent = 'Send Voice Message';
+        voiceBtn.className = 'mb-2 px-4 py-2 bg-green-500 text-white rounded';
+        voiceBtn.onclick = recordVoiceMessage;
+        document.getElementById('chatForm').prepend(voiceBtn);
+        let mediaRecorder, audioChunks = [];
+        async function recordVoiceMessage() {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            mediaRecorder.start();
+            voiceBtn.textContent = 'Recording... Click to Stop';
+            mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                audioChunks = [];
+                const token = localStorage.getItem('token');
+                const formData = new FormData();
+                formData.append('file', audioBlob, 'voice.webm');
+                const res = await fetch('http://localhost:3000/api/upload', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token },
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.url) {
+                    socket.emit('message', { from: userId, to: matchId, text: `🎤 <audio controls src='${data.url}'></audio>` });
+                }
+                voiceBtn.textContent = 'Send Voice Message';
+            };
+            voiceBtn.onclick = () => {
+                mediaRecorder.stop();
+                voiceBtn.onclick = recordVoiceMessage;
+            };
+        }
+
+        feather.replace();
+        AOS.init();
+    </script>
+    <script src="frontend/assets/js/chat.js"></script>
+</body>
+</html>

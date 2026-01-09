@@ -1,0 +1,268 @@
+/* Compact Card Styles - Image First Design */
+
+.compact-card {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  animation: slideUp 0.3s ease;
+}
+
+.compact-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* Profile Card */
+.profile-card {
+  position: relative;
+  aspect-ratio: 3 / 4;
+}
+
+.card-image {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.profile-card:hover .card-image img {
+  transform: scale(1.05);
+}
+
+.card-info-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 12px;
+  background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.7));
+  color: white;
+}
+
+.card-info-overlay h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.card-quick-actions {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  opacity: 0;
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.profile-card:hover .card-quick-actions {
+  opacity: 1;
+}
+
+.action-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: all 0.3s ease;
+}
+
+.action-btn.pass {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.action-btn.pass:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.action-btn.like {
+  background: linear-gradient(135deg, #ff6b6b, #ff5252);
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+}
+
+.action-btn.like:hover {
+  transform: scale(1.1);
+}
+
+.card-summary {
+  display: none;
+}
+
+/* Check-In Card */
+.checkin-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  gap: 12px;
+}
+
+.card-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.user-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.user-quick-info {
+  flex: 1;
+}
+
+.user-quick-info h4 {
+  margin: 0 0 2px 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #333;
+}
+
+.location-mini {
+  margin: 0 0 4px 0;
+  font-size: 12px;
+  color: #666;
+}
+
+.status-mini {
+  display: inline-block;
+  background: rgba(255, 107, 107, 0.1);
+  color: #ff6b6b;
+  padding: 2px 8px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.card-action-arrow {
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #ddd;
+  transition: all 0.3s ease;
+}
+
+.checkin-card:hover .card-action-arrow {
+  color: #ff6b6b;
+  transform: translateX(4px);
+}
+
+/* Activity Card */
+.activity-card {
+  padding: 12px;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.activity-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: rgba(255, 107, 107, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+
+.activity-quick-info h4 {
+  margin: 0 0 2px 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #333;
+}
+
+.time-mini {
+  margin: 0;
+  font-size: 11px;
+  color: #999;
+}
+
+.activity-quick-stats {
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  color: #999;
+  margin-bottom: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.activity-card:hover .card-action-arrow {
+  color: #ff6b6b;
+  transform: translateX(4px);
+}
+
+/* Animations */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .profile-card {
+    border-radius: 10px;
+  }
+
+  .action-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+
+  .checkin-card {
+    padding: 10px;
+    gap: 10px;
+  }
+
+  .user-avatar {
+    width: 44px;
+    height: 44px;
+  }
+
+  .activity-card {
+    padding: 10px;
+  }
+
+  .activity-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+  }
+}

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meengle - Create Your Profile</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="frontend/assets/css/main.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+</head>
+<body class="flex items-center justify-center min-h-screen py-12">
+    <div class="w-full max-w-lg content-card" data-aos="fade-up" data-aos-duration="800">
+        <h2 class="text-3xl font-bold text-center mb-6 gradient-text">Create Your Profile</h2>
+        <form id="create-profile-form" class="space-y-6">
+            <div>
+                <label for="bio" class="block font-medium mb-2">Bio</label>
+                <textarea id="bio" name="bio" rows="3" class="form-input" placeholder="Tell us about yourself..."></textarea>
+            </div>
+            <div>
+                <label class="block font-medium mb-2">Upload up to 6 Pictures</label>
+                <div class="grid grid-cols-3 gap-4">
+                    <input type="file" accept="image/*" class="form-input" name="photo1">
+                    <input type="file" accept="image/*" class="form-input" name="photo2">
+                    <input type="file" accept="image/*" class="form-input" name="photo3">
+                    <input type="file" accept="image/*" class="form-input" name="photo4">
+                    <input type="file" accept="image/*" class="form-input" name="photo5">
+                    <input type="file" accept="image/*" class="form-input" name="photo6">
+                </div>
+            </div>
+            <div>
+                <label for="audio" class="block font-medium mb-2">Upload an Audio Clip</label>
+                <input type="file" accept="audio/*" class="form-input mb-2" name="audio" id="audio">
+                <label class="block font-medium mb-2">Or record audio:</label>
+                <div class="flex items-center gap-4">
+                    <button type="button" id="recordBtn" class="btn btn-secondary">Record Audio</button>
+                    <button type="button" id="stopBtn" class="btn bg-red-500/50 text-white" disabled>Stop</button>
+                </div>
+                <audio id="audioPreview" controls class="w-full mt-4 hidden"></audio>
+                <input type="hidden" id="recordedAudio" name="recordedAudio">
+            </div>
+            <div>
+                <label for="prompts" class="block font-medium mb-2">Choose a Prompt</label>
+                <select id="prompts" name="prompts" class="form-input mb-2">
+                    <option value="">Select a prompt...</option>
+                    <option value="Two truths and a lie">Two truths and a lie</option>
+                    <option value="My ideal weekend includes">My ideal weekend includes</option>
+                    <option value="I'm overly competitive about">I'm overly competitive about</option>
+                    <option value="The last show I binged">The last show I binged</option>
+                </select>
+                <input type="text" id="prompt-answer" name="prompt-answer" class="form-input" placeholder="Your answer to the prompt...">
+            </div>
+            <div class="border-t border-white/10 pt-6 mt-6">
+                <h3 class="text-xl font-semibold text-center mb-4 gradient-text">Two Truths and a Lie</h3>
+                <p class="text-center muted mb-4 text-sm">Add a fun icebreaker to your profile!</p>
+                <div class="space-y-4">
+                    <input type="text" id="truth1" name="truth1" class="form-input" required maxlength="150" placeholder="Truth #1">
+                    <input type="text" id="truth2" name="truth2" class="form-input" required maxlength="150" placeholder="Truth #2">
+                    <input type="text" id="lie" name="lie" class="form-input" required maxlength="150" placeholder="The Lie">
+                </div>
+            </div>
+            <div class="pt-2">
+                <button type="submit" class="w-full btn btn-primary">Save Profile</button>
+            </div>
+        </form>
+        <p class="text-center muted mt-6">Want to go back? <a href="signup.html" class="text-pink-500 hover:underline">Sign Up</a></p>
+    </div>
+    <script>
+        AOS.init({
+            duration: 800,
+            easing: 'ease-in-out',
+            once: true
+        });
+
+        // Audio recording logic
+        let mediaRecorder;
+        let audioChunks = [];
+        const recordBtn = document.getElementById('recordBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const audioPreview = document.getElementById('audioPreview');
+        const recordedAudioInput = document.getElementById('recordedAudio');
+
+        recordBtn.onclick = async function() {
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+                    mediaRecorder.ondataavailable = function(e) {
+                        audioChunks.push(e.data);
+                    };
+                    mediaRecorder.onstop = function() {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        const audioUrl = URL.createObjectURL(audioBlob);
+                        audioPreview.src = audioUrl;
+                        audioPreview.classList.remove('hidden');
+                        recordedAudioInput.value = audioUrl; // For demo, store URL. For upload, send blob.
+                    };
+                    mediaRecorder.start();
+                    recordBtn.disabled = true;
+                    stopBtn.disabled = false;
+                } catch (err) {
+                    alert('Could not access microphone: ' + err.message);
+                }
+            } else {
+                alert('Audio recording not supported on this device/browser.');
+            }
+        };
+
+        stopBtn.onclick = function() {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+                recordBtn.disabled = false;
+                stopBtn.disabled = true;
+            }
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+# Docker Compose Network Configuration
+networks:
+  meengle-network:
+    driver: bridge
+
+# Shared volume configuration
+volumes:
+  mongodb_data:
+    driver: local
+  redis_data:
+    driver: local

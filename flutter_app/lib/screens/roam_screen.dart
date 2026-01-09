@@ -1,0 +1,560 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/roam_provider.dart';
+import '../widgets/cards/roam_guide_card.dart';
+import '../animations/premium_animations.dart';
+
+class RoamScreen extends StatefulWidget {
+  const RoamScreen({Key? key}) : super(key: key);
+
+  @override
+  State<RoamScreen> createState() => _RoamScreenState();
+}
+
+class _RoamScreenState extends State<RoamScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _contentController;
+
+  @override
+  void initState() {
+    super.initState();
+    _contentController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<RoamProvider>().loadRoam();
+      _contentController.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _contentController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0F0F0F),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF1A1A1A),
+        title: const Text(
+          'Travel Mode',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+        ),
+        centerTitle: true,
+        elevation: 0,
+      ),
+      body: Consumer<RoamProvider>(
+        builder: (context, provider, child) {
+          if (provider.isLoading) {
+            return const Center(
+              child: PremiumLoadingIndicator(
+                color: Color(0xFFD4AF37),
+              ),
+            );
+          }
+
+          return FadeTransition(
+            opacity: _contentController,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, 0.1),
+                end: Offset.zero,
+              ).animate(
+                CurvedAnimation(parent: _contentController, curve: Curves.easeOut),
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    ScaleTransition(
+                      scale: Tween<double>(begin: 0.8, end: 1).animate(
+                        CurvedAnimation(
+                          parent: _contentController,
+                          curve: const Interval(0.0, 0.3, curve: Curves.elasticOut),
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1A1A1A),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.amber.shade700,
+                              width: 2,
+                            ),
+                            boxShadow: PremiumAnimations.premiumGlow(
+                              color: Colors.amber.shade700,
+                              intensity: 0.4,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  boxShadow: PremiumAnimations.premiumGlow(
+                                    color: Colors.amber.shade400,
+                                    intensity: 0.5,
+                                  ),
+                                ),
+                                child: Icon(
+                                  Icons.flight_takeoff,
+                                  color: Colors.amber.shade400,
+                                  size: 28,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Travel Mode',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: -0.2,
+                                      ),
+                                    ),
+                                    Text(
+                                      provider.roam?.isActive ?? false
+                                          ? 'Find locals and travelers'
+                                          : 'Not enabled',
+                                      style: TextStyle(
+                                        color: Colors.grey.shade500,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Switch(
+                                value: provider.roam?.isActive ?? false,
+                                onChanged: (_) =>
+                                    provider.toggleTravelMode(),
+                                activeColor: Colors.amber.shade700,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (provider.roam?.isActive ?? false) ...[
+                      FadeTransition(
+                        opacity: Tween<double>(begin: 0, end: 1).animate(
+                          CurvedAnimation(
+                            parent: _contentController,
+                            curve: const Interval(0.2, 0.5, curve: Curves.easeOut),
+                          ),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                          child: Text(
+                            'Local Guides',
+                            style:
+                                Theme.of(context).textTheme.titleLarge?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      for (int i = 0; i < provider.guides.length; i++)
+                        FadeTransition(
+                          opacity: Tween<double>(begin: 0, end: 1).animate(
+                            CurvedAnimation(
+                              parent: _contentController,
+                              curve: Interval(
+                                (0.3 + (i * 0.08)).clamp(0.0, 0.8),
+                                ((0.3 + (i * 0.08)) + 0.3).clamp(0.0, 1.0),
+                                curve: Curves.easeOut,
+                              ),
+                            ),
+                          ),
+                          child: ScaleTransition(
+                            scale: Tween<double>(begin: 0.8, end: 1)
+                                .animate(
+                              CurvedAnimation(
+                                parent: _contentController,
+                                curve: Interval(
+                                  (0.3 + (i * 0.08)).clamp(0.0, 0.8),
+                                  ((0.3 + (i * 0.08)) + 0.3).clamp(0.0, 1.0),
+                                  curve: Curves.elasticOut,
+                                ),
+                              ),
+                            ),
+                            child: RoamGuideCard(
+                              guide: provider.guides[i],
+                              onTap: () =>
+                                  _viewGuideProfile(context, provider.guides[i]),
+                            ),
+                          ),
+                        ),
+                      const SizedBox(height: 24),
+                      FadeTransition(
+                        opacity: Tween<double>(begin: 0, end: 1).animate(
+                          CurvedAnimation(
+                            parent: _contentController,
+                            curve: const Interval(0.5, 0.7, curve: Curves.easeOut),
+                          ),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 8,
+                          ),
+                          child: Text(
+                            'Local Events',
+                            style:
+                                Theme.of(context).textTheme.titleLarge?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      for (int i = 0; i < provider.events.length; i++)
+                        FadeTransition(
+                          opacity: Tween<double>(begin: 0, end: 1).animate(
+                            CurvedAnimation(
+                              parent: _contentController,
+                              curve: Interval(
+                                (0.6 + (i * 0.08)).clamp(0.0, 0.9),
+                                ((0.6 + (i * 0.08)) + 0.3).clamp(0.0, 1.0),
+                                curve: Curves.easeOut,
+                              ),
+                            ),
+                          ),
+                          child: ScaleTransition(
+                            scale: Tween<double>(begin: 0.8, end: 1)
+                                .animate(
+                              CurvedAnimation(
+                                parent: _contentController,
+                                curve: Interval(
+                                  (0.6 + (i * 0.08)).clamp(0.0, 0.9),
+                                  ((0.6 + (i * 0.08)) + 0.3).clamp(0.0, 1.0),
+                                  curve: Curves.elasticOut,
+                                ),
+                              ),
+                            ),
+                            child: Card(
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                              color: const Color(0xFF1A1A1A),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                side: BorderSide(
+                                  color: Colors.amber.shade700,
+                                  width: 1,
+                                ),
+                              ),
+                              elevation: 8,
+                              shadowColor: Colors.amber.shade700,
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        boxShadow:
+                                            PremiumAnimations.premiumGlow(
+                                          color: Colors.amber.shade400,
+                                          intensity: 0.4,
+                                        ),
+                                      ),
+                                      child: Icon(
+                                        Icons.event,
+                                        color: Colors.amber.shade400,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            provider.events[i].name,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w600,
+                                              letterSpacing: -0.2,
+                                            ),
+                                          ),
+                                          Text(
+                                            provider.events[i].location,
+                                            style: TextStyle(
+                                              color: Colors.grey.shade500,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    GlowingButton(
+                                      glowColor: Colors.amber.shade700,
+                                      onPressed: () {},
+                                      child: const Text(
+                                        'Join',
+                                        style: TextStyle(fontSize: 11),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _viewGuideProfile(BuildContext context, dynamic guide) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1A1A1A),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      builder: (context) => ScaleTransition(
+        scale: Tween<double>(begin: 0.8, end: 1).animate(
+          CurvedAnimation(
+            parent: ModalRoute.of(context)?.animation ??
+                AlwaysStoppedAnimation(1),
+            curve: Curves.easeOut,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                guide.name,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: -0.3,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: PremiumAnimations.premiumGlow(
+                        color: Colors.yellow.shade600,
+                        intensity: 0.4,
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.star,
+                      color: Colors.yellow.shade600,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${guide.rating}/5',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: GlowingButton(
+                  glowColor: Colors.amber.shade700,
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Contact Guide'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class PremiumLoadingIndicator extends StatefulWidget {
+  final Color color;
+  final double size;
+
+  const PremiumLoadingIndicator({
+    this.color = const Color(0xFFFF6B9A),
+    this.size = 50,
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  State<PremiumLoadingIndicator> createState() =>
+      _PremiumLoadingIndicatorState();
+}
+
+class _PremiumLoadingIndicatorState extends State<PremiumLoadingIndicator>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _rotationController;
+  late AnimationController _pulseController;
+
+  @override
+  void initState() {
+    super.initState();
+    _rotationController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    )..repeat();
+
+    _pulseController = AnimationController(
+      duration: const Duration(seconds: 1),
+      vsync: this,
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _rotationController.dispose();
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: Tween<double>(begin: 0.8, end: 1.0).animate(
+        CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+      ),
+      child: RotationTransition(
+        turns: _rotationController,
+        child: Container(
+          width: widget.size,
+          height: widget.size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: PremiumAnimations.premiumGlow(
+              color: widget.color,
+              intensity: 0.7 + (_pulseController.value * 0.3),
+            ),
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: widget.size,
+                height: widget.size,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: widget.color.withAlpha(100),
+                    width: 2,
+                  ),
+                ),
+              ),
+              Container(
+                width: widget.size * 0.6,
+                height: widget.size * 0.6,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: widget.color.withAlpha(51),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class GlowingButton extends StatefulWidget {
+  final VoidCallback onPressed;
+  final Widget child;
+  final Color glowColor;
+
+  const GlowingButton({
+    required this.onPressed,
+    required this.child,
+    this.glowColor = const Color(0xFFFF6B9A),
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  State<GlowingButton> createState() => _GlowingButtonState();
+}
+
+class _GlowingButtonState extends State<GlowingButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _glowController;
+
+  @override
+  void initState() {
+    super.initState();
+    _glowController = AnimationController(
+      duration: PremiumAnimations.macroDuration,
+      vsync: this,
+    );
+  }
+
+  @override
+  void dispose() {
+    _glowController.dispose();
+    super.dispose();
+  }
+
+  void _onPressed() {
+    _glowController.forward().then((_) {
+      _glowController.reverse();
+    });
+    widget.onPressed();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: Tween<double>(begin: 1, end: 0.95).animate(
+        CurvedAnimation(parent: _glowController, curve: Curves.easeIn),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: PremiumAnimations.premiumGlow(
+            color: widget.glowColor,
+            intensity: 0.5 + (_glowController.value * 0.5),
+          ),
+        ),
+        child: ElevatedButton(
+          onPressed: _onPressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: widget.glowColor,
+            foregroundColor: Colors.black,
+            elevation: 8,
+          ),
+          child: widget.child,
+        ),
+      ),
+    );
+  }
+}

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meengle - Payment</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="frontend/assets/css/main.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+    <div class="w-full max-w-md content-card" data-aos="fade-up">
+        <h2 class="text-3xl font-bold text-center mb-6 gradient-text">Complete Your Payment</h2>
+        <form id="paymentForm" class="space-y-6">
+            <div>
+                <label for="plan" class="block font-medium mb-2">Selected Plan</label>
+                <select id="plan" name="plan" required class="form-input">
+                    <option value="Premium">Premium - R34.99/week</option>
+                    <option value="Diamond">Diamond - R54.99/week</option>
+                </select>
+            </div>
+            <div>
+                <label for="email" class="block font-medium mb-2">Email</label>
+                <input type="email" id="email" name="email" required class="form-input">
+            </div>
+            <div class="space-y-4 pt-2">
+                <button type="button" id="payfastBtn" class="w-full btn btn-primary">
+                    Pay with PayFast
+                </button>
+                <button type="button" id="stripeBtn" class="w-full btn btn-secondary">
+                    Pay with Card (Stripe)
+                </button>
+                <button type="button" id="paypalBtn" class="w-full btn btn-secondary">
+                    Pay with PayPal
+                </button>
+            </div>
+        </form>
+        <p class="text-center muted mt-6">Have questions? <a href="#" class="text-pink-500 hover:underline">Contact Support</a></p>
+    </div>
+    <script>
+        AOS.init({
+            duration: 800,
+            easing: 'ease-in-out',
+            once: true
+        });
+        document.getElementById('payfastBtn').onclick = async function() {
+            const plan = document.getElementById('plan').value;
+            const email = document.getElementById('email').value;
+            const amount = plan === 'Premium' ? '34.99' : '54.99';
+            const item_name = plan + ' Subscription';
+            const res = await fetch('http://localhost:3000/payfast', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount, item_name, email })
+            });
+            const { payfast_url, data } = await res.json();
+            const form = document.createElement('form');
+            form.action = payfast_url;
+            form.method = 'POST';
+            for (const key in data) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = data[key];
+                form.appendChild(input);
+            }
+            document.body.appendChild(form);
+            form.submit();
+        };
+        document.getElementById('paypalBtn').onclick = async function() {
+            const plan = document.getElementById('plan').value;
+            const amount = plan === 'Premium' ? '34.99' : '54.99';
+            const item_name = plan + ' Subscription';
+            const res = await fetch('http://localhost:3000/paypal', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount, item_name })
+            });
+            const { paypal_url, data } = await res.json();
+            const form = document.createElement('form');
+            form.action = paypal_url;
+            form.method = 'POST';
+            for (const key in data) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = data[key];
+                form.appendChild(input);
+            }
+            document.body.appendChild(form);
+            form.submit();
+        };
+    </script>
+</body>
+</html>

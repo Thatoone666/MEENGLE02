@@ -1,0 +1,285 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:meengle_flutter/models/meengle_match.dart';
+import 'api.dart';
+
+/// Service for managing Meengle Discovery matching engine with filters
+class DiscoveryService {
+  
+  Future<String?> _getToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(ApiService.authKey);
+  }
+
+  /// Get available filter options
+  Future<Map<String, dynamic>> getFilterOptions() async {
+    final token = await _getToken();
+    if (token == null) throw Exception('Not authenticated');
+    
+    final url = Uri.parse('${ApiService.baseUrl}/discovery/filter-options');
+    final response = await http.get(
+      url,
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['filters'] ?? {};
+    }
+    throw Exception('Failed to fetch filter options');
+  }
+
+  /// Get user's current filter preferences
+  Future<Map<String, dynamic>> getUserFilterPreferences() async {
+    final token = await _getToken();
+    if (token == null) throw Exception('Not authenticated');
+    
+    final url = Uri.parse('${ApiService.baseUrl}/discovery/preferences');
+    final response = await http.get(
+      url,
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return {
+        'preferences': data['preferences'] ?? {},
+        'profile': data['profile'] ?? {}
+      };
+    }
+    throw Exception('Failed to fetch filter preferences');
+  }
+
+  /// Update user's filter preferences
+  Future<bool> updateFilterPreferences(Map<String, dynamic> filterPreferences) async {
+    final token = await _getToken();
+    if (token == null) throw Exception('Not authenticated');
+    
+    final url = Uri.parse('${ApiService.baseUrl}/discovery/preferences');
+    final response = await http.put(
+      url,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'filterPreferences': filterPreferences}),
+    );
+    
+    return response.statusCode == 200;
+  }
+
+  /// Update user's profile attributes (height, religion, body type, etc.)
+  Future<bool> updateProfileAttributes(Map<String, dynamic> attributes) async {
+    final token = await _getToken();
+    if (token == null) throw Exception('Not authenticated');
+    
+    final url = Uri.parse('${ApiService.baseUrl}/discovery/profile');
+    final response = await http.put(
+      url,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode(attributes),
+    );
+    
+    return response.statusCode == 200;
+  }
+
+  /// Get discovery candidates with filters applied
+  Future<List<MeengleMatch>> getDiscoveryCandidates({
+    int page = 1,
+    int limit = 20,
+  }) async {
+    final token = await _getToken();
+    if (token == null) throw Exception('Not authenticated');
+    
+    final url = Uri.parse(
+      '${ApiService.baseUrl}/discovery/algorithm?page=$page&limit=$limit'
+    );
+    final response = await http.get(
+      url,
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final candidates = (data['candidates'] as List)
+          .map((c) => MeengleMatch.fromJson(c))
+          .toList();
+      return candidates;
+    }
+    throw Exception('Failed to fetch discovery candidates');
+  }
+
+  /// Get featured matches (AI-recommended)
+  Future<List<MeengleMatch>> getFeaturedMatches() async {
+    final token = await _getToken();
+    if (token == null) throw Exception('Not authenticated');
+    
+    final url = Uri.parse('${ApiService.baseUrl}/discovery/featured');
+    final response = await http.get(
+      url,
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final matches = (data['featured'] as List)
+          .map((m) => MeengleMatch.fromJson(m))
+          .toList();
+      return matches;
+    }
+    return [];
+  }
+
+  /// Like a user
+  Future<bool> likeUser(String userId) async {
+    final token = await _getToken();
+    if (token == null) throw Exception('Not authenticated');
+    
+    final url = Uri.parse('${ApiService.baseUrl}/discovery/match');
+    final response = await http.post(
+      url,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'toUserId': userId,
+        'action': 'like',
+      }),
+    );
+    
+    return response.statusCode == 200 || response.statusCode == 201;
+  }
+
+  /// Pass on a user
+  Future<bool> passUser(String userId) async {
+    final token = await _getToken();
+    if (token == null) throw Exception('Not authenticated');
+    
+    final url = Uri.parse('${ApiService.baseUrl}/discovery/match');
+    final response = await http.post(
+      url,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'toUserId': userId,
+        'action': 'pass',
+      }),
+    );
+    
+    return response.statusCode == 200 || response.statusCode == 201;
+  }
+
+  /// Get received likes count
+  Future<int> getReceivedLikes() async {
+    final token = await _getToken();
+    if (token == null) throw Exception('Not authenticated');
+    
+    final url = Uri.parse('${ApiService.baseUrl}/discovery/likes');
+    final response = await http.get(
+      url,
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['likeCount'] ?? 0;
+    }
+    return 0;
+  }
+
+  /// Get mutual matches (conversations)
+  Future<List<MeengleMatch>> getConversations() async {
+    final token = await _getToken();
+    if (token == null) throw Exception('Not authenticated');
+    
+    final url = Uri.parse('${ApiService.baseUrl}/discovery/conversations');
+    final response = await http.get(
+      url,
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final conversations = (data['conversations'] as List)
+          .map((c) => MeengleMatch.fromJson(c))
+          .toList();
+      return conversations;
+    }
+    return [];
+  }
+
+  /// Unmatch with user
+  Future<bool> unmatch(String userId) async {
+    final token = await _getToken();
+    if (token == null) throw Exception('Not authenticated');
+    
+    final url = Uri.parse('${ApiService.baseUrl}/discovery/unmatch/$userId');
+    final response = await http.post(
+      url,
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    
+    return response.statusCode == 200;
+  }
+
+  /// Block user
+  Future<bool> blockUser(String userId) async {
+    final token = await _getToken();
+    if (token == null) throw Exception('Not authenticated');
+    
+    final url = Uri.parse('${ApiService.baseUrl}/discovery/block/$userId');
+    final response = await http.post(
+      url,
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    
+    return response.statusCode == 200;
+  }
+
+  /// Report user
+  Future<bool> reportUser(String userId, String reason) async {
+    final token = await _getToken();
+    if (token == null) throw Exception('Not authenticated');
+    
+    final url = Uri.parse('${ApiService.baseUrl}/discovery/report/$userId');
+    final response = await http.post(
+      url,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'reason': reason}),
+    );
+    
+    return response.statusCode == 200;
+  }
+
+  /// Get match statistics
+  Future<Map<String, dynamic>> getMatchStats() async {
+    final token = await _getToken();
+    if (token == null) throw Exception('Not authenticated');
+    
+    final url = Uri.parse('${ApiService.baseUrl}/discovery/stats');
+    final response = await http.get(
+      url,
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    }
+    return {
+      'sentLikes': 0,
+      'receivedLikes': 0,
+      'matches': 0,
+      'conversations': 0,
+    };
+  }
+}

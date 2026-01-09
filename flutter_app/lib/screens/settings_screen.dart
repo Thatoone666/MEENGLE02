@@ -1,0 +1,735 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../services/api_service.dart';
+import 'legal_screen.dart';
+
+class SettingsScreen extends StatefulWidget {
+  const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  late SharedPreferences _prefs;
+  bool _notificationsEnabled = true;
+  bool _locationEnabled = true;
+  bool _onlineStatusVisible = true;
+  bool _readReceiptsEnabled = true;
+  String _theme = 'dark';
+  String _language = 'en';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    _prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _notificationsEnabled = _prefs.getBool('notifications_enabled') ?? true;
+      _locationEnabled = _prefs.getBool('location_enabled') ?? true;
+      _onlineStatusVisible = _prefs.getBool('online_status_visible') ?? true;
+      _readReceiptsEnabled = _prefs.getBool('read_receipts_enabled') ?? true;
+      _theme = _prefs.getString('app_theme') ?? 'dark';
+      _language = _prefs.getString('app_language') ?? 'en';
+    });
+  }
+
+  Future<void> _saveSetting(String key, dynamic value) async {
+    if (value is bool) {
+      await _prefs.setBool(key, value);
+    } else if (value is String) {
+      await _prefs.setString(key, value);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Settings'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Account Settings
+            _buildSectionHeader('Account'),
+            _buildSettingsTile(
+              icon: Icons.person,
+              title: 'Edit Profile',
+              subtitle: 'Update your profile information',
+              onTap: () => Navigator.pushNamed(context, '/profile/edit'),
+            ),
+            _buildSettingsTile(
+              icon: Icons.security,
+              title: 'Privacy & Security',
+              subtitle: 'Manage your privacy settings',
+              onTap: () => Navigator.pushNamed(context, '/safety'),
+            ),
+            _buildSettingsTile(
+              icon: Icons.lock,
+              title: 'Change Password',
+              subtitle: 'Update your password',
+              onTap: _showChangePasswordDialog,
+            ),
+            _buildSettingsTile(
+              icon: Icons.email,
+              title: 'Email Preferences',
+              subtitle: 'Control email notifications',
+              onTap: _showEmailPreferencesDialog,
+            ),
+
+            const Divider(height: 24),
+
+            // Notifications
+            _buildSectionHeader('Notifications'),
+            _buildToggleSetting(
+              icon: Icons.notifications,
+              title: 'Push Notifications',
+              subtitle: 'Receive push notifications',
+              value: _notificationsEnabled,
+              onChanged: (value) {
+                setState(() => _notificationsEnabled = value);
+                _saveSetting('notifications_enabled', value);
+              },
+            ),
+            _buildToggleSetting(
+              icon: Icons.chat,
+              title: 'Message Notifications',
+              subtitle: 'Get notified about new messages',
+              value: _notificationsEnabled,
+              onChanged: (value) {
+                setState(() => _notificationsEnabled = value);
+                _saveSetting('message_notifications', value);
+              },
+            ),
+            _buildToggleSetting(
+              icon: Icons.favorite,
+              title: 'Match Notifications',
+              subtitle: 'Get notified about new matches',
+              value: _notificationsEnabled,
+              onChanged: (value) {
+                setState(() => _notificationsEnabled = value);
+                _saveSetting('match_notifications', value);
+              },
+            ),
+
+            const Divider(height: 24),
+
+            // Privacy Settings
+            _buildSectionHeader('Privacy'),
+            _buildToggleSetting(
+              icon: Icons.location_on,
+              title: 'Share Location',
+              subtitle: 'Allow location-based features',
+              value: _locationEnabled,
+              onChanged: (value) {
+                setState(() => _locationEnabled = value);
+                _saveSetting('location_enabled', value);
+              },
+            ),
+            _buildToggleSetting(
+              icon: Icons.visibility,
+              title: 'Show Online Status',
+              subtitle: 'Let others see when you\'re online',
+              value: _onlineStatusVisible,
+              onChanged: (value) {
+                setState(() => _onlineStatusVisible = value);
+                _saveSetting('online_status_visible', value);
+              },
+            ),
+            _buildToggleSetting(
+              icon: Icons.done_all,
+              title: 'Read Receipts',
+              subtitle: 'Show when you\'ve read messages',
+              value: _readReceiptsEnabled,
+              onChanged: (value) {
+                setState(() => _readReceiptsEnabled = value);
+                _saveSetting('read_receipts_enabled', value);
+              },
+            ),
+
+            const Divider(height: 24),
+
+            // Display Settings
+            _buildSectionHeader('Display'),
+            _buildDropdownSetting(
+              icon: Icons.palette,
+              title: 'Theme',
+              value: _theme,
+              options: {
+                'dark': 'Dark Mode',
+                'light': 'Light Mode',
+                'system': 'System Default',
+              },
+              onChanged: (value) {
+                setState(() => _theme = value);
+                _saveSetting('app_theme', value);
+              },
+            ),
+            _buildDropdownSetting(
+              icon: Icons.language,
+              title: 'Language',
+              value: _language,
+              options: {
+                'en': 'English',
+                'es': 'Spanish',
+                'fr': 'French',
+                'zu': 'Zulu',
+                'xh': 'Xhosa',
+                'st': 'Sotho',
+              },
+              onChanged: (value) {
+                setState(() => _language = value);
+                _saveSetting('app_language', value);
+              },
+            ),
+
+            const Divider(height: 24),
+
+            // Subscription & Billing
+            _buildSectionHeader('Subscription'),
+            _buildSettingsTile(
+              icon: Icons.card_membership,
+              title: 'Manage Subscription',
+              subtitle: 'View and manage your subscription',
+              onTap: () => Navigator.pushNamed(context, '/payments'),
+            ),
+            _buildSettingsTile(
+              icon: Icons.receipt,
+              title: 'Billing History',
+              subtitle: 'View your payment history',
+              onTap: _showBillingHistory,
+            ),
+
+            const Divider(height: 24),
+
+            // Support & Legal
+            _buildSectionHeader('Support & Legal'),
+            _buildSettingsTile(
+              icon: Icons.help,
+              title: 'Help & Support',
+              subtitle: 'Contact our support team',
+              onTap: _showHelpSupport,
+            ),
+            _buildSettingsTile(
+              icon: Icons.description,
+              title: 'Terms of Service',
+              subtitle: 'View our terms and conditions',
+              onTap: () => Navigator.pushNamed(context, '/legal'),
+            ),
+            _buildSettingsTile(
+              icon: Icons.privacy_tip,
+              title: 'Privacy Policy',
+              subtitle: 'View our privacy policy',
+              onTap: () => Navigator.pushNamed(context, '/legal'),
+            ),
+
+            const Divider(height: 24),
+
+            // Full Legal Center
+            _buildSettingsTile(
+              icon: Icons.gavel,
+              title: '?? Legal Center',
+              subtitle: 'All terms, policies, and support',
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const LegalScreen(),
+                ),
+              ),
+            ),
+
+            const Divider(height: 24),
+
+            // Danger Zone
+            _buildSectionHeader('Danger Zone'),
+            _buildDangerTile(
+              icon: Icons.delete_forever,
+              title: 'Delete Account',
+              subtitle: 'Permanently delete your account and all data',
+              onTap: _showDeleteAccountDialog,
+            ),
+            _buildSettingsTile(
+              icon: Icons.logout,
+              title: 'Logout',
+              subtitle: 'Sign out of your account',
+              onTap: _showLogoutDialog,
+            ),
+
+            const SizedBox(height: 40),
+
+            // App Version
+            Center(
+              child: Text(
+                'Meengle v1.0.0',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.withAlpha(128),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+          color: Colors.grey,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSettingsTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: Colors.blueAccent),
+      title: Text(title),
+      subtitle: Text(subtitle),
+      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+      onTap: onTap,
+    );
+  }
+
+  Widget _buildDangerTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: Colors.redAccent),
+      title: Text(title, style: const TextStyle(color: Colors.redAccent)),
+      subtitle: Text(subtitle),
+      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+      onTap: onTap,
+    );
+  }
+
+  Widget _buildToggleSetting({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: Colors.blueAccent),
+      title: Text(title),
+      subtitle: Text(subtitle),
+      trailing: Switch(
+        value: value,
+        onChanged: onChanged,
+        activeColor: Colors.blueAccent,
+      ),
+    );
+  }
+
+  Widget _buildDropdownSetting({
+    required IconData icon,
+    required String title,
+    required String value,
+    required Map<String, String> options,
+    required ValueChanged<String> onChanged,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: Colors.blueAccent),
+      title: Text(title),
+      trailing: DropdownButton<String>(
+        value: value,
+        items: options.entries.map((entry) {
+          return DropdownMenuItem(
+            value: entry.key,
+            child: Text(entry.value),
+          );
+        }).toList(),
+        onChanged: (newValue) {
+          if (newValue != null) onChanged(newValue);
+        },
+        underline: const SizedBox(),
+      ),
+    );
+  }
+
+  void _showChangePasswordDialog() {
+    final oldPassController = TextEditingController();
+    final newPassController = TextEditingController();
+    final confirmPassController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Change Password'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: oldPassController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'Current Password',
+                prefixIcon: Icon(Icons.lock),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: newPassController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'New Password',
+                prefixIcon: Icon(Icons.lock),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: confirmPassController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'Confirm Password',
+                prefixIcon: Icon(Icons.lock),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (newPassController.text == confirmPassController.text) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Password changed successfully')),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Passwords do not match')),
+                );
+              }
+            },
+            child: const Text('Update Password'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEmailPreferencesDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Email Preferences'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CheckboxListTile(
+              title: const Text('New matches'),
+              value: true,
+              onChanged: (v) {},
+            ),
+            CheckboxListTile(
+              title: const Text('Messages'),
+              value: true,
+              onChanged: (v) {},
+            ),
+            CheckboxListTile(
+              title: const Text('Promotional offers'),
+              value: false,
+              onChanged: (v) {},
+            ),
+            CheckboxListTile(
+              title: const Text('Weekly digest'),
+              value: true,
+              onChanged: (v) {},
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Email preferences updated')),
+              );
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showBillingHistory() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Billing History'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              _buildBillingItem('Premium Tier', '\$9.99', 'Jan 1, 2025', 'Paid'),
+              _buildBillingItem('Gold Tier', '\$19.99', 'Dec 1, 2024', 'Paid'),
+              _buildBillingItem('Premium Tier', '\$9.99', 'Nov 1, 2024', 'Paid'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBillingItem(String plan, String amount, String date, String status) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(plan, style: const TextStyle(fontWeight: FontWeight.w600)),
+              Text(date, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+            ],
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(amount, style: const TextStyle(fontWeight: FontWeight.w600)),
+              Text(status, style: TextStyle(fontSize: 12, color: Colors.green.withAlpha(200))),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showHelpSupport() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Help & Support'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.email),
+              title: const Text('Email Support'),
+              subtitle: const Text('support@meengle.app'),
+              onTap: () {},
+            ),
+            ListTile(
+              leading: const Icon(Icons.help),
+              title: const Text('FAQ'),
+              subtitle: const Text('Common questions'),
+              onTap: () {},
+            ),
+            ListTile(
+              leading: const Icon(Icons.bug_report),
+              title: const Text('Report a Bug'),
+              subtitle: const Text('Help us improve'),
+              onTap: () {},
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLegalDocument(String title, String type) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: SingleChildScrollView(
+          child: Text(
+            type == 'terms'
+                ? _getTermsOfService()
+                : _getPrivacyPolicy(),
+            style: const TextStyle(fontSize: 12),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getTermsOfService() {
+    return '''
+TERMS OF SERVICE
+
+Last Updated: January 2025
+
+1. ACCEPTANCE OF TERMS
+By accessing and using Meengle, you accept and agree to be bound by the terms and provision of this agreement.
+
+2. USER RESPONSIBILITIES
+- You are responsible for maintaining the confidentiality of your account.
+- You agree to be responsible for all activities that occur under your account.
+- You must be at least 18 years old to use this service.
+
+3. PROHIBITED CONDUCT
+Users shall not:
+- Engage in harassment, bullying, or abusive behavior
+- Share sexually explicit content
+- Solicit or engage in illegal activities
+- Impersonate another person
+- Spam or send unsolicited messages
+
+4. INTELLECTUAL PROPERTY
+All content on Meengle is the property of Meengle and protected by copyright laws.
+
+5. LIMITATION OF LIABILITY
+Meengle shall not be liable for any indirect, incidental, or consequential damages.
+
+6. MODIFICATIONS
+Meengle reserves the right to modify these terms at any time.
+
+For questions, contact: legal@meengle.app
+''';
+  }
+
+  String _getPrivacyPolicy() {
+    return '''
+PRIVACY POLICY
+
+Last Updated: January 2025
+
+1. INFORMATION WE COLLECT
+- Profile information (name, age, location)
+- Profile photos and media
+- Chat history and messages
+- Location data when enabled
+- Device information
+
+2. HOW WE USE YOUR INFORMATION
+- To provide and improve our services
+- To personalize your experience
+- To prevent fraud and abuse
+- To send you notifications
+- To comply with legal obligations
+
+3. DATA SECURITY
+We implement industry-standard security measures to protect your data.
+
+4. YOUR PRIVACY RIGHTS
+You have the right to:
+- Access your data
+- Request data deletion
+- Control privacy settings
+- Opt-out of marketing communications
+
+5. DATA RETENTION
+We retain data for as long as needed to provide services, unless you request deletion.
+
+6. THIRD-PARTY SHARING
+We do not sell your data. We may share data with service providers who assist us.
+
+7. COOKIES
+We use cookies and similar technologies to enhance your experience.
+
+8. CONTACT US
+For privacy concerns, contact: privacy@meengle.app
+''';
+  }
+
+  void _showDeleteAccountDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Account'),
+        content: const Text(
+          'Are you sure you want to delete your account? This action cannot be undone. All your data, messages, and matches will be permanently deleted.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/delete-account');
+            },
+            child: const Text('Delete Account', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLogoutDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // Implement logout logic
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Logged out successfully')),
+              );
+            },
+            child: const Text('Logout'),
+          ),
+        ],
+      ),
+    );
+  }
+}

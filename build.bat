@@ -1,0 +1,98 @@
+@echo off
+REM ?? MEENGLE BUILD SCRIPT - WINDOWS VERSION
+REM Builds APK, IOS, Web, and AAB for Google Play simultaneously
+
+setlocal enabledelayedexpansion
+
+echo.
+echo ?? Starting MEENGLE Production Build...
+echo ?? Building Android (APK + AAB)
+echo ?? Building iOS
+echo ?? Building Web
+echo.
+
+set VERSION=1.0.0
+set BUILD_NUMBER=1
+
+echo.
+echo ========== MEENGLE PRODUCTION BUILD ==========
+echo Version: %VERSION%
+echo Build Number: %BUILD_NUMBER%
+echo.
+
+REM Clean previous builds
+echo ?? Cleaning previous builds...
+cd flutter_app
+call flutter clean
+if exist build rmdir /s /q build
+if exist ios\Pods rmdir /s /q ios\Pods
+if exist ios\Podfile.lock del ios\Podfile.lock
+echo ? Cleaned
+echo.
+
+REM Get dependencies
+echo ?? Getting Flutter dependencies...
+call flutter pub get
+echo ? Dependencies installed
+echo.
+
+REM Build APK
+echo ?? Building Android APK...
+call flutter build apk --release --build-number=%BUILD_NUMBER% --build-name=%VERSION% --target-platform=android-arm64
+echo ? APK built: build/app/outputs/apk/release/app-release.apk
+echo.
+
+REM Build AAB
+echo ?? Building Android App Bundle (AAB)...
+call flutter build appbundle --release --build-number=%BUILD_NUMBER% --build-name=%VERSION%
+echo ? AAB built: build/app/outputs/bundle/release/app-release.aab
+echo.
+
+REM Build iOS
+echo ?? Building iOS...
+call flutter build ios --release --build-number=%BUILD_NUMBER% --build-name=%VERSION%
+echo ? iOS built: build/ios/ipa/meengle.ipa
+echo.
+
+REM Build Web
+echo ?? Building Web...
+call flutter build web ^
+  --release ^
+  --build-name=%VERSION%
+echo ? Web built: build/web
+echo.
+
+REM Create distribution packages
+echo ?? Creating distribution packages...
+if not exist dist\android mkdir dist\android
+if not exist dist\ios mkdir dist\ios
+if not exist dist\web mkdir dist\web
+
+copy build\app\outputs\apk\release\app-release.apk dist\android\meengle-%VERSION%.apk
+copy build\app\outputs\bundle\release\app-release.aab dist\android\meengle-%VERSION%.aab
+xcopy /E /I /Y build\web dist\web\meengle-web-%VERSION%
+
+echo ? Distribution packages created
+echo.
+
+echo.
+echo ========================================
+echo ?? MEENGLE PRODUCTION BUILD COMPLETE!
+echo ========================================
+echo.
+echo ?? Artifacts:
+echo   • APK:      dist\android\meengle-%VERSION%.apk
+echo   • AAB:      dist\android\meengle-%VERSION%.aab (For Google Play)
+echo   • iOS:      build\ios\ipa\meengle.ipa
+echo   • Web:      dist\web\meengle-web-%VERSION%
+echo.
+echo ?? Next:
+echo   1. Upload AAB to Google Play Console
+echo   2. Upload IPA to App Store Connect
+echo   3. Deploy web to hosting service
+echo.
+echo ? Status: READY FOR DISTRIBUTION
+echo.
+
+cd ..
+pause

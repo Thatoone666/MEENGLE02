@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meengle - Settings</title>
+    <link rel="stylesheet" href="frontend/assets/css/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.5.1/nouislider.min.css" />
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.5.1/nouislider.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <a href="home.html" class="header-icon" aria-label="Back to Home"><i data-feather="arrow-left"></i></a>
+            <h1 class="header-title">Settings</h1>
+            <div class="header-icon"></div>
+        </header>
+
+        <main class="main-content" id="settings-container">
+            <!-- Settings will be loaded here -->
+            <div class="text-center muted">Loading settings...</div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            AOS.init({ once: true });
+            feather.replace();
+
+            const settingsContainer = document.getElementById('settings-container');
+            const token = localStorage.getItem('token');
+            let currentUser = null;
+
+            const fetchSettings = async () => {
+                try {
+                    const response = await fetch('/api/profile', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (!response.ok) throw new Error('Failed to fetch settings');
+                    currentUser = await response.json();
+                    renderSettings(currentUser);
+                } catch (error) {
+                    settingsContainer.innerHTML = `<p class="text-danger text-center">${error.message}</p>`;
+                }
+            };
+
+            const renderSettings = (user) => {
+                settingsContainer.innerHTML = `
+                    <form id="settings-form">
+                        <div class="content-card" data-aos="fade-up">
+                            <h2 class="settings-section-title">Account</h2>
+                            <div class="mb-4">
+                                <label for="name" class="form-label">Name</label>
+                                <input type="text" id="name" class="form-input" value="${user.name || ''}">
+                            </div>
+                            <div class="mb-4">
+                                <label for="email" class="form-label">Email</label>
+                                <input type="email" id="email" class="form-input" value="${user.email || ''}" readonly>
+                            </div>
+                             <div class="mb-4">
+                                <label for="bio" class="form-label">Bio</label>
+                                <textarea id="bio" class="form-input" rows="3">${user.bio || ''}</textarea>
+                            </div>
+                        </div>
+
+                        <div class="content-card" data-aos="fade-up">
+                            <h2 class="settings-section-title">Discovery</h2>
+                            <div class="mb-6">
+                                <label class="form-label">Distance Range</label>
+                                <div id="distance-slider"></div>
+                                <div id="distance-value" class="text-right muted text-sm mt-2"></div>
+                            </div>
+                            <div class="mb-6">
+                                <label class="form-label">Age Range</label>
+                                <div id="age-slider"></div>
+                                <div id="age-value" class="text-right muted text-sm mt-2"></div>
+                            </div>
+                            <div>
+                                <label for="gender-preference" class="form-label">Show Me</label>
+                                <select id="gender-preference" class="form-input">
+                                    <option value="Men" ${user.interestedIn === 'Men' ? 'selected' : ''}>Men</option>
+                                    <option value="Women" ${user.interestedIn === 'Women' ? 'selected' : ''}>Women</option>
+                                    <option value="Everyone" ${user.interestedIn === 'Everyone' ? 'selected' : ''}>Everyone</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="content-card" data-aos="fade-up">
+                             <h2 class="settings-section-title">Notifications</h2>
+                             <div class="form-switch-wrapper">
+                                <label for="push-notifications" class="form-label">Push Notifications</label>
+                                <label class="form-switch">
+                                    <input type="checkbox" id="push-notifications" ${user.notifications?.push ? 'checked' : ''}>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="form-switch-wrapper">
+                                <label for="email-notifications" class="form-label">Email Notifications</label>
+                                <label class="form-switch">
+                                    <input type="checkbox" id="email-notifications" ${user.notifications?.email ? 'checked' : ''}>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="content-card" data-aos="fade-up">
+                            <button type="submit" class="btn btn-primary w-full">Save Changes</button>
+                        </div>
+                    </form>
+
+                    <div class="content-card" data-aos="fade-up">
+                        <h2 class="settings-section-title">Danger Zone</h2>
+                        <button id="logout-btn" class="btn btn-secondary w-full mb-2">Logout</button>
+                        <button id="delete-account-btn" class="btn btn-danger w-full">Delete Account</button>
+                    </div>
+                    <div id="response-message" class="mt-4 text-center"></div>
+                `;
+                
+                setupSliders(user.discoverySettings);
+                addEventListeners();
+                feather.replace();
+            };
+
+            const setupSliders = (settings) => {
+                const distanceSlider = document.getElementById('distance-slider');
+                const ageSlider = document.getElementById('age-slider');
+
+                noUiSlider.create(distanceSlider, {
+                    start: [settings?.distance || 50],
+                    connect: 'lower',
+                    range: { 'min': 1, 'max': 200 },
+                    step: 1,
+                    format: { to: val => Math.round(val), from: val => val }
+                });
+
+                noUiSlider.create(ageSlider, {
+                    start: [settings?.ageRange?.min || 18, settings?.ageRange?.max || 35],
+                    connect: true,
+                    range: { 'min': 18, 'max': 80 },
+                    step: 1,
+                    format: { to: val => Math.round(val), from: val => val }
+                });
+
+                distanceSlider.noUiSlider.on('update', (values) => {
+                    document.getElementById('distance-value').textContent = `${values[0]} km`;
+                });
+
+                ageSlider.noUiSlider.on('update', (values) => {
+                    document.getElementById('age-value').textContent = `${values[0]} - ${values[1]} years`;
+                });
+            };
+            
+            const addEventListeners = () => {
+                document.getElementById('settings-form').addEventListener('submit', handleSave);
+                document.getElementById('logout-btn').addEventListener('click', handleLogout);
+                document.getElementById('delete-account-btn').addEventListener('click', handleDeleteAccount);
+            };
+
+            const handleSave = async (e) => {
+                e.preventDefault();
+                const responseMessage = document.getElementById('response-message');
+                
+                const distance = document.getElementById('distance-slider').noUiSlider.get();
+                const ageRangeValues = document.getElementById('age-slider').noUiSlider.get();
+
+                const data = {
+                    name: document.getElementById('name').value,
+                    bio: document.getElementById('bio').value,
+                    interestedIn: document.getElementById('gender-preference').value,
+                    discoverySettings: {
+                        distance: distance,
+                        ageRange: { min: ageRangeValues[0], max: ageRangeValues[1] }
+                    },
+                    notifications: {
+                        push: document.getElementById('push-notifications').checked,
+                        email: document.getElementById('email-notifications').checked
+                    }
+                };
+
+                try {
+                    const response = await fetch('/api/profile', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify(data)
+                    });
+                    const result = await response.json();
+                    if (!response.ok) throw new Error(result.message || 'Failed to save settings');
+                    
+                    responseMessage.className = 'text-success';
+                    responseMessage.textContent = 'Settings saved successfully!';
+                } catch (error) {
+                    responseMessage.className = 'text-danger';
+                    responseMessage.textContent = `Error: ${error.message}`;
+                } finally {
+                    setTimeout(() => responseMessage.textContent = '', 3000);
+                }
+            };
+
+            const handleLogout = () => {
+                localStorage.removeItem('token');
+                window.location.href = 'login.html';
+            };
+
+            const handleDeleteAccount = async () => {
+                if (!confirm('Are you sure you want to delete your account? This action is irreversible.')) return;
+
+                try {
+                    const response = await fetch('/api/users/delete', {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (!response.ok) throw new Error('Failed to delete account');
+                    
+                    alert('Account deleted successfully.');
+                    localStorage.removeItem('token');
+                    window.location.href = 'signup.html';
+                } catch (error) {
+                    alert(`Error: ${error.message}`);
+                }
+            };
+
+            fetchSettings();
+        });
+    </script>
+</body>
+</html>

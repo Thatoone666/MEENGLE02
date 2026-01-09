@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meengle - Profile Details</title>
+    <link rel="stylesheet" href="frontend/assets/css/main.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <a href="home.html" class="header-icon" aria-label="Back to home"><i data-feather="arrow-left"></i></a>
+            <h1 id="profile-name-header" class="header-title">Profile</h1>
+            <div class="header-icon" id="more-options-menu-button" aria-label="More options"><i data-feather="more-horizontal"></i></div>
+        </header>
+
+        <main class="main-content">
+            <div id="profile-details-container">
+                <!-- Profile content will be dynamically inserted here -->
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="fixed-footer">
+                <button class="footer-icon btn-secondary" aria-label="Dislike" onclick="handleInteraction('dislike')">
+                    <i data-feather="x"></i>
+                </button>
+                <button class="footer-icon btn-secondary" aria-label="Save to favorites" onclick="handleInteraction('favorite')">
+                    <i data-feather="bookmark"></i>
+                </button>
+                <button class="footer-icon btn-primary" aria-label="Like" onclick="handleInteraction('like')">
+                    <i data-feather="heart"></i>
+                </button>
+                <button id="priorityLikeBtn" class="footer-icon btn-special" aria-label="Priority Like" onclick="handleInteraction('priority-like')">
+                    <i data-feather="diamond"></i>
+                </button>
+            </div>
+        </main>
+
+        <!-- More Options Modal -->
+        <div id="more-options-modal" class="modal-container" style="display: none;">
+            <div class="modal-content content-card">
+                <h2 class="text-lg font-bold mb-4">Options</h2>
+                <button id="report-profile-btn" class="btn btn-danger w-full mb-2">Report Profile</button>
+                <button id="block-profile-btn" class="btn btn-danger w-full">Block Profile</button>
+                <button id="close-modal-btn" class="btn btn-secondary w-full mt-4">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            AOS.init();
+            feather.replace();
+
+            const profileDetailsContainer = document.getElementById('profile-details-container');
+            const profileNameHeader = document.getElementById('profile-name-header');
+            const reportBtn = document.getElementById('report-profile-btn');
+            const blockBtn = document.getElementById('block-profile-btn');
+            const moreOptionsBtn = document.getElementById('more-options-menu-button');
+            const modal = document.getElementById('more-options-modal');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+
+            let currentProfile = null;
+
+            const getProfileIdFromUrl = () => {
+                const params = new URLSearchParams(window.location.search);
+                return params.get('id');
+            };
+
+            const fetchProfileDetails = async () => {
+                const profileId = getProfileIdFromUrl();
+                if (!profileId) {
+                    profileDetailsContainer.innerHTML = '<p class="text-center">Profile not found.</p>';
+                    return;
+                }
+
+                try {
+                    const token = localStorage.getItem('token');
+                    const response = await fetch(`/api/users/${profileId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch profile details.');
+                    }
+
+                    currentProfile = await response.json();
+                    renderProfile(currentProfile);
+
+                } catch (error) {
+                    console.error('Error fetching profile:', error);
+                    profileDetailsContainer.innerHTML = `<p class="text-center text-danger">Error: ${error.message}</p>`;
+                }
+            };
+
+            const renderProfile = (profile) => {
+                profileNameHeader.textContent = profile.name || 'Profile';
+                let content = '';
+
+                // Main profile image and basic info
+                content += `
+                    <div class="content-card profile-main-image" style="background-image: url('${profile.profilePicture || 'frontend/assets/images/placeholder.png'}');">
+                        <div class="profile-image-overlay">
+                            <h1 class="text-4xl font-bold">${profile.name}, ${profile.age}</h1>
+                            <div class="flex items-center mt-1">
+                                <div class="online-indicator ${profile.active ? 'bg-green-400' : 'bg-gray-400'}"></div>
+                                <p class="text-sm">${profile.active ? 'Active recently' : 'Inactive'}</p>
+                            </div>
+                            <p class="text-lg mt-2">${profile.bio || 'No bio provided.'}</p>
+                        </div>
+                    </div>`;
+
+                // Prompts and other details
+                if (profile.prompts && profile.prompts.length > 0) {
+                    profile.prompts.forEach(prompt => {
+                        content += `
+                            <div class="content-card" data-aos="fade-up">
+                                <h3 class="font-bold text-muted mb-2">${prompt.question}</h3>
+                                <p class="text-xl">${prompt.answer}</p>
+                            </div>`;
+                    });
+                }
+                
+                // Additional images
+                if (profile.additionalPictures && profile.additionalPictures.length > 0) {
+                    profile.additionalPictures.forEach(picUrl => {
+                        content += `<div class="content-card profile-additional-image" style="background-image: url('${picUrl}');" data-aos="fade-up"></div>`;
+                    });
+                }
+
+                // Details Section
+                content += `
+                    <div class="content-card" data-aos="fade-up">
+                        <h3 class="font-bold text-muted mb-4">Details</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><span class="font-bold">Gender:</span> ${profile.gender || 'N/A'}</div>
+                            <div><span class="font-bold">Location:</span> ${profile.location || 'N/A'}</div>
+                            <!-- Add more details as needed -->
+                        </div>
+                    </div>`;
+
+                profileDetailsContainer.innerHTML = content;
+            };
+            
+            window.handleInteraction = async (type) => {
+                const profileId = getProfileIdFromUrl();
+                if (!profileId) return;
+
+                const token = localStorage.getItem('token');
+                let url = '';
+                let method = 'POST';
+
+                switch(type) {
+                    case 'like':
+                    case 'dislike':
+                        url = '/api/matches/interact';
+                        break;
+                    case 'favorite':
+                        // Assuming a favorite endpoint exists
+                        url = `/api/users/favorite/${profileId}`;
+                        break;
+                    case 'priority-like':
+                        // Assuming a priority like endpoint exists
+                        url = '/api/matches/priority-like';
+                        break;
+                    default:
+                        return;
+                }
+
+                try {
+                    const response = await fetch(url, {
+                        method: method,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ profileId: profileId, action: type })
+                    });
+                    const result = await response.json();
+                    console.log(`${type} action result:`, result);
+                    // Maybe show a subtle animation or feedback
+                    // For now, let's just move to the next profile for like/dislike
+                    if(type === 'like' || type === 'dislike') {
+                        // window.location.href = 'home.html'; // Or fetch next profile
+                    }
+                } catch (error) {
+                    console.error(`Error on ${type} action:`, error);
+                }
+            };
+
+            // Modal logic
+            moreOptionsBtn.addEventListener('click', () => {
+                if (currentProfile) {
+                    modal.style.display = 'flex';
+                }
+            });
+
+            closeModalBtn.addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+
+            window.addEventListener('click', (event) => {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+
+            reportBtn.addEventListener('click', () => {
+                const profileId = getProfileIdFromUrl();
+                if(profileId) {
+                    window.location.href = `report-profile.html?id=${profileId}`;
+                }
+            });
+
+            blockBtn.addEventListener('click', async () => {
+                const profileId = getProfileIdFromUrl();
+                if (!profileId || !confirm('Are you sure you want to block this user? This action cannot be undone.')) {
+                    return;
+                }
+                
+                try {
+                    const token = localStorage.getItem('token');
+                    const response = await fetch('/api/users/block', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ blockUserId: profileId })
+                    });
+
+                    if (response.ok) {
+                        alert('User blocked successfully.');
+                        window.location.href = 'home.html';
+                    } else {
+                        const result = await response.json();
+                        throw new Error(result.message || 'Failed to block user.');
+                    }
+                } catch (error) {
+                    alert(`Error: ${error.message}`);
+                }
+            });

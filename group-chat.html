@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meengle - Group Chat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <link rel="stylesheet" href="frontend/assets/css/main.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+</head>
+<body class="text-white">
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-30">
+        <div class="container mx-auto px-6 py-3 flex justify-between items-center content-card mt-4">
+            <a href="home.html" class="nav-icon" title="Back"><i data-feather="arrow-left"></i></a>
+            <h1 class="text-xl font-bold gradient-text">Group Chat</h1>
+            <div class="w-8"></div> <!-- Placeholder for spacing -->
+        </div>
+    </nav>
+
+    <main class="pt-24 pb-10 px-4 flex items-center justify-center min-h-screen">
+        <div class="w-full max-w-2xl content-card" data-aos="fade-up">
+            <h2 class="text-2xl font-bold text-center mb-6 gradient-text">Group Chats</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Left Panel: Groups List & Creation -->
+                <div class="md:col-span-1 space-y-4">
+                    <form id="createGroupForm">
+                        <input type="text" id="groupName" placeholder="New Group Name" required class="form-input mb-2">
+                        <input type="text" id="memberIds" placeholder="User IDs (comma-sep)" required class="form-input mb-2">
+                        <button type="submit" class="btn btn-secondary w-full">Create</button>
+                    </form>
+                    <div id="groupsList" class="space-y-2">
+                        <!-- Group list items will be injected here -->
+                        <p class="muted text-sm text-center">No groups yet. Create one!</p>
+                    </div>
+                </div>
+
+                <!-- Right Panel: Chat Window -->
+                <div class="md:col-span-2 flex flex-col h-[60vh]">
+                    <div id="groupChatWindow" class="flex-1 overflow-y-auto rounded-lg p-4 mb-4 bg-black/20">
+                        <p class="muted text-center">Select a group to start chatting.</p>
+                    </div>
+                    <form id="groupChatForm" class="flex">
+                        <input type="text" id="groupChatInput" class="form-input flex-1 rounded-r-none" placeholder="Type a message..." required>
+                        <button type="submit" class="btn btn-primary rounded-l-none">Send</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+    <script>
+        const token = localStorage.getItem('token');
+        const userId = localStorage.getItem('userId');
+        let currentGroupId = null;
+        const socket = io('http://localhost:3000');
+        document.getElementById('createGroupForm').onsubmit = async function(e) {
+            e.preventDefault();
+            const name = document.getElementById('groupName').value;
+            const memberIds = document.getElementById('memberIds').value.split(',').map(x => x.trim());
+            const res = await fetch('http://localhost:3000/api/groups', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({ name, memberIds })
+            });
+            await loadGroups();
+        };
+        async function loadGroups() {
+            const res = await fetch('http://localhost:3000/api/groups', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            const groups = await res.json();
+            const list = document.getElementById('groupsList');
+            list.innerHTML = '';
+            groups.forEach(group => {
+                const btn = document.createElement('button');
+                btn.textContent = group.name;
+                btn.className = 'block w-full mb-2 px-4 py-2 bg-gray-200 rounded';
+                btn.onclick = () => joinGroup(group._id);
+                list.appendChild(btn);
+            });
+        }
+        async function joinGroup(groupId) {
+            currentGroupId = groupId;
+            socket.emit('join', { groupId });
+            document.getElementById('groupChatWindow').innerHTML = '';
+        }
+        document.getElementById('groupChatForm').onsubmit = async function(e) {
+            e.preventDefault();
+            const text = document.getElementById('groupChatInput').value;
+            await fetch(`http://localhost:3000/api/groups/${currentGroupId}/message`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({ text })
+            });
+            document.getElementById('groupChatInput').value = '';
+        };
+        socket.on('groupMessage', ({ groupId, msg }) => {
+            if (groupId !== currentGroupId) return;
+            const chatWindow = document.getElementById('groupChatWindow');
+            const msgDiv = document.createElement('div');
+            msgDiv.textContent = (msg.from === userId ? 'You: ' : 'User: ') + msg.text;
+            msgDiv.className = 'mb-2';
+            chatWindow.appendChild(msgDiv);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        });
+        loadGroups();
+        feather.replace();
+        AOS.init();
+    </script>
+</body>
+</html>

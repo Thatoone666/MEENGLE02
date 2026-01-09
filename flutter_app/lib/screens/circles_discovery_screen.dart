@@ -1,0 +1,540 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../models/meengle_circle.dart';
+import '../providers/circles_provider.dart';
+import '../animations/premium_animations.dart';
+
+class CirclesDiscoveryScreen extends StatefulWidget {
+  const CirclesDiscoveryScreen({super.key});
+
+  @override
+  State<CirclesDiscoveryScreen> createState() => _CirclesDiscoveryScreenState();
+}
+
+class _CirclesDiscoveryScreenState extends State<CirclesDiscoveryScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _gridController;
+
+  @override
+  void initState() {
+    super.initState();
+    _gridController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+    Future.microtask(() {
+      if (mounted) {
+        context.read<CirclesProvider>().loadCircles();
+        _gridController.forward();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _gridController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0F0F0F),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF1A1A1A),
+        title: const Text(
+          'MEENGLE CIRCLES',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1,
+            color: Colors.white,
+          ),
+        ),
+        centerTitle: true,
+        elevation: 0,
+      ),
+      body: Consumer<CirclesProvider>(
+        builder: (context, provider, _) {
+          if (provider.isLoading) {
+            return const Center(
+              child: PremiumLoadingIndicator(
+                color: Color(0xFFD4AF37),
+              ),
+            );
+          }
+
+          if (provider.error != null) {
+            return FadeTransition(
+              opacity: _gridController,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      color: Colors.red.shade400,
+                      size: 60,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      provider.error ?? 'Error loading circles',
+                      style: const TextStyle(
+                        color: Colors.red,
+                        fontSize: 14,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    GlowingButton(
+                      glowColor: Colors.amber.shade700,
+                      onPressed: () => provider.loadCircles(),
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          return FadeTransition(
+            opacity: _gridController,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, 0.1),
+                end: Offset.zero,
+              ).animate(
+                CurvedAnimation(parent: _gridController, curve: Curves.easeOut),
+              ),
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (provider.joinedCircles.isNotEmpty) ...[
+                        const Text(
+                          'Your Circles',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          height: 100,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: provider.joinedCircles.length,
+                            itemBuilder: (context, index) {
+                              final circle = provider.joinedCircles[index];
+                              return ScaleTransition(
+                                scale: Tween<double>(begin: 0.8, end: 1)
+                                    .animate(
+                                  CurvedAnimation(
+                                    parent: _gridController,
+                                    curve: Interval(
+                                      (index * 0.1).clamp(0.0, 0.6),
+                                      ((index * 0.1) + 0.3)
+                                          .clamp(0.0, 1.0),
+                                      curve: Curves.elasticOut,
+                                    ),
+                                  ),
+                                ),
+                                child: Container(
+                                  width: 100,
+                                  margin: const EdgeInsets.only(right: 8),
+                                  decoration: BoxDecoration(
+                                    borderRadius:
+                                        BorderRadius.circular(12),
+                                    color: Colors.amber.shade700,
+                                    boxShadow:
+                                        PremiumAnimations.premiumGlow(
+                                      color: Colors.amber.shade700,
+                                      intensity: 0.5,
+                                    ),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      circle.name,
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                        letterSpacing: 0.2,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+                      const Text(
+                        'Discover',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                        ),
+                        itemCount: provider.circles.length,
+                        itemBuilder: (context, index) {
+                          final circle = provider.circles[index];
+                          return FadeTransition(
+                            opacity: Tween<double>(begin: 0, end: 1)
+                                .animate(
+                              CurvedAnimation(
+                                parent: _gridController,
+                                curve: Interval(
+                                  (index * 0.08).clamp(0.0, 0.8),
+                                  ((index * 0.08) + 0.4)
+                                      .clamp(0.0, 1.0),
+                                  curve: Curves.easeOut,
+                                ),
+                              ),
+                            ),
+                            child: ScaleTransition(
+                              scale: Tween<double>(begin: 0.8, end: 1)
+                                  .animate(
+                                CurvedAnimation(
+                                  parent: _gridController,
+                                  curve: Interval(
+                                    (index * 0.08).clamp(0.0, 0.8),
+                                    ((index * 0.08) + 0.4)
+                                        .clamp(0.0, 1.0),
+                                    curve: Curves.elasticOut,
+                                  ),
+                                ),
+                              ),
+                              child: _CircleCard(
+                                circle: circle,
+                                onJoin: () =>
+                                    provider.joinCircle(circle.id),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _CircleCard extends StatefulWidget {
+  final MeengleCircle circle;
+  final VoidCallback onJoin;
+
+  const _CircleCard({required this.circle, required this.onJoin});
+
+  @override
+  State<_CircleCard> createState() => _CircleCardState();
+}
+
+class _CircleCardState extends State<_CircleCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _joinController;
+
+  @override
+  void initState() {
+    super.initState();
+    _joinController = AnimationController(
+      duration: PremiumAnimations.medioDuration,
+      vsync: this,
+    );
+  }
+
+  @override
+  void dispose() {
+    _joinController.dispose();
+    super.dispose();
+  }
+
+  void _onJoin() {
+    _joinController.forward().then((_) {
+      _joinController.reverse();
+    });
+    widget.onJoin();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.grey[900],
+        border: Border.all(
+          color: Colors.amber.shade700,
+          width: 1.5,
+        ),
+        boxShadow: PremiumAnimations.premiumGlow(
+          color: Colors.amber.shade700,
+          intensity: 0.4,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.circle.name,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  widget.circle.description,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 11,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${widget.circle.memberCount} members',
+                  style: TextStyle(
+                    color: Colors.grey.shade500,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: ScaleTransition(
+                    scale: Tween<double>(begin: 1, end: 0.95)
+                        .animate(
+                      CurvedAnimation(
+                        parent: _joinController,
+                        curve: Curves.easeOut,
+                      ),
+                    ),
+                    child: ElevatedButton(
+                      onPressed: _onJoin,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.amber.shade700,
+                        padding:
+                            const EdgeInsets.symmetric(vertical: 6),
+                        elevation: 8,
+                        shadowColor: Colors.amber.shade700,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ),
+                      child: const Text(
+                        'Join',
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class PremiumLoadingIndicator extends StatefulWidget {
+  final Color color;
+  final double size;
+
+  const PremiumLoadingIndicator({
+    this.color = const Color(0xFFFF6B9A),
+    this.size = 50,
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  State<PremiumLoadingIndicator> createState() =>
+      _PremiumLoadingIndicatorState();
+}
+
+class _PremiumLoadingIndicatorState extends State<PremiumLoadingIndicator>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _rotationController;
+  late AnimationController _pulseController;
+
+  @override
+  void initState() {
+    super.initState();
+    _rotationController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    )..repeat();
+
+    _pulseController = AnimationController(
+      duration: const Duration(seconds: 1),
+      vsync: this,
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _rotationController.dispose();
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: Tween<double>(begin: 0.8, end: 1.0).animate(
+        CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+      ),
+      child: RotationTransition(
+        turns: _rotationController,
+        child: Container(
+          width: widget.size,
+          height: widget.size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: PremiumAnimations.premiumGlow(
+              color: widget.color,
+              intensity: 0.7 + (_pulseController.value * 0.3),
+            ),
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: widget.size,
+                height: widget.size,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: widget.color.withAlpha(100),
+                    width: 2,
+                  ),
+                ),
+              ),
+              Container(
+                width: widget.size * 0.6,
+                height: widget.size * 0.6,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: widget.color.withAlpha(51),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class GlowingButton extends StatefulWidget {
+  final VoidCallback onPressed;
+  final Widget child;
+  final Color glowColor;
+
+  const GlowingButton({
+    required this.onPressed,
+    required this.child,
+    this.glowColor = const Color(0xFFFF6B9A),
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  State<GlowingButton> createState() => _GlowingButtonState();
+}
+
+class _GlowingButtonState extends State<GlowingButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _glowController;
+
+  @override
+  void initState() {
+    super.initState();
+    _glowController = AnimationController(
+      duration: PremiumAnimations.macroDuration,
+      vsync: this,
+    );
+  }
+
+  @override
+  void dispose() {
+    _glowController.dispose();
+    super.dispose();
+  }
+
+  void _onPressed() {
+    _glowController.forward().then((_) {
+      _glowController.reverse();
+    });
+    widget.onPressed();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: Tween<double>(begin: 1, end: 0.95).animate(
+        CurvedAnimation(parent: _glowController, curve: Curves.easeIn),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: PremiumAnimations.premiumGlow(
+            color: widget.glowColor,
+            intensity: 0.5 + (_glowController.value * 0.5),
+          ),
+        ),
+        child: ElevatedButton(
+          onPressed: _onPressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: widget.glowColor,
+            foregroundColor: Colors.black,
+            elevation: 8,
+          ),
+          child: widget.child,
+        ),
+      ),
+    );
+  }
+}

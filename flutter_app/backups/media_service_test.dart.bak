@@ -1,0 +1,103 @@
+import 'dart:typed_data';
+import 'dart:convert';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:mockito/mockito.dart';
+import 'package:mockito/annotations.dart';
+import 'package:image/image.dart' as img;
+import 'package:http_parser/http_parser.dart';
+import 'package:meengle_flutter/services/media_service.dart';
+import 'package:meengle_flutter/utils/logger.dart';
+
+@GenerateMocks([http.Client])
+void main() {
+  late MediaService mediaService;
+  late MockClient mockClient;
+  late Logger logger;
+
+  setUp(() {
+    mockClient = MockClient();
+    logger = Logger();
+    mediaService = MediaService(client: mockClient, logger: logger);
+  });
+
+  group('MediaService', () {
+    test('optimizes image correctly', () async {
+      // Create a test image
+      final image = img.Image(width: 2048, height: 2048);
+      final imageData = Uint8List.fromList(img.encodeJpg(image));
+      
+      // Setup mocks for upload
+      when(mockClient.post(
+        any,
+        headers: anyNamed('headers'),
+        body: any,
+      )).thenAnswer((_) async => http.Response(
+        json.encode({
+          'uploadUrl': 'https://test.com/upload',
+          'cdnPath': 'test/123',
+        }),
+        200,
+      ));
+              
+      final request = http.StreamedRequest('PUT', Uri.parse('https://test.com/upload'));
+      when(mockClient.send(any)).thenAnswer((_) async => http.StreamedResponse(
+        ByteStream.fromBytes([]),
+        200,
+      ));
+
+      final String cdnUrl = await mediaService.uploadMedia(
+        data: imageData,
+        fileName: 'test.jpg',
+      );
+
+      expect(cdnUrl, startsWith('https://cdn.meengle.app/'));
+      
+      // Verify proper optimization
+      verify(mockClient.post(
+        any,
+        headers: anyNamed('headers'),
+        body: any,
+      )).called(1);
+      
+      verify(mockClient.send(any)).called(1);
+    });
+
+    test('handles upload errors gracefully', () async {
+      final imageData = Uint8List.fromList([1, 2, 3]);
+      
+      when(mockClient.post(
+        any,
+        headers: anyNamed('headers'),
+        body: any,
+      )).thenAnswer((_) async => http.Response('Server Error', 500));
+
+      expect(
+        () => mediaService.uploadMedia(
+          data: imageData,
+          fileName: 'test.jpg',
+        ),
+        throwsException,
+      );
+    });
+
+    test('generates correct image URLs', () {
+      const imageId = 'test123';
+      
+      expect(
+        mediaService.getImageUrl(imageId),
+        equals('https://cdn.meengle.app/images/$imageId/md'),
+      );
+      
+      expect(
+        mediaService.getImageUrl(imageId, ImageSize.thumbnail),
+        equals('https://cdn.meengle.app/images/$imageId/thumb'),
+      );
+      
+      expect(
+        mediaService.getImageUrl(imageId, ImageSize.large),
+        equals('https://cdn.meengle.app/images/$imageId/lg'),
+      );
+    });
+  });
+}

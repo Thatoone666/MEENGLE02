@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meengle - Gender Preference</title>
+    <link rel="stylesheet" href="frontend/assets/css/main.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <a href="create-profile.html" class="header-icon" aria-label="Go back"><i data-feather="arrow-left"></i></a>
+            <h1 class="header-title">Your Preference</h1>
+            <div class="header-icon"></div>
+        </header>
+
+        <main class="main-content-centered">
+            <div class="content-card" data-aos="fade-up">
+                <h2 class="text-2xl font-bold text-center mb-6">Who are you interested in?</h2>
+                <form id="preference-form" class="space-y-6">
+                    <div>
+                        <label for="gender-preference" class="form-label">Show me</label>
+                        <select id="gender-preference" name="gender-preference" required class="form-input">
+                            <option value="Men">Men</option>
+                            <option value="Women">Women</option>
+                            <option value="Everyone">Everyone</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-full">Save Preferences</button>
+                </form>
+                <div class="text-center mt-6">
+                    <a href="home.html" class="text-link">Skip for now</a>
+                </div>
+                <div id="response-message" class="mt-4 text-center"></div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            AOS.init();
+            feather.replace();
+
+            const preferenceForm = document.getElementById('preference-form');
+            const responseMessage = document.getElementById('response-message');
+
+            preferenceForm.addEventListener('submit', async function(event) {
+                event.preventDefault();
+                const preference = document.getElementById('gender-preference').value;
+
+                try {
+                    const token = localStorage.getItem('token');
+                    const response = await fetch('/api/profile', {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ interestedIn: preference })
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        responseMessage.textContent = 'Preferences saved successfully!';
+                        responseMessage.className = 'text-success';
+                        setTimeout(() => {
+                            window.location.href = 'home.html';
+                        }, 1500);
+                    } else {
+                        throw new Error(result.message || 'Failed to save preferences.');
+                    }
+                } catch (error) {
+                    responseMessage.textContent = `Error: ${error.message}`;
+                    responseMessage.className = 'text-danger';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

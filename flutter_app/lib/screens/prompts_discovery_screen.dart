@@ -1,0 +1,619 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../models/meengle_prompt.dart';
+import '../widgets/cards/prompt_card.dart';
+import '../providers/prompt_provider.dart';
+import '../animations/premium_animations.dart';
+
+/// Screen to discover and answer prompts
+class PromptsDiscoveryScreen extends StatefulWidget {
+  const PromptsDiscoveryScreen({super.key});
+
+  @override
+  State<PromptsDiscoveryScreen> createState() => _PromptsDiscoveryScreenState();
+}
+
+class _PromptsDiscoveryScreenState extends State<PromptsDiscoveryScreen>
+    with SingleTickerProviderStateMixin {
+  PromptCategory? _selectedCategory;
+  late AnimationController _listController;
+
+  @override
+  void initState() {
+    super.initState();
+    _listController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<PromptProvider>().loadPrompts();
+      _listController.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _listController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Personality Questions',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
+        centerTitle: true,
+        elevation: 0,
+      ),
+      body: Consumer<PromptProvider>(
+        builder: (context, provider, _) {
+          if (provider.isLoading) {
+            return const Center(
+              child: PremiumLoadingIndicator(
+                color: Color(0xFFD4AF37),
+              ),
+            );
+          }
+
+          if (provider.error != null) {
+            return FadeTransition(
+              opacity: _listController,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: PremiumAnimations.premiumGlow(
+                          color: Colors.red.shade400,
+                          intensity: 0.5,
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: Colors.red.shade400,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Error loading prompts',
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      provider.error!,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey[400]),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          final filteredPrompts = _selectedCategory == null
+              ? provider.unansweredPrompts
+              : provider.unansweredPrompts
+                  .where((p) => p.category == _selectedCategory)
+                  .toList();
+
+          return FadeTransition(
+            opacity: _listController,
+            child: Column(
+              children: [
+                // Progress bar
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Profile Complete',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                          Text(
+                            '${provider.answeredCount}/${provider.totalCount}',
+                            style: TextStyle(
+                              color: Colors.amber.shade400,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.amber.shade700.withAlpha(51),
+                                blurRadius: 6,
+                              ),
+                            ],
+                          ),
+                          child: LinearProgressIndicator(
+                            value: provider.totalCount > 0
+                                ? provider.answeredCount / provider.totalCount
+                                : 0,
+                            minHeight: 8,
+                            backgroundColor: Colors.grey[800],
+                            valueColor: AlwaysStoppedAnimation(
+                              Colors.amber.shade600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Category filter
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      _buildCategoryChip(null, 'All', provider),
+                      const SizedBox(width: 8),
+                      for (final category in PromptCategory.values)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: _buildCategoryChip(category, null, provider),
+                        ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Prompts list
+                if (filteredPrompts.isEmpty)
+                  Expanded(
+                    child: FadeTransition(
+                      opacity: _listController,
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                boxShadow: PremiumAnimations.premiumGlow(
+                                  color: Colors.green.shade400,
+                                  intensity: 0.5,
+                                ),
+                              ),
+                              child: Icon(
+                                Icons.check_circle_outline,
+                                size: 64,
+                                color: Colors.green.shade400,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'All done!',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .headlineSmall
+                                  ?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'You\'ve answered all prompts',
+                              style: TextStyle(
+                                color: Colors.grey[400],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  Expanded(
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0, 0.1),
+                        end: Offset.zero,
+                      ).animate(
+                        CurvedAnimation(
+                          parent: _listController,
+                          curve: Curves.easeOut,
+                        ),
+                      ),
+                      child: ListView.builder(
+                        padding: const EdgeInsets.only(bottom: 24),
+                        itemCount: filteredPrompts.length,
+                        itemBuilder: (context, index) {
+                          final prompt = filteredPrompts[index];
+                          final isAnswered = provider.isPromptAnswered(prompt.id);
+
+                          return FadeTransition(
+                            opacity: Tween<double>(begin: 0, end: 1)
+                                .animate(
+                              CurvedAnimation(
+                                parent: _listController,
+                                curve: Interval(
+                                  (index * 0.08).clamp(0.0, 0.8),
+                                  ((index * 0.08) + 0.4).clamp(0.0, 1.0),
+                                  curve: Curves.easeOut,
+                                ),
+                              ),
+                            ),
+                            child: ScaleTransition(
+                              scale: Tween<double>(begin: 0.8, end: 1)
+                                  .animate(
+                                CurvedAnimation(
+                                  parent: _listController,
+                                  curve: Interval(
+                                    (index * 0.08).clamp(0.0, 0.8),
+                                    ((index * 0.08) + 0.4).clamp(0.0, 1.0),
+                                    curve: Curves.elasticOut,
+                                  ),
+                                ),
+                              ),
+                              child: PromptCard(
+                                prompt: prompt,
+                                isAnswered: isAnswered,
+                                existingAnswer:
+                                    provider.getAnswerForPrompt(prompt.id),
+                                onTapAnswer: (selectedPrompt) {
+                                  _showAnswerDialog(
+                                    context,
+                                    selectedPrompt,
+                                    provider,
+                                  );
+                                },
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildCategoryChip(
+    PromptCategory? category,
+    String? label,
+    PromptProvider provider,
+  ) {
+    final isSelected = _selectedCategory == category;
+    final displayLabel = label ?? _getCategoryLabel(category!);
+
+    return FilterChip(
+      label: Text(displayLabel),
+      selected: isSelected,
+      onSelected: (selected) {
+        setState(() {
+          _selectedCategory = selected ? category : null;
+        });
+      },
+      backgroundColor: Colors.grey[800],
+      selectedColor: Colors.amber.shade700,
+      labelStyle: TextStyle(
+        color: isSelected ? Colors.black : Colors.white,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.2,
+      ),
+      side: BorderSide(
+        color: isSelected ? Colors.transparent : Colors.amber.shade700,
+        width: 1.5,
+      ),
+    );
+  }
+
+  void _showAnswerDialog(
+    BuildContext context,
+    MeenglePrompt prompt,
+    PromptProvider provider,
+  ) {
+    final controller = TextEditingController();
+    final existingAnswer = provider.getAnswerForPrompt(prompt.id);
+    if (existingAnswer != null) {
+      controller.text = existingAnswer.answer;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => ScaleTransition(
+        scale: Tween<double>(begin: 0.8, end: 1).animate(
+          CurvedAnimation(
+            parent: ModalRoute.of(context)?.animation ??
+                AlwaysStoppedAnimation(1),
+            curve: Curves.easeOut,
+          ),
+        ),
+        child: AlertDialog(
+          title: Text(
+            prompt.question,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          backgroundColor: const Color(0xFF1A1A1A),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 8),
+              Text(
+                'Suggested answers:',
+                style: TextStyle(
+                  color: Colors.grey[400],
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: prompt.suggestedAnswers
+                    .take(3)
+                    .map(
+                      (answer) => GestureDetector(
+                        onTap: () {
+                          controller.text = answer;
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.shade700.withAlpha(51),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: Colors.amber.shade700.withAlpha(102),
+                            ),
+                          ),
+                          child: Text(
+                            answer,
+                            style: TextStyle(
+                              color: Colors.amber.shade400,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    )
+                    .toList(),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                maxLength: 250,
+                maxLines: 4,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Your answer...',
+                  hintStyle: TextStyle(color: Colors.grey[600]),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.amber.shade700),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey[900],
+                  counterStyle: const TextStyle(color: Colors.white30),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            GlowingButton(
+              glowColor: Colors.amber.shade700,
+              onPressed: () {
+                if (controller.text.isNotEmpty) {
+                  provider.submitAnswer(prompt.id, controller.text);
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Answer saved!'),
+                      duration: Duration(milliseconds: 1500),
+                    ),
+                  );
+                }
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _getCategoryLabel(PromptCategory category) {
+    return category.label;
+  }
+}
+
+class PremiumLoadingIndicator extends StatefulWidget {
+  final Color color;
+  final double size;
+
+  const PremiumLoadingIndicator({
+    this.color = const Color(0xFFFF6B9A),
+    this.size = 50,
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  State<PremiumLoadingIndicator> createState() =>
+      _PremiumLoadingIndicatorState();
+}
+
+class _PremiumLoadingIndicatorState extends State<PremiumLoadingIndicator>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _rotationController;
+  late AnimationController _pulseController;
+
+  @override
+  void initState() {
+    super.initState();
+    _rotationController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    )..repeat();
+
+    _pulseController = AnimationController(
+      duration: const Duration(seconds: 1),
+      vsync: this,
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _rotationController.dispose();
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: Tween<double>(begin: 0.8, end: 1.0).animate(
+        CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+      ),
+      child: RotationTransition(
+        turns: _rotationController,
+        child: Container(
+          width: widget.size,
+          height: widget.size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: PremiumAnimations.premiumGlow(
+              color: widget.color,
+              intensity: 0.7 + (_pulseController.value * 0.3),
+            ),
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: widget.size,
+                height: widget.size,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: widget.color.withAlpha(100),
+                    width: 2,
+                  ),
+                ),
+              ),
+              Container(
+                width: widget.size * 0.6,
+                height: widget.size * 0.6,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: widget.color.withAlpha(51),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class GlowingButton extends StatefulWidget {
+  final VoidCallback onPressed;
+  final Widget child;
+  final Color glowColor;
+
+  const GlowingButton({
+    required this.onPressed,
+    required this.child,
+    this.glowColor = const Color(0xFFFF6B9A),
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  State<GlowingButton> createState() => _GlowingButtonState();
+}
+
+class _GlowingButtonState extends State<GlowingButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _glowController;
+
+  @override
+  void initState() {
+    super.initState();
+    _glowController = AnimationController(
+      duration: PremiumAnimations.macroDuration,
+      vsync: this,
+    );
+  }
+
+  @override
+  void dispose() {
+    _glowController.dispose();
+    super.dispose();
+  }
+
+  void _onPressed() {
+    _glowController.forward().then((_) {
+      _glowController.reverse();
+    });
+    widget.onPressed();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: Tween<double>(begin: 1, end: 0.95).animate(
+        CurvedAnimation(parent: _glowController, curve: Curves.easeIn),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: PremiumAnimations.premiumGlow(
+            color: widget.glowColor,
+            intensity: 0.5 + (_glowController.value * 0.5),
+          ),
+        ),
+        child: ElevatedButton(
+          onPressed: _onPressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: widget.glowColor,
+            foregroundColor: Colors.black,
+            elevation: 8,
+          ),
+          child: widget.child,
+        ),
+      ),
+    );
+  }
+}

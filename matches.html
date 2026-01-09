@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meengle - My Matches</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="frontend/assets/css/premium-style.css">
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+    </style>
+</head>
+<body class="text-white">
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-30">
+        <div class="container mx-auto px-6 py-3 flex justify-between items-center content-card mt-4">
+            <a href="home.html" class="nav-icon" title="Back"><i data-feather="arrow-left"></i></a>
+            <h1 class="text-xl font-bold gradient-text">My Matches</h1>
+            <div class="w-8"></div> <!-- Placeholder for spacing -->
+        </div>
+    </nav>
+
+    <!-- Matches Grid -->
+    <main class="pt-24 pb-10 px-4">
+        <div id="matches-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-w-6xl mx-auto">
+            <!-- Match items will be dynamically inserted here -->
+            <div class="text-center p-4 muted col-span-full">Loading your matches...</div>
+        </div>
+    </main>
+
+    <script src="frontend/assets/js/matches.js"></script>
+    <script>
+        feather.replace();
+    </script>
+</body>
+</html>

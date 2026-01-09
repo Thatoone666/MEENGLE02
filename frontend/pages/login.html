@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - MEENGLE</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .login-container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      padding: 40px;
+      max-width: 450px;
+      width: 100%;
+    }
+
+    .logo {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .logo h1 {
+      font-size: 36px;
+      color: #667eea;
+      margin-bottom: 5px;
+    }
+
+    .logo p {
+      color: #999;
+      font-size: 14px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: #333;
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: border-color 0.3s;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .error {
+      background: #fff5f5;
+      border: 1px solid #ffcccc;
+      color: #cc0000;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .error.show {
+      display: block;
+    }
+
+    .btn-login {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .btn-login:hover {
+      transform: scale(1.02);
+    }
+
+    .btn-login:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .signup-link {
+      text-align: center;
+      margin-top: 20px;
+      color: #666;
+      font-size: 14px;
+    }
+
+    .signup-link a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .signup-link a:hover {
+      text-decoration: underline;
+    }
+
+    .forgot-password {
+      text-align: right;
+      margin-bottom: 20px;
+    }
+
+    .forgot-password a {
+      color: #667eea;
+      text-decoration: none;
+      font-size: 13px;
+    }
+
+    .forgot-password a:hover {
+      text-decoration: underline;
+    }
+
+    .legal-footer {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+      font-size: 11px;
+      color: #999;
+      text-align: center;
+    }
+
+    .legal-footer a {
+      color: #667eea;
+      text-decoration: none;
+    }
+
+    .legal-footer a:hover {
+      text-decoration: underline;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 10px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="logo">
+      <h1>?? MEENGLE</h1>
+      <p>Meet Your Match in South Africa</p>
+    </div>
+
+    <div class="error" id="errorMsg"></div>
+
+    <form onsubmit="handleLogin(event)">
+      <div class="form-group">
+        <label>Email Address</label>
+        <input 
+          type="email" 
+          id="email" 
+          required 
+          placeholder="your@email.com"
+          autocomplete="email"
+        >
+      </div>
+
+      <div class="form-group">
+        <label>Password</label>
+        <input 
+          type="password" 
+          id="password" 
+          required 
+          placeholder="••••••••"
+          autocomplete="current-password"
+        >
+        <div class="forgot-password">
+          <a href="/pages/forgot-password.html">Forgot password?</a>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-login" id="loginBtn">
+        <span id="btnText">Login</span>
+      </button>
+    </form>
+
+    <div class="signup-link">
+      Don't have an account? <a href="/pages/signup.html">Sign up here</a>
+    </div>
+
+    <div class="legal-footer">
+      <p>By logging in, you agree to our
+        <a href="/pages/terms.html">Terms</a>,
+        <a href="/pages/privacy.html">Privacy Policy</a>, and
+        <a href="/pages/community-guidelines.html">Community Guidelines</a>
+      </p>
+      <p style="margin-top: 8px;">???? POPIA Compliant | South Africa</p>
+    </div>
+  </div>
+
+  <script src="/assets/js/api-client.js"></script>
+  <script>
+    async function handleLogin(event) {
+      event.preventDefault();
+      
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const loginBtn = document.getElementById('loginBtn');
+      const btnText = document.getElementById('btnText');
+      const errorMsg = document.getElementById('errorMsg');
+
+      try {
+        loginBtn.disabled = true;
+        btnText.textContent = 'Logging in...';
+        errorMsg.classList.remove('show');
+
+        // Use API client to login
+        const response = await window.apiClient.login(email, password);
+
+        // Store user data
+        localStorage.setItem('user', JSON.stringify(response.user || response));
+        
+        // Redirect to dashboard
+        window.location.href = '/pages/dashboard.html';
+
+      } catch (error) {
+        console.error('Login failed:', error);
+        errorMsg.textContent = error.message || 'Invalid email or password. Please try again.';
+        errorMsg.classList.add('show');
+        loginBtn.disabled = false;
+        btnText.textContent = 'Login';
+      }
+    }
+
+    // Allow Enter to submit
+    document.getElementById('password').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') handleLogin(e);
+    });
+
+    // Check if already logged in
+    window.addEventListener('DOMContentLoaded', () => {
+      if (localStorage.getItem('authToken')) {
+        window.location.href = '/pages/dashboard.html';
+      }
+    });
+  </script>
+</body>
+</html>

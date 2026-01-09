@@ -1,0 +1,402 @@
+/*
+    main.css
+    Consolidated stylesheet for the Meengle web application.
+    This file combines styles from premium-style.css and profile-details.css,
+    and introduces a more consistent and premium design system.
+*/
+
+/* Import Google Fonts - Poppins for premium typography */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+/*
+    CSS Variables - The Core of the Design System
+    - Defines a consistent, premium, and vibrant color palette.
+    - Establishes a modern font stack.
+    - Centralizes sizing, spacing, and shadow values for easy updates.
+*/
+:root {
+    /* Color Palette - Vibrant and Premium */
+    --primary-gradient: linear-gradient(45deg, #C13584, #E1306C);
+    --primary-color: #C13584; /* Deep Magenta */
+    --secondary-color: #E1306C; /* Vibrant Pink */
+    --accent-color: #FFD700; /* Gold for premium highlights */
+    --background-color: #121212; /* Dark background for a premium, modern feel */
+    --glass-bg: rgba(255, 255, 255, 0.05); /* Translucent white for glass effect */
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --text-color: #EAEAEA; /* Off-white for readability on dark backgrounds */
+    --muted-text-color: #A0A0A0;
+    --border-color: rgba(255, 255, 255, 0.15);
+    --card-background-color: rgba(30, 30, 30, 0.7);
+    --success-color: #28a745;
+    --danger-color: #dc3545;
+
+    /* Typography */
+    --font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+    /* Sizing & Spacing */
+    --border-radius-sm: 0.5rem;
+    --border-radius-md: 1rem;
+    --border-radius-lg: 1.5rem;
+    --spacing-unit: 1rem;
+
+    /* Shadows - Adapted for dark mode */
+    --shadow-sm: 0 4px 8px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.4);
+}
+
+/*
+    Base & Reset Styles
+    - Ensures a consistent base across all browsers.
+    - Applies the primary font and background color.
+    - Sets up smooth font rendering.
+*/
+body {
+    background-color: var(--background-color);
+    font-family: var(--font-family);
+    color: var(--text-color);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1.5;
+    overflow-x: hidden; /* Prevent horizontal scroll from animations */
+}
+
+/* Add a subtle background pattern */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at top left, rgba(193, 53, 132, 0.1), transparent 40%),
+                radial-gradient(circle at bottom right, rgba(225, 48, 108, 0.1), transparent 50%);
+    z-index: -1;
+}
+
+/*
+    Typography System
+    - Defines a clear hierarchy for headings.
+    - Includes a gradient text utility for a premium feel.
+*/
+h1, .h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: calc(var(--spacing-unit) * 0.5);
+    text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+
+h2, .h2 {
+    font-size: 1.75rem;
+    font-weight: 600;
+    margin-bottom: calc(var(--spacing-unit) * 0.5);
+}
+
+.gradient-text {
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.muted {
+    color: var(--muted-text-color);
+}
+
+/*
+    Button System
+    - Primary buttons are vibrant and inviting.
+    - Secondary buttons are subtle for less critical actions.
+    - Includes hover and focus states for better interactivity.
+*/
+.btn {
+    display: inline-block;
+    font-weight: 600;
+    text-align: center;
+    vertical-align: middle;
+    cursor: pointer;
+    user-select: none;
+    border: 1px solid transparent;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    border-radius: 9999px; /* Pill shape */
+    transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+    backdrop-filter: blur(10px);
+}
+
+.btn-primary {
+    background: var(--primary-gradient);
+    color: white;
+    box-shadow: 0 5px 15px rgba(193, 53, 132, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 8px 25px rgba(193, 53, 132, 0.4);
+}
+
+.btn-secondary {
+    background-color: var(--glass-bg);
+    color: var(--text-color);
+    border-color: var(--glass-border);
+}
+
+.btn-secondary:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+/*
+    Form Elements
+    - Clean, modern, and accessible form styling.
+    - Clear focus states.
+*/
+.form-input {
+    width: 100%;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--glass-bg);
+    color: var(--text-color);
+    transition: box-shadow 0.18s ease, border-color 0.18s ease;
+    backdrop-filter: blur(5px);
+}
+
+.form-input::placeholder {
+    color: var(--muted-text-color);
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(193, 53, 132, 0.25);
+}
+
+/* Form Additions */
+.form-label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: var(--muted-text-color);
+}
+
+.text-danger {
+    color: var(--danger-color);
+}
+
+.text-success {
+    color: var(--success-color);
+}
+
+.text-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+.text-link:hover {
+    color: var(--secondary-color);
+    text-decoration: underline;
+}
+
+/*
+    Card Component - Glassmorphism Effect
+    - The primary container for content sections.
+    - Uses subtle shadows and rounded corners for a soft, modern look.
+*/
+.content-card {
+    background-color: var(--card-background-color);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: calc(var(--spacing-unit) * 2);
+    transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+    border: 1px solid var(--glass-border);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+}
+
+.content-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: var(--shadow-lg);
+    background-color: rgba(30, 30, 30, 0.9);
+}
+
+/*
+    Premium Feature Styling
+    - Visual cues for premium or special features.
+*/
+.premium-border {
+    border: 2px solid var(--accent-color);
+}
+
+.premium-glow {
+    box-shadow: 0 0 25px rgba(255, 215, 0, 0.3);
+}
+
+.premium-tag {
+    background-color: var(--accent-color);
+    color: #333;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--border-radius-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/*
+    Avatar Component
+    - Used for user profile pictures.
+*/
+.avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    object-fit: cover;
+    box-shadow: var(--shadow-md);
+    border: 3px solid var(--accent-color);
+}
+
+.avatar-sm {
+    width: 40px;
+    height: 40px;
+}
+
+/*
+    Profile Details Specific Styles
+    - Styles previously in profile-details.css are integrated here.
+*/
+.profile-image {
+    background-size: cover;
+    background-position: center;
+    height: 100vh; /* Full viewport height for immersive feel */
+    display: flex;
+    align-items: flex-end;
+    padding: var(--spacing-unit);
+    color: white;
+    position: relative;
+}
+
+/* Add a vignette effect to profile images */
+.profile-image::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 50%;
+    background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+}
+
+/*
+    Animations & Transitions
+*/
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+}
+
+/* Loading Skeleton */
+.skeleton {
+    background-color: var(--glass-bg);
+    border-radius: var(--border-radius-sm);
+    position: relative;
+    overflow: hidden;
+}
+
+.skeleton::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -150%;
+    width: 150%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    to { left: 150%; }
+}
+
+/* Main Layout Containers */
+.container {
+    width: 100%;
+    max-width: 1200px; /* Or your preferred max-width */
+    margin: 0 auto;
+    padding: 0 var(--spacing-unit);
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-unit) 0;
+    margin-bottom: calc(var(--spacing-unit) * 2);
+}
+
+.main-content {
+    padding-bottom: calc(var(--spacing-unit) * 4); /* Space for fixed footers */
+}
+
+.main-content-centered {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: var(--spacing-unit);
+}
+
+/* Header Variants */
+.header-transparent {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    background: transparent;
+}
+
+.header-icon {
+    color: var(--text-color);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+.header-icon:hover {
+    background-color: var(--glass-bg);
+}
+
+.header-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+/*
+    Accessibility Improvements
+    - High-contrast mode support.
+    - Clear focus rings for keyboard navigation.
+*/
+.focus-ring:focus {
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(193, 53, 132, 0.3);
+    border-radius: var(--border-radius-sm);
+}
+
+@media (prefers-contrast: more) {
+    :root {
+        --border-color: #999;
+        --text-color: #FFF;
+        --background-color: #000;
+        --card-background-color: #111;
+    }
+    .content-card {
+        box-shadow: 0 0 0 2px var(--border-color);
+    }
+}

@@ -1,0 +1,406 @@
+// Analytics & Event Tracking System
+class Analytics {
+  constructor(options = {}) {
+    this.userId = options.userId;
+    this.sessionId = this.generateSessionId();
+    this.events = [];
+    this.providers = options.providers || [];
+    this.batchSize = options.batchSize || 10;
+    this.autoFlush = options.autoFlush !== false;
+
+    this.initProviders();
+  }
+
+  initProviders() {
+    // Initialize PostHog if available
+    if (window.posthog) {
+      this.providers.push('posthog');
+    }
+
+    // Initialize Mixpanel if available
+    if (window.mixpanel) {
+      this.providers.push('mixpanel');
+    }
+
+    // Initialize Google Analytics if available
+    if (window.gtag) {
+      this.providers.push('gtag');
+    }
+  }
+
+  trackEvent(eventName, properties = {}) {
+    const event = {
+      name: eventName,
+      properties: {
+        ...properties,
+        timestamp: new Date().toISOString(),
+        sessionId: this.sessionId,
+        userId: this.userId,
+        url: window.location.href
+      }
+    };
+
+    this.events.push(event);
+
+    // Send to providers immediately for important events
+    if (this.isImportantEvent(eventName)) {
+      this.sendEvent(event);
+    } else if (this.events.length >= this.batchSize && this.autoFlush) {
+      this.flush();
+    }
+  }
+
+  trackPageView(pageName, properties = {}) {
+    this.trackEvent('page_view', {
+      page: pageName,
+      ...properties
+    });
+  }
+
+  trackUserAction(action, target, properties = {}) {
+    this.trackEvent('user_action', {
+      action,
+      target,
+      ...properties
+    });
+  }
+
+  trackConversion(conversionType, value, properties = {}) {
+    this.trackEvent('conversion', {
+      type: conversionType,
+      value,
+      ...properties
+    });
+  }
+
+  trackError(errorName, errorMessage, properties = {}) {
+    this.trackEvent('error', {
+      name: errorName,
+      message: errorMessage,
+      ...properties
+    });
+  }
+
+  trackTiming(eventName, duration, properties = {}) {
+    this.trackEvent('timing', {
+      event: eventName,
+      duration,
+      ...properties
+    });
+  }
+
+  setUserProperty(property, value) {
+    this.userId = this.userId || {};
+    
+    // Send to providers
+    if (window.posthog) {
+      window.posthog.people.set({ [property]: value });
+    }
+    if (window.mixpanel) {
+      window.mixpanel.people.set({ [property]: value });
+    }
+  }
+
+  identifyUser(userId, properties = {}) {
+    this.userId = userId;
+
+    if (window.posthog) {
+      window.posthog.identify(userId, properties);
+    }
+    if (window.mixpanel) {
+      window.mixpanel.identify(userId);
+      window.mixpanel.people.set(properties);
+    }
+  }
+
+  // Check if event is important for immediate sending
+  isImportantEvent(eventName) {
+    const importantEvents = ['conversion', 'error', 'signup', 'login'];
+    return importantEvents.includes(eventName);
+  }
+
+  // Send event to analytics providers
+  sendEvent(event) {
+    if (window.posthog) {
+      window.posthog.capture(event.name, event.properties);
+    }
+    if (window.mixpanel) {
+      window.mixpanel.track(event.name, event.properties);
+    }
+    if (window.gtag) {
+      window.gtag('event', event.name, event.properties);
+    }
+  }
+
+  flush() {
+    this.events.forEach(event => this.sendEvent(event));
+    this.events = [];
+  }
+
+  generateSessionId() {
+    return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  getSessionId() {
+    return this.sessionId;
+  }
+
+  getEvents() {
+    return this.events;
+  }
+}
+
+// User Behavior Tracker
+class BehaviorTracker {
+  constructor() {
+    this.analytics = window.analytics;
+    this.startTime = Date.now();
+    this.events = [];
+    this.init();
+  }
+
+  init() {
+    this.trackPageTiming();
+    this.trackScrollDepth();
+    this.trackClickTracking();
+    this.trackFormInteraction();
+  }
+
+  trackPageTiming() {
+    window.addEventListener('load', () => {
+      const loadTime = performance.now();
+      this.analytics?.trackTiming('page_load', loadTime);
+    });
+  }
+
+  trackScrollDepth() {
+    let maxScroll = 0;
+    let reported = {};
+
+    window.addEventListener('scroll', () => {
+      const scrollPercent = (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100;
+
+      if (scrollPercent > maxScroll) {
+        maxScroll = scrollPercent;
+
+        const milestones = [25, 50, 75, 100];
+        milestones.forEach(milestone => {
+          if (scrollPercent >= milestone && !reported[milestone]) {
+            reported[milestone] = true;
+            this.analytics?.trackEvent('scroll_depth', { depth: milestone });
+          }
+        });
+      }
+    });
+  }
+
+  trackClickTracking() {
+    document.addEventListener('click', (e) => {
+      const target = e.target.closest('[data-track]');
+      if (!target) return;
+
+      const trackLabel = target.dataset.track;
+      const trackCategory = target.dataset.trackCategory || 'interaction';
+
+      this.analytics?.trackUserAction('click', trackLabel, {
+        category: trackCategory,
+        element: target.tagName
+      });
+    });
+  }
+
+  trackFormInteraction() {
+    document.addEventListener('change', (e) => {
+      if (e.target.closest('form')) {
+        const form = e.target.closest('form');
+        const formName = form.name || form.id || 'unknown_form';
+
+        this.analytics?.trackUserAction('form_change', e.target.name || e.target.id, {
+          form: formName
+        });
+      }
+    });
+
+    document.addEventListener('submit', (e) => {
+      if (e.target.tagName === 'FORM') {
+        const formName = e.target.name || e.target.id || 'unknown_form';
+        this.analytics?.trackEvent('form_submit', { form: formName });
+      }
+    });
+  }
+}
+
+// Heatmap Tracking (for user interaction patterns)
+class HeatmapTracker {
+  constructor() {
+    this.clicks = [];
+    this.hovers = [];
+    this.scrollPositions = [];
+    this.init();
+  }
+
+  init() {
+    document.addEventListener('click', (e) => {
+      this.recordClick(e.clientX, e.clientY, e.target);
+    });
+
+    document.addEventListener('mouseover', (e) => {
+      this.recordHover(e.clientX, e.clientY, e.target);
+    });
+
+    window.addEventListener('scroll', () => {
+      this.recordScrollPosition();
+    });
+  }
+
+  recordClick(x, y, element) {
+    this.clicks.push({
+      x,
+      y,
+      element: element?.tagName || 'unknown',
+      timestamp: Date.now()
+    });
+  }
+
+  recordHover(x, y, element) {
+    this.hovers.push({
+      x,
+      y,
+      element: element?.tagName || 'unknown',
+      timestamp: Date.now()
+    });
+  }
+
+  recordScrollPosition() {
+    this.scrollPositions.push({
+      x: window.scrollX,
+      y: window.scrollY,
+      timestamp: Date.now()
+    });
+  }
+
+  getHeatmapData() {
+    return {
+      clicks: this.clicks,
+      hovers: this.hovers,
+      scrollPositions: this.scrollPositions
+    };
+  }
+
+  exportHeatmapData() {
+    const data = this.getHeatmapData();
+    const json = JSON.stringify(data);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `heatmap-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+}
+
+// Funnel Tracker (for conversion tracking)
+class FunnelTracker {
+  constructor(funnelName, steps) {
+    this.funnelName = funnelName;
+    this.steps = steps; // ['step1', 'step2', 'step3']
+    this.completedSteps = [];
+    this.startTime = Date.now();
+    this.analytics = window.analytics;
+  }
+
+  recordStep(stepName) {
+    if (!this.steps.includes(stepName)) return;
+
+    if (!this.completedSteps.includes(stepName)) {
+      this.completedSteps.push(stepName);
+      
+      const stepIndex = this.steps.indexOf(stepName);
+      const progress = (this.completedSteps.length / this.steps.length) * 100;
+
+      this.analytics?.trackEvent('funnel_step', {
+        funnel: this.funnelName,
+        step: stepName,
+        stepNumber: stepIndex + 1,
+        progress
+      });
+    }
+  }
+
+  recordDropoff(reason) {
+    const completedPercentage = (this.completedSteps.length / this.steps.length) * 100;
+
+    this.analytics?.trackEvent('funnel_dropoff', {
+      funnel: this.funnelName,
+      completedSteps: this.completedSteps,
+      completedPercentage,
+      reason,
+      duration: Date.now() - this.startTime
+    });
+  }
+
+  recordCompletion() {
+    const duration = Date.now() - this.startTime;
+
+    this.analytics?.trackConversion(this.funnelName, 1, {
+      steps: this.completedSteps.length,
+      duration
+    });
+  }
+}
+
+// A/B Testing Support
+class ABTest {
+  constructor(testName, variants) {
+    this.testName = testName;
+    this.variants = variants; // ['variant_a', 'variant_b']
+    this.userVariant = this.getUserVariant();
+    this.analytics = window.analytics;
+
+    this.recordParticipation();
+  }
+
+  getUserVariant() {
+    const stored = localStorage.getItem(`abtest_${this.testName}`);
+    if (stored) return stored;
+
+    const variant = this.variants[Math.floor(Math.random() * this.variants.length)];
+    localStorage.setItem(`abtest_${this.testName}`, variant);
+    return variant;
+  }
+
+  recordParticipation() {
+    this.analytics?.trackEvent('ab_test_participation', {
+      test: this.testName,
+      variant: this.userVariant
+    });
+  }
+
+  recordConversion(value = 1) {
+    this.analytics?.trackConversion(`abtest_${this.testName}`, value, {
+      variant: this.userVariant
+    });
+  }
+
+  isVariant(variantName) {
+    return this.userVariant === variantName;
+  }
+
+  getVariant() {
+    return this.userVariant;
+  }
+}
+
+// Initialize analytics system
+window.Analytics = Analytics;
+window.BehaviorTracker = BehaviorTracker;
+window.HeatmapTracker = HeatmapTracker;
+window.FunnelTracker = FunnelTracker;
+window.ABTest = ABTest;
+
+window.analytics = new Analytics();
+window.behaviorTracker = new BehaviorTracker();
+window.heatmapTracker = new HeatmapTracker();
+
+export { Analytics, BehaviorTracker, HeatmapTracker, FunnelTracker, ABTest };

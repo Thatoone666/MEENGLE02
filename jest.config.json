@@ -1,0 +1,33 @@
+{
+  "jest": {
+    "testEnvironment": "node",
+    "coveragePathIgnorePatterns": ["/node_modules/"],
+    "collectCoverageFrom": [
+      "backend/**/*.js",
+      "!backend/node_modules/**",
+      "!backend/tests/**"
+    ],
+    "testMatch": [
+      "**/tests/**/*.test.js",
+      "**/__tests__/**/*.js"
+    ],
+    "testTimeout": 30000,
+    "setupFiles": ["<rootDir>/backend/tests/setup.js"],
+    "verbose": true,
+    "bail": false,
+    "maxWorkers": 4
+  },
+  "vitest": {
+    "globals": true,
+    "environment": "happy-dom",
+    "setupFiles": ["./frontend/tests/setup.js"],
+    "coverage": {
+      "provider": "v8",
+      "reporter": ["text", "json", "html"],
+      "exclude": [
+        "node_modules/",
+        "frontend/tests/"
+      ]
+    }
+  }
+}

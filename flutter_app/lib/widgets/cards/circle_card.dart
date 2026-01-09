@@ -1,0 +1,204 @@
+import 'package:flutter/material.dart';
+import '../../../models/meengle_circle.dart';
+import '../../animations/premium_animations.dart';
+
+class CircleCard extends StatefulWidget {
+  final MeengleCircle circle;
+  final bool isJoined;
+  final VoidCallback onJoin;
+  final VoidCallback onTap;
+
+  const CircleCard({
+    required this.circle,
+    required this.isJoined,
+    required this.onJoin,
+    required this.onTap,
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  State<CircleCard> createState() => _CircleCardState();
+}
+
+class _CircleCardState extends State<CircleCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _scaleController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scaleController = AnimationController(
+      duration: PremiumAnimations.medioDuration,
+      vsync: this,
+    );
+  }
+
+  @override
+  void dispose() {
+    _scaleController.dispose();
+    super.dispose();
+  }
+
+  void _onJoin() {
+    _scaleController.forward().then((_) {
+      _scaleController.reverse();
+    });
+    widget.onJoin();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: widget.onTap,
+      child: ScaleTransition(
+        scale: Tween<double>(begin: 1, end: 0.98).animate(
+          CurvedAnimation(parent: _scaleController, curve: Curves.easeOut),
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            color: Colors.grey[900],
+            border: Border.all(
+              color: Colors.amber.shade700,
+              width: 1.5,
+            ),
+            boxShadow: PremiumAnimations.premiumGlow(
+              color: Colors.amber.shade700,
+              intensity: 0.5,
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            color: Colors.amber.shade700,
+                            boxShadow: PremiumAnimations.premiumGlow(
+                              color: Colors.amber.shade700,
+                              intensity: 0.4,
+                            ),
+                          ),
+                          child: Center(
+                            child: Text(
+                              circle.name[0].toUpperCase(),
+                              style: const TextStyle(
+                                color: Colors.black,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                circle.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              Text(
+                                circle.type.label,
+                                style: TextStyle(
+                                  color: Colors.grey.shade400,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      circle.description,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.grey.shade300,
+                        fontSize: 11,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${circle.memberCount} members',
+                      style: TextStyle(
+                        color: Colors.grey.shade400,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ScaleTransition(
+                        scale: Tween<double>(begin: 1, end: 0.95).animate(
+                          CurvedAnimation(
+                            parent: _scaleController,
+                            curve: Curves.easeOut,
+                          ),
+                        ),
+                        child: ElevatedButton(
+                          onPressed: isJoined ? null : _onJoin,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: isJoined
+                                ? Colors.green.shade900
+                                : Colors.amber.shade700,
+                            foregroundColor: isJoined
+                                ? Colors.green.shade400
+                                : Colors.black,
+                            padding:
+                                const EdgeInsets.symmetric(vertical: 6),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            elevation: isJoined ? 0 : 8,
+                            shadowColor: isJoined
+                                ? Colors.transparent
+                                : Colors.amber.shade700,
+                          ),
+                          child: Text(
+                            isJoined ? 'Joined' : 'Join',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

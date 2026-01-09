@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meengle - Fiesty Meengles</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="frontend/assets/css/main.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+</head>
+<body class="text-white">
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-30">
+        <div class="container mx-auto px-6 py-3 flex justify-between items-center content-card mt-4">
+            <a href="home.html" class="nav-icon" title="Back"><i data-feather="arrow-left"></i></a>
+            <h1 class="text-xl font-bold gradient-text">Fiesty Meengles</h1>
+            <div class="w-8"></div> <!-- Placeholder for spacing -->
+        </div>
+    </nav>
+
+    <main class="pt-24 pb-10 px-4 flex items-center justify-center min-h-screen">
+        <div id="content" class="w-full max-w-4xl content-card" data-aos="fade-up">
+            <h1 class="text-3xl font-bold text-center mb-2 gradient-text">Welcome to Fiesty Meengles</h1>
+            <p class="text-center muted mb-8">This is an exclusive space for Diamond members.</p>
+            <div id="exclusive-content" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Option 1: Lit Tonight -->
+                <div class="sub-card">
+                    <h2 class="text-2xl font-bold mb-2">Lit Tonight</h2>
+                    <p class="muted mb-4">Find people who are looking for fun tonight. This list resets daily.</p>
+                    <button onclick="showLitTonight()" class="btn btn-secondary">View Now</button>
+                </div>
+
+                <!-- Option 2: Lit Constants -->
+                <div class="sub-card">
+                    <h2 class="text-2xl font-bold mb-2">Lit Constants</h2>
+                    <p class="muted mb-4">Connect with people who are always up for a good time.</p>
+                    <button onclick="showLitConstants()" class="btn btn-secondary">Explore</button>
+                </div>
+
+                <!-- Option 3: Masquerade -->
+                <div class="sub-card">
+                    <h2 class="text-2xl font-bold mb-2">Masquerade</h2>
+                    <p class="muted mb-4">Connect anonymously. Profiles are revealed only after a mutual match.</p>
+                    <button onclick="showMasquerade()" class="btn btn-secondary">Join the Ball</button>
+                </div>
+            </div>
+            <div id="sub-content" class="mt-8">
+                <!-- Content for the selected option will be loaded here -->
+            </div>
+        </div>
+    </main>
+    <script>
+        // This token is needed by showMasquerade
+        const token = localStorage.getItem('token');
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:3000/api/diamond-access', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (response.status === 403) {
+                    document.getElementById('content').innerHTML = '<h1 class="text-3xl font-bold text-red-500">Access Denied</h1><p>This page is for Diamond members only. <a href="payment.html" class="text-blue-500">Upgrade now</a>.</p>';
+                    return;
+                }
+
+                if (!response.ok) {
+                    throw new Error('Failed to verify access');
+                }
+
+                // Content is already visible, so we just let it be.
+                // If we needed to hide it, we would do that here.
+
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('content').innerHTML = '<h1 class="text-3xl font-bold text-red-500">Error</h1><p>Could not verify your access level. Please try again later.</p>';
+            }
+        });
+
+        async function showLitTonight() {
+            const token = localStorage.getItem('token');
+            const subContent = document.getElementById('sub-content');
+            try {
+                const res = await fetch('http://localhost:3000/api/fiesty/lit-tonight', { headers: { 'Authorization': 'Bearer ' + token }});
+                if (!res.ok) throw new Error('Failed to fetch users');
+                const users = await res.json();
+                
+                let content = '<h3 class="text-xl font-bold mb-4">People who are Lit Tonight</h3>';
+                users.forEach(user => {
+                    content += `<div class="p-2 border-b flex justify-between items-center">${user.name} <button onclick="likeUser('${user._id}', 'lit-tonight')" class="px-3 py-1 bg-green-500 text-white rounded-full text-sm">Like</button></div>`;
+                });
+                subContent.innerHTML = content;
+            } catch (error) {
+                subContent.innerHTML = '<p class="text-red-500">Could not load users. Please try again.</p>';
+            }
+        }
+
+        async function showLitConstants() {
+            const token = localStorage.getItem('token');
+            const subContent = document.getElementById('sub-content');
+            try {
+                const res = await fetch('http://localhost:3000/api/fiesty/lit-constant', { headers: { 'Authorization': 'Bearer ' + token }});
+                if (!res.ok) throw new Error('Failed to fetch users');
+                const users = await res.json();
+                let content = '<h3 class="text-xl font-bold mb-4">Lit Constants</h3>';
+                users.forEach(user => {
+                    content += `<div class="p-2 border-b flex justify-between items-center">${user.name} <button onclick="likeUser('${user._id}', 'lit-constant')" class="px-3 py-1 bg-green-500 text-white rounded-full text-sm">Like</button></div>`;
+                });
+                subContent.innerHTML = content;
+            } catch (error) {
+                subContent.innerHTML = '<p class="text-red-500">Could not load users. Please try again.</p>';
+            }
+        }
+
+        async function showMasquerade() {
+            const message = "Welcome to the Masquerade.\n\nWhat you see here, stays here. Discretion is part of the allure.\n\nDo you agree to respect the privacy of all participants?";
+            const subContent = document.getElementById('sub-content');
+            if (confirm(message)) {
+                try {
+                    const res = await fetch('http://localhost:3000/api/fiesty/masquerade', { headers: { 'Authorization': 'Bearer ' + token }});
+                    if (!res.ok) throw new Error('Failed to fetch users');
+                    const users = await res.json();
+                    let content = '<h3 class="text-xl font-bold mb-4">Masquerade Ball</h3>';
+                    users.forEach(user => {
+                        content += `<div class="p-2 border-b flex justify-between items-center">${user.masqueradeAlias} <button onclick="likeUser('${user._id}', 'masquerade')" class="px-3 py-1 bg-green-500 text-white rounded-full text-sm">Like</button></div>`;
+                    });
+                    subContent.innerHTML = content;
+                } catch (error) {
+                    subContent.innerHTML = '<p class="text-red-500">Could not load users. Please try again.</p>';
+                }
+            }
+        }
+
+        async function likeUser(userId, context) {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`http://localhost:3000/api/matches/like/${userId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({ context })
+            });
+            const data = await res.json();
+            if (data.match) {
+                alert(`It's a match from ${data.context}!`);
+            }
+        }
+        feather.replace();
+        AOS.init();
+    </script>
+</body>
+</html>

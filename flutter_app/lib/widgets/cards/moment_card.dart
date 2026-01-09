@@ -1,0 +1,273 @@
+import 'package:flutter/material.dart';
+import 'dart:async';
+import '../../../models/meengle_moment.dart';
+import '../../animations/premium_animations.dart';
+import '../glowing_badge.dart';
+
+class MomentCard extends StatefulWidget {
+  final MeengleMoment moment;
+  final VoidCallback onAccept;
+  final VoidCallback onReject;
+  final VoidCallback onExtend;
+
+  const MomentCard({
+    required this.moment,
+    required this.onAccept,
+    required this.onReject,
+    required this.onExtend,
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  State<MomentCard> createState() => _MomentCardState();
+}
+
+class _MomentCardState extends State<MomentCard>
+    with SingleTickerProviderStateMixin {
+  late Timer _timer;
+  late int _secondsRemaining;
+  late AnimationController _glowController;
+
+  @override
+  void initState() {
+    super.initState();
+    _secondsRemaining = widget.moment.secondsRemaining;
+    _glowController = AnimationController(
+      duration: const Duration(seconds: 3),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) {
+        setState(() {
+          _secondsRemaining =
+              (_secondsRemaining - 1).clamp(0, double.infinity).toInt();
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    _glowController.dispose();
+    super.dispose();
+  }
+
+  Color get _timerColor {
+    final percentage = (_secondsRemaining / (24 * 3600)) * 100;
+    if (percentage < 25) return Colors.red;
+    if (percentage < 50) return Colors.orange;
+    return Colors.amber.shade700;
+  }
+
+  String get _timeRemaining {
+    final hours = _secondsRemaining ~/ 3600;
+    final minutes = (_secondsRemaining % 3600) ~/ 60;
+    final seconds = _secondsRemaining % 60;
+    return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _glowController,
+      builder: (context, _) {
+        return Card(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: _timerColor, width: 2),
+          ),
+          color: const Color(0xFF1A1A1A),
+          elevation: 15 + (_glowController.value * 5),
+          shadowColor: _timerColor.withAlpha(77),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: PremiumAnimations.premiumGlow(
+                color: _timerColor,
+                intensity: 0.5 + (_glowController.value * 0.5),
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Premium Header
+                  Row(
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: PremiumAnimations.premiumGlow(
+                            color: Colors.amber,
+                            intensity: 0.6,
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.flash_on,
+                          color: Colors.amber.shade400,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Moment Match',
+                        style: Theme.of(context).textTheme.labelMedium
+                            ?.copyWith(
+                              color: Colors.amber.shade400,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.5,
+                            ),
+                      ),
+                      const Spacer(),
+                      // Premium Timer Badge
+                      GlowingBadge(
+                        label: _timeRemaining,
+                        color: _timerColor,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Match Name
+                  Text(
+                    'Match from User ${widget.moment.matchId}',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+
+                  // Subtitle
+                  Text(
+                    'Available for 24 hours',
+                    style: TextStyle(
+                      color: Colors.grey.shade400,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Premium Progress Indicator
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: Container(
+                      height: 6,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(6),
+                        boxShadow: [
+                          BoxShadow(
+                            color: _timerColor.withAlpha(30),
+                            blurRadius: 6,
+                          ),
+                        ],
+                      ),
+                      child: LinearProgressIndicator(
+                        value: _secondsRemaining / (24 * 3600),
+                        backgroundColor: Colors.grey.shade800,
+                        valueColor: AlwaysStoppedAnimation<Color>(_timerColor),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Action Buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildPremiumButton(
+                          label: 'Pass',
+                          icon: Icons.close,
+                          color: Colors.red.shade700,
+                          onPressed: widget.onReject,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildPremiumButton(
+                          label: 'Chat Now',
+                          icon: Icons.favorite,
+                          color: Colors.amber.shade700,
+                          onPressed: widget.onAccept,
+                          isPrimary: true,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Extend Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: _buildPremiumButton(
+                      label: 'Extend Match (+6h)',
+                      icon: Icons.schedule,
+                      color: Colors.amber.shade700,
+                      onPressed: widget.onExtend,
+                      isSecondary: true,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPremiumButton({
+    required String label,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onPressed,
+    bool isPrimary = false,
+    bool isSecondary = false,
+  }) {
+    if (isPrimary) {
+      return GlowingButton(
+        glowColor: color,
+        onPressed: onPressed,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 18),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return OutlinedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 18),
+      label: Text(
+        label,
+        style: TextStyle(
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.3,
+          color: color,
+        ),
+      ),
+      style: OutlinedButton.styleFrom(
+        side: BorderSide(color: color.withAlpha(179), width: 2),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        foregroundColor: color,
+      ),
+    );
+  }
+}

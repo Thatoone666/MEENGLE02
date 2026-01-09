@@ -1,0 +1,183 @@
+import express from 'express';
+import { verifyToken } from './auth.js';
+import mongoose from 'mongoose';
+
+const router = express.Router();
+
+const locationChatSchema = new mongoose.Schema({
+  latitude: { type: Number, required: true },
+  longitude: { type: Number, required: true },
+  location: String,
+  messages: [{
+    userId: mongoose.Schema.Types.ObjectId,
+    userName: String,
+    userAvatar: String,
+    message: { type: String, required: true },
+    timestamp: { type: Date, default: Date.now },
+    deleted: { type: Boolean, default: false }
+  }],
+  activeUsers: { type: Number, default: 0 },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+});
+
+locationChatSchema.index({ latitude: 1, longitude: 1 });
+locationChatSchema.index({ createdAt: -1 });
+
+let LocationChat;
+try {
+  LocationChat = mongoose.model('LocationChat', locationChatSchema);
+} catch {
+  LocationChat = mongoose.model('LocationChat');
+}
+
+router.post('/message', verifyToken, async (req, res) => {
+  try {
+    const { latitude, longitude, message, location } = req.body;
+
+    if (!latitude || !longitude || !message) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    if (typeof latitude !== 'number' || typeof longitude !== 'number') {
+      return res.status(400).json({ error: 'Invalid coordinates' });
+    }
+
+    if (message.trim().length === 0 || message.length > 500) {
+      return res.status(400).json({ error: 'Message must be 1-500 characters' });
+    }
+
+    const roundedLat = Math.round(latitude * 1000) / 1000;
+    const roundedLng = Math.round(longitude * 1000) / 1000;
+
+    const chat = await LocationChat.findOneAndUpdate(
+      { 
+        latitude: roundedLat, 
+        longitude: roundedLng 
+      },
+      {
+        $push: {
+          messages: {
+            userId: req.userId,
+            userName: req.body.userName || 'Anonymous',
+            userAvatar: req.body.userAvatar || null,
+            message: message.trim(),
+            timestamp: new Date()
+          }
+        },
+        $set: { updatedAt: new Date(), location }
+      },
+      { upsert: true, new: true, runValidators: true }
+    );
+
+    res.json({ success: true, chat });
+  } catch (error) {
+    console.error('Location chat error:', error);
+    res.status(500).json({ error: 'Failed to send message' });
+  }
+});
+
+router.get('/:latitude/:longitude', async (req, res) => {
+  try {
+    const lat = parseFloat(req.params.latitude);
+    const lng = parseFloat(req.params.longitude);
+    const radius = parseFloat(req.query.radius) || 0.05;
+    const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+
+    if (isNaN(lat) || isNaN(lng)) {
+      return res.status(400).json({ error: 'Invalid coordinates' });
+    }
+
+    const chat = await LocationChat.findOne({
+      latitude: { $gte: lat - radius, $lte: lat + radius },
+      longitude: { $gte: lng - radius, $lte: lng + radius }
+    })
+      .select('latitude longitude location messages activeUsers updatedAt')
+      .lean();
+
+    if (!chat) {
+      return res.json({ messages: [], activeUsers: 0 });
+    }
+
+    const visibleMessages = chat.messages
+      .filter(m => !m.deleted)
+      .slice(-limit)
+      .map(m => ({
+        userId: m.userId,
+        userName: m.userName,
+        userAvatar: m.userAvatar,
+        message: m.message,
+        timestamp: m.timestamp
+      }));
+
+    res.json({
+      latitude: chat.latitude,
+      longitude: chat.longitude,
+      location: chat.location,
+      messages: visibleMessages,
+      activeUsers: chat.activeUsers,
+      updatedAt: chat.updatedAt
+    });
+  } catch (error) {
+    console.error('Fetch location chat error:', error);
+    res.status(500).json({ error: 'Failed to fetch chat' });
+  }
+});
+
+router.delete('/message/:messageId', verifyToken, async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const { latitude, longitude } = req.body;
+
+    if (!messageId || !latitude || !longitude) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    const result = await LocationChat.findOneAndUpdate(
+      {
+        latitude: Math.round(latitude * 1000) / 1000,
+        longitude: Math.round(longitude * 1000) / 1000,
+        'messages._id': messageId,
+        'messages.userId': req.userId
+      },
+      {
+        $set: { 'messages.$.deleted': true }
+      },
+      { new: true }
+    );
+
+    if (!result) {
+      return res.status(404).json({ error: 'Message not found or unauthorized' });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Delete message error:', error);
+    res.status(500).json({ error: 'Failed to delete message' });
+  }
+});
+
+router.post('/clean-old', async (req, res) => {
+  try {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    
+    const result = await LocationChat.updateMany(
+      { updatedAt: { $lt: thirtyDaysAgo } },
+      {
+        $pull: {
+          messages: { timestamp: { $lt: thirtyDaysAgo } }
+        }
+      }
+    );
+
+    res.json({ 
+      success: true, 
+      message: `Cleaned ${result.modifiedCount} location chats` 
+    });
+  } catch (error) {
+    console.error('Clean old messages error:', error);
+    res.status(500).json({ error: 'Failed to clean old messages' });
+  }
+});
+
+export default router;

@@ -1,0 +1,158 @@
+import express from 'express';
+import stripe from 'stripe';
+import mongoose from 'mongoose';
+import { verifyToken } from './auth.js';
+
+const router = express.Router();
+const stripeClient = stripe(process.env.STRIPE_SECRET_KEY);
+
+const subscriptionSchema = new mongoose.Schema({
+  userId: mongoose.Schema.Types.ObjectId,
+  tier: { type: String, enum: ['free', 'premium', 'gold', 'platinum'], default: 'free' },
+  status: { type: String, enum: ['active', 'cancelled', 'expired'], default: 'active' },
+  stripeSubscriptionId: String,
+  stripeCustomerId: String,
+  billingCycle: { type: String, enum: ['monthly', 'annual'], default: 'monthly' },
+  amount: Number,
+  startDate: { type: Date, default: Date.now },
+  renewalDate: Date,
+  autoRenew: { type: Boolean, default: true },
+  cancellationDate: Date,
+  createdAt: { type: Date, default: Date.now }
+});
+
+let Subscription;
+try {
+  Subscription = mongoose.model('Subscription', subscriptionSchema);
+} catch {
+  Subscription = mongoose.model('Subscription');
+}
+
+const TIER_PRICES = {
+  free: { monthly: 0, annual: 0 },
+  premium: { monthly: 999, annual: 9990 },
+  gold: { monthly: 1999, annual: 19990 },
+  platinum: { monthly: 2999, annual: 29990 }
+};
+
+router.post('/create-payment-intent', verifyToken, async (req, res) => {
+  try {
+    const { tier, billingCycle = 'monthly' } = req.body;
+
+    if (!TIER_PRICES[tier]) {
+      return res.status(400).json({ error: 'Invalid tier' });
+    }
+
+    const amount = TIER_PRICES[tier][billingCycle];
+    if (amount === 0) {
+      return res.status(400).json({ error: 'Free tier cannot be purchased' });
+    }
+
+    const paymentIntent = await stripeClient.paymentIntents.create({
+      amount,
+      currency: 'zar',
+      metadata: {
+        userId: req.userId,
+        tier,
+        billingCycle
+      }
+    });
+
+    res.json({
+      success: true,
+      clientSecret: paymentIntent.client_secret,
+      amount,
+      tier
+    });
+  } catch (error) {
+    console.error('Payment intent error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/confirm-payment', verifyToken, async (req, res) => {
+  try {
+    const { paymentIntentId, tier, billingCycle = 'monthly' } = req.body;
+
+    const paymentIntent = await stripeClient.paymentIntents.retrieve(paymentIntentId);
+
+    if (paymentIntent.status !== 'succeeded') {
+      return res.status(400).json({ error: 'Payment not completed' });
+    }
+
+    const amount = TIER_PRICES[tier][billingCycle];
+    const renewalDate = new Date();
+    if (billingCycle === 'monthly') {
+      renewalDate.setMonth(renewalDate.getMonth() + 1);
+    } else {
+      renewalDate.setFullYear(renewalDate.getFullYear() + 1);
+    }
+
+    const userId = new mongoose.Types.ObjectId(req.userId);
+
+    let subscription = await Subscription.findOne({ userId, status: 'active' });
+    if (subscription) {
+      subscription.status = 'cancelled';
+      subscription.cancellationDate = new Date();
+      await subscription.save();
+    }
+
+    subscription = new Subscription({
+      userId,
+      tier,
+      status: 'active',
+      billingCycle,
+      amount,
+      renewalDate,
+      stripePaymentIntentId: paymentIntentId
+    });
+
+    await subscription.save();
+
+    res.json({
+      success: true,
+      subscription: {
+        id: subscription._id,
+        tier: subscription.tier,
+        renewalDate: subscription.renewalDate
+      }
+    });
+  } catch (error) {
+    console.error('Confirm payment error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/current', verifyToken, async (req, res) => {
+  try {
+    const userId = new mongoose.Types.ObjectId(req.userId);
+    const subscription = await Subscription.findOne({ userId, status: 'active' }).lean();
+
+    res.json(subscription || { tier: 'free', status: 'inactive' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch subscription' });
+  }
+});
+
+router.post('/cancel', verifyToken, async (req, res) => {
+  try {
+    const userId = new mongoose.Types.ObjectId(req.userId);
+    const subscription = await Subscription.findOne({ userId, status: 'active' });
+
+    if (!subscription) {
+      return res.status(404).json({ error: 'No active subscription' });
+    }
+
+    await Subscription.updateOne(
+      { _id: subscription._id },
+      { status: 'cancelled', cancellationDate: new Date() }
+    );
+
+    res.json({ success: true, message: 'Subscription cancelled' });
+  } catch (error) {
+    console.error('Cancel error:', error);
+    res.status(500).json({ error: 'Failed to cancel' });
+  }
+});
+
+export default router;

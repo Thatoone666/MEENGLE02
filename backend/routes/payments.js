@@ -1,0 +1,278 @@
+import express from 'express';
+import { verifyToken } from './auth.js';
+import mongoose from 'mongoose';
+
+const router = express.Router();
+
+const paymentSchema = new mongoose.Schema({
+  userId: mongoose.Schema.Types.ObjectId,
+  tier: { type: String, required: true },
+  amount: { type: Number, required: true },
+  currency: { type: String, default: 'USD' },
+  method: { type: String, required: true },
+  status: { type: String, enum: ['pending', 'processing', 'completed', 'failed', 'refunded'], default: 'pending' },
+  transactionId: String,
+  externalPaymentId: String,
+  externalReference: String,
+  failureReason: String,
+  metadata: mongoose.Schema.Types.Mixed,
+  createdAt: { type: Date, default: Date.now, index: true },
+  completedAt: Date,
+  refundedAt: Date
+});
+
+paymentSchema.index({ userId: 1, createdAt: -1 });
+paymentSchema.index({ status: 1 });
+paymentSchema.index({ transactionId: 1 });
+
+let Payment;
+try {
+  Payment = mongoose.model('Payment', paymentSchema);
+} catch {
+  Payment = mongoose.model('Payment');
+}
+
+const TIER_PRICES = {
+  free: 0,
+  premium: 9.99,
+  gold: 19.99,
+  platinum: 29.99
+};
+
+router.post('/create-intent', verifyToken, async (req, res) => {
+  try {
+    const { amount, currency = 'USD', tier, method } = req.body;
+
+    if (!tier || !TIER_PRICES[tier]) {
+      return res.status(400).json({ error: 'Invalid tier' });
+    }
+
+    if (!method) {
+      return res.status(400).json({ error: 'Payment method required' });
+    }
+
+    if (amount !== TIER_PRICES[tier]) {
+      return res.status(400).json({ error: 'Amount mismatch with tier' });
+    }
+
+    const userId = new mongoose.Types.ObjectId(req.userId);
+
+    const payment = new Payment({
+      userId,
+      amount,
+      currency,
+      tier,
+      method,
+      status: 'pending',
+      transactionId: `txn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    });
+
+    await payment.save();
+
+    res.json({
+      success: true,
+      paymentId: payment._id,
+      transactionId: payment.transactionId,
+      amount,
+      currency,
+      tier
+    });
+  } catch (error) {
+    console.error('Payment intent error:', error);
+    res.status(500).json({ error: 'Failed to create payment intent' });
+  }
+});
+
+router.post('/confirm', verifyToken, async (req, res) => {
+  try {
+    const { paymentId, externalPaymentId, externalReference } = req.body;
+
+    if (!paymentId) {
+      return res.status(400).json({ error: 'paymentId required' });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(paymentId)) {
+      return res.status(400).json({ error: 'Invalid paymentId' });
+    }
+
+    const payment = await Payment.findById(paymentId);
+
+    if (!payment) {
+      return res.status(404).json({ error: 'Payment not found' });
+    }
+
+    if (payment.userId.toString() !== req.userId) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+
+    if (payment.status !== 'pending') {
+      return res.status(400).json({ error: 'Payment already processed' });
+    }
+
+    const updated = await Payment.findByIdAndUpdate(
+      paymentId,
+      {
+        status: 'completed',
+        completedAt: new Date(),
+        externalPaymentId,
+        externalReference
+      },
+      { new: true }
+    );
+
+    res.json({
+      success: true,
+      payment: {
+        id: updated._id,
+        status: updated.status,
+        tier: updated.tier,
+        amount: updated.amount,
+        completedAt: updated.completedAt
+      }
+    });
+  } catch (error) {
+    console.error('Payment confirm error:', error);
+    res.status(500).json({ error: 'Failed to confirm payment' });
+  }
+});
+
+router.post('/fail', verifyToken, async (req, res) => {
+  try {
+    const { paymentId, reason } = req.body;
+
+    if (!paymentId) {
+      return res.status(400).json({ error: 'paymentId required' });
+    }
+
+    const payment = await Payment.findById(paymentId);
+
+    if (!payment) {
+      return res.status(404).json({ error: 'Payment not found' });
+    }
+
+    if (payment.userId.toString() !== req.userId) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+
+    await Payment.findByIdAndUpdate(
+      paymentId,
+      {
+        status: 'failed',
+        failureReason: reason || 'Unknown error'
+      }
+    );
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Payment fail error:', error);
+    res.status(500).json({ error: 'Failed to update payment' });
+  }
+});
+
+router.post('/refund', verifyToken, async (req, res) => {
+  try {
+    const { paymentId, reason } = req.body;
+
+    if (!paymentId) {
+      return res.status(400).json({ error: 'paymentId required' });
+    }
+
+    const payment = await Payment.findById(paymentId);
+
+    if (!payment) {
+      return res.status(404).json({ error: 'Payment not found' });
+    }
+
+    if (payment.userId.toString() !== req.userId) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+
+    if (payment.status !== 'completed') {
+      return res.status(400).json({ error: 'Only completed payments can be refunded' });
+    }
+
+    const refundedAt = new Date();
+    const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
+
+    if (payment.completedAt < tenDaysAgo) {
+      return res.status(400).json({ error: 'Refund window expired (10 days)' });
+    }
+
+    await Payment.findByIdAndUpdate(
+      paymentId,
+      {
+        status: 'refunded',
+        refundedAt,
+        metadata: {
+          ...payment.metadata,
+          refundReason: reason
+        }
+      }
+    );
+
+    res.json({ 
+      success: true, 
+      message: 'Refund processed',
+      refundAmount: payment.amount
+    });
+  } catch (error) {
+    console.error('Refund error:', error);
+    res.status(500).json({ error: 'Failed to process refund' });
+  }
+});
+
+router.get('/history', verifyToken, async (req, res) => {
+  try {
+    const userId = new mongoose.Types.ObjectId(req.userId);
+    const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+    const skip = parseInt(req.query.skip) || 0;
+
+    const payments = await Payment.find({ userId })
+      .select('-metadata')
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .skip(skip)
+      .lean();
+
+    const total = await Payment.countDocuments({ userId });
+
+    res.json({
+      payments,
+      total,
+      limit,
+      skip
+    });
+  } catch (error) {
+    console.error('Payment history error:', error);
+    res.status(500).json({ error: 'Failed to fetch payment history' });
+  }
+});
+
+router.get('/stats', verifyToken, async (req, res) => {
+  try {
+    const userId = new mongoose.Types.ObjectId(req.userId);
+
+    const stats = await Payment.aggregate([
+      { $match: { userId, status: 'completed' } },
+      {
+        $group: {
+          _id: '$tier',
+          count: { $sum: 1 },
+          total: { $sum: '$amount' }
+        }
+      }
+    ]);
+
+    const totalSpent = stats.reduce((sum, stat) => sum + stat.total, 0);
+
+    res.json({
+      totalSpent,
+      byTier: stats
+    });
+  } catch (error) {
+    console.error('Payment stats error:', error);
+    res.status(500).json({ error: 'Failed to fetch stats' });
+  }
+});
+
+export default router;

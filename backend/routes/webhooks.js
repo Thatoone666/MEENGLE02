@@ -1,0 +1,82 @@
+import express from 'express';
+import stripe from 'stripe';
+import mongoose from 'mongoose';
+
+const router = express.Router();
+const stripeClient = stripe(process.env.STRIPE_SECRET_KEY);
+
+router.post('/stripe', express.raw({type: 'application/json'}), async (req, res) => {
+  try {
+    const sig = req.headers['stripe-signature'];
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+    if (!webhookSecret || !sig) {
+      return res.json({ received: true });
+    }
+
+    let event;
+    try {
+      event = stripeClient.webhooks.constructEvent(req.body, sig, webhookSecret);
+    } catch (err) {
+      console.error('Webhook signature error:', err);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    const Subscription = mongoose.model('Subscription');
+
+    if (event.type === 'payment_intent.succeeded') {
+      const paymentIntent = event.data.object;
+      
+      await Subscription.updateOne(
+        { stripePaymentIntentId: paymentIntent.id },
+        {
+          status: 'active',
+          stripeSubscriptionId: paymentIntent.id
+        }
+      );
+
+      console.log(`? Payment succeeded: ${paymentIntent.id}`);
+    }
+
+    if (event.type === 'payment_intent.payment_failed') {
+      const paymentIntent = event.data.object;
+      console.log(`? Payment failed: ${paymentIntent.id}`);
+    }
+
+    if (event.type === 'invoice.payment_succeeded') {
+      console.log(`? Invoice paid`);
+    }
+
+    res.json({ received: true });
+  } catch (error) {
+    console.error('Webhook error:', error);
+    res.status(500).json({ error: 'Webhook processing failed' });
+  }
+});
+
+router.post('/payfast', async (req, res) => {
+  try {
+    const { pf_payment_id, payment_status } = req.body;
+
+    const Subscription = mongoose.model('Subscription');
+
+    if (payment_status === 'COMPLETE') {
+      await Subscription.updateOne(
+        { paymentId: pf_payment_id },
+        {
+          status: 'active',
+          paymentStatus: 'completed'
+        }
+      );
+
+      console.log(`? PayFast payment completed: ${pf_payment_id}`);
+    }
+
+    res.json({ received: true });
+  } catch (error) {
+    console.error('PayFast webhook error:', error);
+    res.status(500).json({ error: 'Webhook processing failed' });
+  }
+});
+
+export default router;

@@ -1,0 +1,426 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/discovery_provider.dart';
+import '../animations/premium_animations.dart';
+
+class DiscoveryScreen extends StatefulWidget {
+  const DiscoveryScreen({Key? key}) : super(key: key);
+
+  @override
+  State<DiscoveryScreen> createState() => _DiscoveryScreenState();
+}
+
+class _DiscoveryScreenState extends State<DiscoveryScreen>
+    with SingleTickerProviderStateMixin {
+  final _searchController = TextEditingController();
+  late AnimationController _contentController;
+
+  @override
+  void initState() {
+    super.initState();
+    _contentController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<DiscoveryProvider>().loadMatches();
+      _contentController.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _contentController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0F0F0F),
+      body: Consumer<DiscoveryProvider>(
+        builder: (context, DiscoveryProvider provider, child) {
+          return FadeTransition(
+            opacity: _contentController,
+            child: Column(
+              children: [
+                // Search Bar
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: ScaleTransition(
+                    scale: Tween<double>(begin: 0.8, end: 1).animate(
+                      CurvedAnimation(
+                        parent: _contentController,
+                        curve: const Interval(0.0, 0.2, curve: Curves.elasticOut),
+                      ),
+                    ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: PremiumAnimations.premiumGlow(
+                          color: Colors.amber.shade700,
+                          intensity: 0.3,
+                        ),
+                      ),
+                      child: TextField(
+                        controller: _searchController,
+                        style: const TextStyle(color: Colors.white),
+                        onChanged: (value) =>
+                            provider.searchMatches(value),
+                        decoration: InputDecoration(
+                          hintText: 'Search profiles...',
+                          hintStyle: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          prefixIcon: const Icon(
+                            Icons.search,
+                            color: Color(0xFFD4AF37),
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: Colors.amber.shade700,
+                              width: 2,
+                            ),
+                          ),
+                          filled: true,
+                          fillColor: const Color(0xFF1A1A1A),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Filter Chips
+                FadeTransition(
+                  opacity: Tween<double>(begin: 0, end: 1).animate(
+                    CurvedAnimation(
+                      parent: _contentController,
+                      curve: const Interval(0.15, 0.4, curve: Curves.easeOut),
+                    ),
+                  ),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      children: [
+                        _buildFilterChip('Verified', provider.isFilteredByVerification,
+                            () => provider.filterByVerification(!provider.isFilteredByVerification)),
+                        const SizedBox(width: 8),
+                        _buildFilterChip('Photos', provider.isFilteredByPhotos,
+                            () => provider.filterByPhotos(!provider.isFilteredByPhotos)),
+                        const SizedBox(width: 8),
+                        _buildFilterChip('Active', provider.isFilteredByActive,
+                            () => provider.filterByActive(!provider.isFilteredByActive)),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Matches List
+                Expanded(
+                  child: provider.matches.isEmpty
+                      ? FadeTransition(
+                          opacity: _contentController,
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    boxShadow: PremiumAnimations.premiumGlow(
+                                      color: Colors.amber.shade400,
+                                      intensity: 0.5,
+                                    ),
+                                  ),
+                                  child: Icon(
+                                    Icons.people_outline,
+                                    color: Colors.amber.shade400,
+                                    size: 64,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                const Text(
+                                  'No matches found',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      : SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(0, 0.1),
+                            end: Offset.zero,
+                          ).animate(
+                            CurvedAnimation(
+                              parent: _contentController,
+                              curve: Curves.easeOut,
+                            ),
+                          ),
+                          child: ListView.builder(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            itemCount: provider.matches.length,
+                            itemBuilder: (context, index) {
+                              final match = provider.matches[index];
+                              return FadeTransition(
+                                opacity: Tween<double>(begin: 0, end: 1)
+                                    .animate(
+                                  CurvedAnimation(
+                                    parent: _contentController,
+                                    curve: Interval(
+                                      (index * 0.08).clamp(0.0, 0.8),
+                                      ((index * 0.08) + 0.4)
+                                          .clamp(0.0, 1.0),
+                                      curve: Curves.easeOut,
+                                    ),
+                                  ),
+                                ),
+                                child: ScaleTransition(
+                                  scale: Tween<double>(begin: 0.8, end: 1)
+                                      .animate(
+                                    CurvedAnimation(
+                                      parent: _contentController,
+                                      curve: Interval(
+                                        (index * 0.08).clamp(0.0, 0.8),
+                                        ((index * 0.08) + 0.4)
+                                            .clamp(0.0, 1.0),
+                                        curve: Curves.elasticOut,
+                                      ),
+                                    ),
+                                  ),
+                                  child: Card(
+                                    margin: const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                    ),
+                                    color: const Color(0xFF1A1A1A),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius:
+                                          BorderRadius.circular(12),
+                                      side: BorderSide(
+                                        color: Colors.amber.shade700,
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                    elevation: 8,
+                                    shadowColor: Colors.amber.shade700,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(16),
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            width: 60,
+                                            height: 60,
+                                            decoration: BoxDecoration(
+                                              color: Colors.amber.shade700,
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              boxShadow:
+                                                  PremiumAnimations
+                                                      .premiumGlow(
+                                                color: Colors.amber
+                                                    .shade700,
+                                                intensity: 0.4,
+                                              ),
+                                            ),
+                                            child: Center(
+                                              child: Text(
+                                                match.name[0]
+                                                    .toUpperCase(),
+                                                style:
+                                                    const TextStyle(
+                                                  color: Colors.black,
+                                                  fontSize: 24,
+                                                  fontWeight:
+                                                      FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 16),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment
+                                                      .start,
+                                              children: [
+                                                Text(
+                                                  match.name,
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontWeight:
+                                                        FontWeight.bold,
+                                                    fontSize: 14,
+                                                    letterSpacing:
+                                                        -0.2,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  '${match.compatibilityScore}% match',
+                                                  style: TextStyle(
+                                                    color: Colors.amber
+                                                        .shade400,
+                                                    fontSize: 12,
+                                                    fontWeight:
+                                                        FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          GlowingButton(
+                                            glowColor: Colors.amber
+                                                .shade700,
+                                            onPressed: () {},
+                                            child: const Text(
+                                              'View',
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                );
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildFilterChip(
+    String label,
+    bool isSelected,
+    VoidCallback onTap,
+  ) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 8,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? Colors.amber.shade700
+              : Colors.grey.shade800,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: Colors.amber.shade700,
+            width: 1.5,
+          ),
+          boxShadow: isSelected
+              ? PremiumAnimations.premiumGlow(
+                  color: Colors.amber.shade700,
+                  intensity: 0.5,
+                )
+              : [],
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.black : Colors.white,
+            fontWeight: FontWeight.w700,
+            fontSize: 12,
+            letterSpacing: 0.2,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class GlowingButton extends StatefulWidget {
+  final VoidCallback onPressed;
+  final Widget child;
+  final Color glowColor;
+
+  const GlowingButton({
+    required this.onPressed,
+    required this.child,
+    this.glowColor = const Color(0xFFFF6B9A),
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  State<GlowingButton> createState() => _GlowingButtonState();
+}
+
+class _GlowingButtonState extends State<GlowingButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _glowController;
+
+  @override
+  void initState() {
+    super.initState();
+    _glowController = AnimationController(
+      duration: PremiumAnimations.macroDuration,
+      vsync: this,
+    );
+  }
+
+  @override
+  void dispose() {
+    _glowController.dispose();
+    super.dispose();
+  }
+
+  void _onPressed() {
+    _glowController.forward().then((_) {
+      _glowController.reverse();
+    });
+    widget.onPressed();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: Tween<double>(begin: 1, end: 0.95).animate(
+        CurvedAnimation(parent: _glowController, curve: Curves.easeIn),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: PremiumAnimations.premiumGlow(
+            color: widget.glowColor,
+            intensity: 0.5 + (_glowController.value * 0.5),
+          ),
+        ),
+        child: ElevatedButton(
+          onPressed: _onPressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: widget.glowColor,
+            foregroundColor: Colors.black,
+            elevation: 8,
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 6,
+            ),
+          ),
+          child: widget.child,
+        ),
+      ),
+    );
+  }
+}

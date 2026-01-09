@@ -1,0 +1,95 @@
+import 'dart:typed_data';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/src/byte_stream.dart';
+import 'package:mockito/mockito.dart';
+import 'package:mockito/annotations.dart';
+import 'package:image/image.dart' as img;
+import 'package:meengle_flutter/services/media_service.dart';
+import 'package:meengle_flutter/utils/logger.dart';
+
+@GenerateMocks([http.Client])
+void main() {
+  late MediaService mediaService;
+  late MockClient mockClient;
+  late Logger logger;
+
+  setUp(() {
+    mockClient = MockClient();
+    logger = Logger();
+    mediaService = MediaService(client: mockClient, logger: logger);
+  });
+
+  group('MediaService', () {
+    test('optimizes image correctly', () async {
+      // Create a test image
+      final image = img.Image(width: 2048, height: 2048);
+      final imageData = Uint8List.fromList(img.encodeJpg(image));
+      
+      // Upload the image
+      when(mockClient.post(any, headers: anyNamed('headers'), body: any))
+          .thenAnswer((_) async => http.Response(
+                '{"uploadUrl": "https://test.com/upload", "cdnPath": "test/123"}',
+                200,
+              ));
+              
+      when(mockClient.send(any)).thenAnswer(
+          (_) async => MockStreamedResponse(http.StreamedResponse(
+                Stream.value([]),
+                200,
+              )));
+
+      final String cdnUrl = await mediaService.uploadMedia(
+        data: imageData,
+        fileName: 'test.jpg',
+      );
+
+      expect(cdnUrl, startsWith('https://cdn.meengle.app/'));
+    });
+
+    test('handles upload errors gracefully', () async {
+      final imageData = Uint8List.fromList([1, 2, 3]);
+      
+      when(mockClient.post(any, headers: anyNamed('headers'), body: any))
+          .thenAnswer((_) async => http.Response('Server Error', 500));
+
+      expect(
+        () => mediaService.uploadMedia(
+          data: imageData,
+          fileName: 'test.jpg',
+        ),
+        throwsException,
+      );
+    });
+
+    test('generates correct image URLs', () {
+      const imageId = 'test123';
+      
+      expect(
+        mediaService.getImageUrl(imageId),
+        equals('https://cdn.meengle.app/images/$imageId/md'),
+      );
+      
+      expect(
+        mediaService.getImageUrl(imageId, size: ImageSize.thumbnail),
+        equals('https://cdn.meengle.app/images/$imageId/thumb'),
+      );
+      
+      expect(
+        mediaService.getImageUrl(imageId, size: ImageSize.large),
+        equals('https://cdn.meengle.app/images/$imageId/lg'),
+      );
+    });
+  });
+}
+
+class MockStreamedResponse extends Mock implements http.StreamedResponse {
+  final http.StreamedResponse _real;
+  MockStreamedResponse(this._real);
+
+  @override
+  int get statusCode => _real.statusCode;
+
+  @override
+  ByteStream get stream => ByteStream(_real.stream);
+}

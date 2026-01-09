@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meengle - Report Profile</title>
+    <link rel="stylesheet" href="frontend/assets/css/main.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <a href="javascript:history.back()" class="header-icon" aria-label="Go back"><i data-feather="arrow-left"></i></a>
+            <h1 class="header-title">Report Profile</h1>
+            <div class="header-icon"></div>
+        </header>
+
+        <main class="main-content">
+            <div class="content-card" data-aos="fade-up">
+                <p class="text-center muted mb-6">Please tell us why you are reporting this profile. Your safety is our priority.</p>
+                <form id="report-form" class="space-y-6">
+                    <div id="report-reasons" class="space-y-4">
+                        <!-- Report reasons will be dynamically loaded here -->
+                    </div>
+                    <div>
+                        <label for="comments" class="form-label">Additional comments (optional)</label>
+                        <textarea id="comments" name="comments" rows="3" class="form-input" placeholder="Provide more details..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-full">Submit Report</button>
+                </form>
+                <div id="response-message" class="mt-4 text-center"></div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            AOS.init();
+            feather.replace();
+
+            const reportReasonsContainer = document.getElementById('report-reasons');
+            const reportForm = document.getElementById('report-form');
+            const responseMessage = document.getElementById('response-message');
+
+            const reasons = [
+                { value: 'spam', label: 'Spam or scam' },
+                { value: 'inappropriate', label: 'Inappropriate content' },
+                { value: 'underage', label: 'Underage user' },
+                { value: 'hate_speech', label: 'Hate speech or symbols' },
+                { value: 'impersonation', label: 'Impersonation or fake profile' },
+                { value: 'other', label: 'Other' }
+            ];
+
+            reasons.forEach(reason => {
+                const label = document.createElement('label');
+                label.className = 'form-radio-label';
+                label.innerHTML = `
+                    <input type="radio" name="reason" value="${reason.value}" class="form-radio">
+                    <span class="ml-3">${reason.label}</span>
+                `;
+                reportReasonsContainer.appendChild(label);
+            });
+
+            const getProfileIdFromUrl = () => {
+                const params = new URLSearchParams(window.location.search);
+                return params.get('id');
+            };
+
+            reportForm.addEventListener('submit', async function(event) {
+                event.preventDefault();
+                const formData = new FormData(this);
+                const reason = formData.get('reason');
+                const comments = formData.get('comments');
+                const reportedUserId = getProfileIdFromUrl();
+
+                if (!reason) {
+                    responseMessage.textContent = 'Please select a reason for the report.';
+                    responseMessage.className = 'text-danger';
+                    return;
+                }
+                
+                if (!reportedUserId) {
+                    responseMessage.textContent = 'Could not identify the profile to report.';
+                    responseMessage.className = 'text-danger';
+                    return;
+                }
+
+                try {
+                    const token = localStorage.getItem('token');
+                    const response = await fetch('/api/users/report', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ reportedUserId, reason, comments })
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        responseMessage.textContent = 'Report submitted successfully. Thank you for helping keep our community safe.';
+                        responseMessage.className = 'text-success';
+                        reportForm.reset();
+                        setTimeout(() => {
+                           if (history.length > 1) {
+                               history.back();
+                           } else {
+                               window.location.href = 'home.html';
+                           }
+                        }, 3000);
+                    } else {
+                        throw new Error(result.message || 'Failed to submit report.');
+                    }
+                } catch (error) {
+                    responseMessage.textContent = `Error: ${error.message}`;
+                    responseMessage.className = 'text-danger';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

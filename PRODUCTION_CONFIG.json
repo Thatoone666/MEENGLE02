@@ -1,0 +1,160 @@
+{
+  "production": {
+    "backend": {
+      "baseUrl": "https://api.meengle.app",
+      "timeout": 30000,
+      "retries": 3,
+      "logLevel": "error"
+    },
+    "frontend": {
+      "apiUrl": "https://api.meengle.app",
+      "wsUrl": "wss://api.meengle.app",
+      "environment": "production",
+      "enableAnalytics": true,
+      "enableErrorReporting": true
+    },
+    "database": {
+      "mongodb": {
+        "url": "${MONGODB_URI}",
+        "poolSize": 20,
+        "maxRetries": 3,
+        "retryDelay": 1000
+      }
+    },
+    "cache": {
+      "redis": {
+        "url": "${REDIS_URL}",
+        "ttl": 3600,
+        "maxConnections": 50
+      }
+    },
+    "authentication": {
+      "jwt": {
+        "secret": "${JWT_SECRET}",
+        "expiresIn": "24h",
+        "refreshExpiresIn": "7d"
+      }
+    },
+    "payments": {
+      "stripe": {
+        "publishableKey": "${STRIPE_PUBLISHABLE_KEY}",
+        "secretKey": "${STRIPE_SECRET_KEY}",
+        "webhookSecret": "${STRIPE_WEBHOOK_SECRET}",
+        "apiVersion": "2023-10-16"
+      }
+    },
+    "firebase": {
+      "projectId": "${FIREBASE_PROJECT_ID}",
+      "apiKey": "${FIREBASE_API_KEY}",
+      "authDomain": "${FIREBASE_AUTH_DOMAIN}",
+      "storageBucket": "${FIREBASE_STORAGE_BUCKET}",
+      "messagingSenderId": "${FIREBASE_MESSAGING_SENDER_ID}",
+      "appId": "${FIREBASE_APP_ID}",
+      "serviceAccountKey": "${FIREBASE_SERVICE_ACCOUNT_KEY}"
+    },
+    "socketIO": {
+      "cors": {
+        "origin": ["https://meengle.app", "https://www.meengle.app"],
+        "methods": ["GET", "POST"],
+        "credentials": true
+      },
+      "transports": ["websocket"],
+      "pingTimeout": 60000,
+      "pingInterval": 25000
+    },
+    "security": {
+      "https": true,
+      "hsts": {
+        "maxAge": 31536000,
+        "includeSubDomains": true,
+        "preload": true
+      },
+      "cors": {
+        "credentials": true,
+        "methods": ["GET", "POST", "PUT", "DELETE"],
+        "allowedHeaders": ["Content-Type", "Authorization"]
+      },
+      "rateLimit": {
+        "windowMs": 900000,
+        "maxRequests": 100
+      }
+    },
+    "logging": {
+      "level": "info",
+      "format": "json",
+      "service": "meengle-api",
+      "environment": "production"
+    },
+    "monitoring": {
+      "sentry": {
+        "enabled": true,
+        "dsn": "${SENTRY_DSN}",
+        "tracesSampleRate": 0.1,
+        "environment": "production"
+      },
+      "newrelic": {
+        "enabled": true,
+        "licenseKey": "${NEW_RELIC_LICENSE_KEY}",
+        "appName": "Meengle API"
+      }
+    },
+    "features": {
+      "stories": {
+        "enabled": true,
+        "maxStorageSize": 10737418240,
+        "expirationHours": 24,
+        "compressionQuality": 0.7
+      },
+      "spotlight": {
+        "enabled": true,
+        "tiers": {
+          "bronze": {
+            "price": 499,
+            "hours": 1,
+            "visibility": 1
+          },
+          "silver": {
+            "price": 999,
+            "hours": 6,
+            "visibility": 2
+          },
+          "gold": {
+            "price": 1999,
+            "hours": 24,
+            "visibility": 5
+          },
+          "platinum": {
+            "price": 4999,
+            "hours": 72,
+            "visibility": 10
+          }
+        }
+      },
+      "messaging": {
+        "enabled": true,
+        "encryptionEnabled": true,
+        "maxMessageLength": 2000
+      },
+      "notifications": {
+        "enabled": true,
+        "fcmEnabled": true,
+        "emailEnabled": true
+      }
+    }
+  },
+  "staging": {
+    "backend": {
+      "baseUrl": "https://staging-api.meengle.app",
+      "timeout": 30000,
+      "retries": 3,
+      "logLevel": "debug"
+    },
+    "frontend": {
+      "apiUrl": "https://staging-api.meengle.app",
+      "wsUrl": "wss://staging-api.meengle.app",
+      "environment": "staging",
+      "enableAnalytics": true,
+      "enableErrorReporting": true
+    }
+  }
+}

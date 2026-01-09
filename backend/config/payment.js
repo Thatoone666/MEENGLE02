@@ -1,0 +1,291 @@
+module.exports = {
+  // Stripe configuration
+  stripe: {
+    secretKey: process.env.STRIPE_SECRET_KEY,
+    publishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
+    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+    apiVersion: '2023-10-16',
+  },
+
+  // Payment plans - Monthly & Weekly subscriptions
+  plans: {
+    free: {
+      id: 'plan_free',
+      name: 'Free',
+      price: 0,
+      currency: 'usd',
+      interval: 'month',
+      features: [
+        'Basic profile',
+        'View matches',
+        'Send messages (limited)',
+      ],
+    },
+
+    // SPARK TIER
+    spark_weekly: {
+      id: process.env.STRIPE_SPARK_WEEKLY_PRICE_ID,
+      name: 'Spark',
+      price: 2.99,
+      currency: 'usd',
+      interval: 'week',
+      billingCycle: 'weekly',
+      features: [
+        '? Spark profile badge',
+        'Extended matches',
+        'More messages',
+        'Basic filters',
+        'Support',
+      ],
+      savings: null,
+      highlighted: false,
+    },
+    spark_monthly: {
+      id: process.env.STRIPE_SPARK_MONTHLY_PRICE_ID,
+      name: 'Spark',
+      price: 9.99,
+      currency: 'usd',
+      interval: 'month',
+      billingCycle: 'monthly',
+      features: [
+        '? Spark profile badge',
+        'Extended matches',
+        'More messages',
+        'Basic filters',
+        'Support',
+      ],
+      savings: '17% savings',
+      highlighted: false,
+    },
+
+    // SPARK+ TIER (Most Popular)
+    sparkplus_weekly: {
+      id: process.env.STRIPE_SPARKPLUS_WEEKLY_PRICE_ID,
+      name: 'Spark+',
+      price: 4.99,
+      currency: 'usd',
+      interval: 'week',
+      billingCycle: 'weekly',
+      features: [
+        '? Spark+ profile badge',
+        'Unlimited matches',
+        'Unlimited messages',
+        'Advanced filters',
+        'Priority support',
+        'Rewind feature',
+      ],
+      savings: null,
+      highlighted: false,
+    },
+    sparkplus_monthly: {
+      id: process.env.STRIPE_SPARKPLUS_MONTHLY_PRICE_ID,
+      name: 'Spark+',
+      price: 16.99,
+      currency: 'usd',
+      interval: 'month',
+      billingCycle: 'monthly',
+      features: [
+        '? Spark+ profile badge',
+        'Unlimited matches',
+        'Unlimited messages',
+        'Advanced filters',
+        'Priority support',
+        'Rewind feature',
+      ],
+      savings: '32% savings', // Most popular - highlight savings
+      highlighted: true, // APPLE STRATEGY: Make this the default/highlighted
+    },
+
+    // FLAME TIER
+    flame_weekly: {
+      id: process.env.STRIPE_FLAME_WEEKLY_PRICE_ID,
+      name: 'Flame',
+      price: 6.99,
+      currency: 'usd',
+      interval: 'week',
+      billingCycle: 'weekly',
+      features: [
+        '?? Flame profile badge',
+        'All Spark+ features',
+        'Video calls',
+        'Exclusive matches',
+        'Premium filters',
+        'Dedicated support',
+      ],
+      savings: null,
+      highlighted: false,
+    },
+    flame_monthly: {
+      id: process.env.STRIPE_FLAME_MONTHLY_PRICE_ID,
+      name: 'Flame',
+      price: 24.99,
+      currency: 'usd',
+      interval: 'month',
+      billingCycle: 'monthly',
+      features: [
+        '?? Flame profile badge',
+        'All Spark+ features',
+        'Video calls',
+        'Exclusive matches',
+        'Premium filters',
+        'Dedicated support',
+      ],
+      savings: '29% savings',
+      highlighted: false,
+    },
+
+    // WILDFIRE TIER (Premium/Maximum - Apple Strategy: Make this seem like the best value)
+    wildfire_weekly: {
+      id: process.env.STRIPE_WILDFIRE_WEEKLY_PRICE_ID,
+      name: 'Wildfire',
+      price: 9.99,
+      currency: 'usd',
+      interval: 'week',
+      billingCycle: 'weekly',
+      features: [
+        '??? Wildfire VIP badge',
+        'All Flame features',
+        'Unlimited video calls',
+        'VIP events access',
+        'Priority matching',
+        'Concierge support',
+        'Exclusive perks',
+      ],
+      savings: null,
+      highlighted: false,
+      recommended: false,
+    },
+    wildfire_monthly: {
+      id: process.env.STRIPE_WILDFIRE_MONTHLY_PRICE_ID,
+      name: 'Wildfire',
+      price: 34.99,
+      currency: 'usd',
+      interval: 'month',
+      billingCycle: 'monthly',
+      features: [
+        '??? Wildfire VIP badge',
+        'All Flame features',
+        'Unlimited video calls',
+        'VIP events access',
+        'Priority matching',
+        'Concierge support (24/7)',
+        'Exclusive perks',
+        'Monthly profile highlight',
+      ],
+      savings: '30% savings', // APPLE STRATEGY: Highest tier shows savings too
+      highlighted: false,
+      recommended: true, // APPLE STRATEGY: Recommend premium tier
+      badge: 'BEST VALUE', // APPLE STRATEGY: Psychological pricing nudge
+    },
+  },
+
+  // Apple-Style Pricing Psychology
+  pricingStrategy: {
+    // Show decoy pricing to make premium tier look better
+    decoyEnabled: true,
+    
+    // Recommended tier (Apple shows 3 tiers, middle one highlighted on some products, premium on others)
+    recommendedTier: 'wildfire_monthly',
+    
+    // Bundle discount (subscribe to multiple months)
+    bundleDiscounts: {
+      3_months: 0.10, // 10% discount
+      6_months: 0.15, // 15% discount
+      12_months: 0.25, // 25% discount
+    },
+
+    // Free trial offer (Apple strategy)
+    freeTrialDays: 7,
+    freeTrialTier: 'wildfire_monthly',
+
+    // Upsell strategy
+    upsellMessages: {
+      spark_monthly: 'Upgrade to Spark+ for unlimited messages',
+      sparkplus_monthly: 'Unlock video calls with Flame',
+      flame_monthly: 'Experience the ultimate with Wildfire - 30% more features',
+    },
+
+    // Display order (front-end should follow this)
+    displayOrder: [
+      'spark_monthly',
+      'sparkplus_monthly', // APPLE: Put premium middle for visibility
+      'flame_monthly',
+      'wildfire_monthly', // APPLE: Ultimate tier at bottom, seems most expensive but best value
+    ],
+
+    // Weekly vs Monthly comparison (Apple shows "per week/month" to normalize prices)
+    priceDisplayFormat: {
+      weekly: 'per week',
+      monthly: 'per month', // MORE AFFORDABLE LOOKING
+    },
+  },
+
+  // Payment webhooks
+  webhooks: {
+    enabled: true,
+    retryAttempts: 3,
+    retryDelay: 60000, // 1 minute
+  },
+
+  // Currency configuration
+  currency: {
+    default: 'usd',
+    supported: ['usd', 'eur', 'gbp', 'cad', 'aud'],
+  },
+
+  // Payment timeout
+  timeout: 30000, // 30 seconds
+
+  // Refund policy (Apple-style: lenient to reduce friction)
+  refund: {
+    enabled: true,
+    daysWindow: 30, // Apple offers 14 days, we offer 30 for competitive advantage
+    autoRefundTrialCancellations: true,
+  },
+
+  // VAT configuration
+  vat: {
+    enabled: process.env.ENABLE_VAT === 'true',
+    rate: 0.19, // 19% default
+    includeInDisplay: false, // Show prices before VAT (Apple strategy)
+  },
+
+  // Apple-style tier descriptions (for marketing)
+  tierDescriptions: {
+    spark_monthly: {
+      headline: 'Start your spark',
+      subtitle: 'Basic premium features',
+      cta: 'Choose Plan',
+      badge: null,
+    },
+    sparkplus_monthly: {
+      headline: 'Premium sparks',
+      subtitle: 'Unlimited messages & matches',
+      cta: 'Choose Plan',
+      badge: 'Most Popular', // APPLE STRATEGY: Highlight middle tier
+    },
+    flame_monthly: {
+      headline: 'Turn up the heat',
+      subtitle: 'Video calls included',
+      cta: 'Choose Plan',
+      badge: null,
+    },
+    wildfire_monthly: {
+      headline: 'Ignite the passion',
+      subtitle: 'Ultimate VIP experience',
+      cta: 'Start Free Trial', // APPLE STRATEGY: Premium tier gets free trial CTA
+      badge: 'BEST VALUE',
+    },
+  },
+
+  // A/B Testing configurations
+  abTesting: {
+    enabled: true,
+    // Apple shows different layouts to different users
+    layouts: {
+      horizontal: 'Show tiers left to right',
+      vertical: 'Show tiers top to bottom (more scrolling = more conversions)',
+      default: 'horizontal',
+    },
+  },
+};

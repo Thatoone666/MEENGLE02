@@ -1,0 +1,22 @@
+# Production build configuration for Flutter web
+name: meengle
+env:
+  API_URL: 'https://api.meengle.com'
+  STRIPE_PUBLISHABLE: 'pk_live_YOUR_KEY'
+  SOCKET_URL: 'wss://api.meengle.com'
+  CDN_URL: 'https://cdn.meengle.com'
+  ENABLE_ANALYTICS: true
+  ENVIRONMENT: 'production'
+
+# Build settings
+build:
+  web:
+    customername: 'meengle'
+    base-href: '/'
+    release: true
+    tree-shake-icons: true
+    pwa: true
+    source-maps: false
+    dart2js-optimization: O4
+    gzip: true
+    service-worker: true
