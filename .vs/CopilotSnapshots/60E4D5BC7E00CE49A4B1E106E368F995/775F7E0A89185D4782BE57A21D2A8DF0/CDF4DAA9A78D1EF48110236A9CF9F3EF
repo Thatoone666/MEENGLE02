@@ -1,0 +1,11 @@
+﻿const request = require('supertest');
+const { expect } = require('chai');
+const app = require('../server');
+
+describe('Profile API', () => {
+  it('should return 401 if no token', async () => {
+    const res = await request(app).get('/api/profile');
+    expect(res.status).to.equal(401);
+  });
+  // Add more tests as needed
+});

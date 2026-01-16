@@ -1,0 +1,147 @@
+﻿const chai = require('chai');
+const chaiHttp = require('chai-http');
+const { expect } = chai;
+const mongoose = require('mongoose');
+const server = require('../server');
+const { createTestUser, cleanup } = require('./test-helpers');
+const FraudPattern = require('../models/FraudPattern');
+const FraudReport = require('../models/FraudReport');
+
+chai.use(chaiHttp);
+
+describe('Fraud Detection API', () => {
+  let token;
+  let userId;
+
+  before(async () => {
+    await cleanup();
+    const user = await createTestUser();
+    token = user.token;
+    userId = user.userId;
+  });
+
+  after(async () => {
+    await cleanup();
+  });
+
+  describe('Risk Assessment', () => {
+    beforeEach(async () => {
+      // Create test fraud patterns
+      await FraudPattern.create({
+        pattern: 'large_amount',
+        description: 'Transaction amount is unusually large',
+        riskLevel: 'high',
+        indicators: ['amount_above_threshold', 'unusual_time'],
+      });
+    });
+
+    afterEach(async () => {
+      await FraudPattern.deleteMany({});
+    });
+
+    it('should assess transaction risk level', async () => {
+      const res = await chai
+        .request(server)
+        .post('/api/fraud/assess')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          userId,
+          transactionId: 'test123',
+          amount: 100.0,
+          paymentMethod: 'payfast',
+          ipAddress: '127.0.0.1',
+        });
+
+      expect(res).to.have.status(200);
+      expect(res.body).to.have.property('riskLevel');
+      expect(res.body).to.have.property('flags');
+      expect(res.body).to.have.property('details');
+      expect(res.body).to.have.property('shouldBlock');
+    });
+
+    it('should identify high-risk transactions', async () => {
+      const res = await chai
+        .request(server)
+        .post('/api/fraud/assess')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          userId,
+          transactionId: 'test456',
+          amount: 10000.0, // High amount to trigger risk
+          paymentMethod: 'payfast',
+          ipAddress: '1.2.3.4',
+          metadata: {
+            cardAttempts: 5,
+          },
+        });
+
+      expect(res).to.have.status(200);
+      expect(res.body.riskLevel).to.equal('high');
+      expect(res.body.shouldBlock).to.be.true;
+      expect(res.body.flags).to.include('large_amount');
+    });
+  });
+
+  describe('Fraud Reporting', () => {
+    it('should create a fraud report', async () => {
+      const res = await chai
+        .request(server)
+        .post('/api/fraud/report')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          transactionId: 'test789',
+          reason: 'stolen_card',
+          description: 'Card reported stolen by issuer',
+          amount: 500.0,
+          paymentMethod: 'payfast',
+          ipAddress: '127.0.0.1',
+        });
+
+      expect(res).to.have.status(200);
+      expect(res.body.success).to.be.true;
+
+      const report = await FraudReport.findOne({ transactionId: 'test789' });
+      expect(report).to.exist;
+      expect(report.reason).to.equal('stolen_card');
+      expect(report.status).to.equal('pending');
+    });
+  });
+
+  describe('Fraud Patterns', () => {
+    beforeEach(async () => {
+      await FraudPattern.create([
+        {
+          pattern: 'multiple_cards',
+          description: 'Multiple cards used in short time',
+          riskLevel: 'high',
+          indicators: ['rapid_attempts', 'different_cards'],
+        },
+        {
+          pattern: 'ip_mismatch',
+          description: 'IP address mismatch from previous transactions',
+          riskLevel: 'medium',
+          indicators: ['location_change'],
+        },
+      ]);
+    });
+
+    afterEach(async () => {
+      await FraudPattern.deleteMany({});
+    });
+
+    it('should get active fraud patterns', async () => {
+      const res = await chai
+        .request(server)
+        .get('/api/fraud/patterns')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(res).to.have.status(200);
+      expect(res.body).to.be.an('array');
+      expect(res.body).to.have.lengthOf(2);
+      expect(res.body[0]).to.have.property('pattern');
+      expect(res.body[0]).to.have.property('description');
+      expect(res.body[0]).to.have.property('riskLevel');
+      expect(res.body[0]).to.have.property('indicators');
+    });
+  });
+});

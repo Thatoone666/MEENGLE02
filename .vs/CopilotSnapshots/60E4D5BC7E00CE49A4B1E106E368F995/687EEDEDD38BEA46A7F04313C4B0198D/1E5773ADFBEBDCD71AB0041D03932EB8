@@ -1,0 +1,162 @@
+﻿# Test Environment Setup
+
+This file documents the test environment configuration for the backend.
+
+## Node.js ES Modules
+
+The project uses ES modules (`import`/`export`) throughout:
+
+```javascript
+// ✅ Correct
+import express from 'express';
+export const authRouter = router;
+
+// ❌ Don't use CommonJS
+const express = require('express');
+module.exports = router;
+```
+
+## Test Framework Stack
+
+| Tool | Version | Purpose |
+|------|---------|---------|
+| Mocha | ^10.2.0 | Test runner |
+| Chai | ^4.3.10 | Assertion library |
+| Supertest | ^6.3.3 | HTTP testing |
+| MongoDB Memory Server | ^9.1.6 | In-memory database |
+
+## Environment Variables for Tests
+
+Tests use MongoDB Memory Server, so they don't need `.env` file configuration. However, some values are hardcoded for testing:
+
+```javascript
+// JWT Secret for tests
+process.env.JWT_SECRET || 'test-secret'
+
+// Email service (non-blocking failures)
+sendVerificationEmail(email, token).catch(err => console.error(...))
+```
+
+## Database Lifecycle in Tests
+
+```
+Before All Tests
+    ↓
+    Create MongoDB Memory Server
+    ↓
+    Connect Mongoose to in-memory DB
+    ↓
+    Create Express app with routes
+    ↓
+Individual Test
+    ↓
+    Test executes
+    ↓
+After Each Test
+    ↓
+    Clear User collection (deleteMany)
+    ↓
+After All Tests
+    ↓
+    Disconnect Mongoose
+    ↓
+    Stop MongoDB Memory Server
+```
+
+## Important Notes
+
+### Email Service in Tests
+- Email sending is attempted but non-blocking
+- Tests don't validate email functionality
+- Email errors are logged but don't fail tests
+- See `backend/services/emailService.js`
+
+### Password Hashing
+- Uses bcryptjs with salt rounds = 10
+- All test users have hashed passwords
+- Raw passwords never stored in database
+
+### Token Generation
+- Access tokens expire in 7 days
+- Refresh tokens expire in 30 days
+- Uses JWT with 'test-secret' in test environment
+
+## Adding New Tests
+
+When adding new test files, follow this pattern:
+
+```javascript
+import request from 'supertest';
+import { expect } from 'chai';
+import helpers from './test-helpers.js';
+
+describe('Feature API', function() {
+  let app;
+  
+  before(async function() {
+    this.timeout(15000);
+    const h = await helpers.start();
+    app = h.app;
+  });
+  
+  after(async function() {
+    this.timeout(10000);
+    await helpers.stop();
+  });
+
+  it('should do something', async function() {
+    this.timeout(5000);
+    const res = await request(app)
+      .get('/api/endpoint')
+      .expect(200);
+    
+    expect(res.body).to.have.property('expectedField');
+  });
+});
+```
+
+## Running Tests in CI/CD
+
+For GitHub Actions or similar:
+
+```yaml
+- name: Install dependencies
+  run: npm install
+
+- name: Run tests
+  run: npm test
+  timeout-minutes: 5
+
+- name: Lint
+  run: npm run lint
+```
+
+## Memory Considerations
+
+- MongoDB Memory Server stores entire database in RAM
+- Each test run creates a fresh instance
+- Suitable for small to medium test datasets
+- For large datasets, consider integration testing separately
+
+## Debugging Tests
+
+### Run single test
+```bash
+npx mocha tests/auth.test.js --grep "should signup"
+```
+
+### Increase timeout for debugging
+```bash
+npx mocha tests/auth.test.js --timeout 60000
+```
+
+### Enable verbose output
+```bash
+DEBUG=* npm test
+```
+
+### Use Node debugger
+```bash
+node --inspect-brk ./node_modules/.bin/mocha tests/auth.test.js
+```
+Then open `chrome://inspect` in Chrome.

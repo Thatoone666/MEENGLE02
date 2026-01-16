@@ -1,0 +1,17 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Flutter: Launch main.dart",
+      "request": "launch",
+      "type": "dart",
+      "program": "${workspaceFolder}/flutter_app/lib/main.dart",
+      "cwd": "${workspaceFolder}/flutter_app"
+    },
+    {
+      "name": "Flutter: Attach (running app)",
+      "request": "attach",
+      "type": "dart"
+    }
+  ]
+}

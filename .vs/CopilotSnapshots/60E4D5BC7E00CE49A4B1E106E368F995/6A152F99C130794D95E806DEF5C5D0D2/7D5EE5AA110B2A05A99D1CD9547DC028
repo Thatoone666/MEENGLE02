@@ -1,0 +1,310 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Community Guidelines - MEENGLE</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.6;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      background: #f5f5f5;
+      color: #333;
+    }
+    .container {
+      background: white;
+      padding: 40px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #667eea;
+      border-bottom: 3px solid #667eea;
+      padding-bottom: 15px;
+    }
+    h2 {
+      color: #667eea;
+      margin-top: 30px;
+    }
+    .rule {
+      background: #f9f9f9;
+      border-left: 4px solid #667eea;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+    .do {
+      border-left-color: #28a745;
+      background: #f0fff4;
+    }
+    .dont {
+      border-left-color: #dc3545;
+      background: #fff5f5;
+    }
+    .warning {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+    .sa-law {
+      background: #e3f2fd;
+      border-left: 4px solid #2196f3;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>👥 MEENGLE - COMMUNITY GUIDELINES</h1>
+    <p><strong>Last Updated: January 2024 | South African Platform</strong></p>
+
+    <div class="sa-law">
+      <strong>🇿🇦 SOUTH AFRICAN LAW:</strong> These guidelines comply with South African law, including the Criminal Law (Sexual Offences and Related Matters) Amendment Act, the Promotion of Equality and Prevention of Unfair Discrimination Act (PEPUDA), and the Protection from Harassment Act.
+    </div>
+
+    <p>MEENGLE is a community platform dedicated to helping people find meaningful connections. These Community Guidelines ensure MEENGLE remains a safe, respectful, and welcoming place for everyone in South Africa.</p>
+
+    <div class="warning">
+      <strong>⚠️ Remember:</strong> Violations of these guidelines may result in warnings, temporary suspension, or permanent banning from MEENGLE. Serious violations will be reported to South African law enforcement.
+    </div>
+
+    <h2>✅ BE RESPECTFUL & AUTHENTIC</h2>
+    
+    <div class="rule do">
+      <strong>✓ DO:</strong>
+      <ul>
+        <li>Be genuine and honest in your profile</li>
+        <li>Use recent, clear photos of yourself</li>
+        <li>Treat all users with kindness and respect</li>
+        <li>Accept rejection gracefully</li>
+        <li>Engage in meaningful conversations</li>
+        <li>Report problematic users</li>
+      </ul>
+    </div>
+
+    <div class="rule dont">
+      <strong>✗ DON'T:</strong>
+      <ul>
+        <li>Use fake or misleading photos</li>
+        <li>Catfish or impersonate others</li>
+        <li>Be rude, insulting, or dismissive</li>
+        <li>Harass users who aren't interested</li>
+        <li>Pressure someone into conversation</li>
+        <li>Continue messaging after someone asks you to stop</li>
+      </ul>
+    </div>
+
+    <h2>🔒 SAFETY FIRST</h2>
+    
+    <div class="rule do">
+      <strong>✓ DO:</strong>
+      <ul>
+        <li>Verify people's identities before meeting</li>
+        <li>Meet in public places (shopping malls, restaurants, cafes)</li>
+        <li>Tell trusted friends where you're going</li>
+        <li>Trust your instincts</li>
+        <li>Take time to get to know someone</li>
+        <li>Report unsafe behavior immediately</li>
+      </ul>
+    </div>
+
+    <div class="rule dont">
+      <strong>✗ DON'T:</strong>
+      <ul>
+        <li>Share personal details too quickly (address, workplace, phone)</li>
+        <li>Send money to someone you haven't met</li>
+        <li>Meet alone in private locations initially</li>
+        <li>Ignore red flags or concerning behavior</li>
+        <li>Feel pressured to move conversations off the app</li>
+        <li>Share explicit content you didn't consent to</li>
+      </ul>
+    </div>
+
+    <h2>💬 APPROPRIATE CONTENT</h2>
+    
+    <div class="rule do">
+      <strong>✓ DO:</strong>
+      <ul>
+        <li>Share interesting conversation starters</li>
+        <li>Post appropriate photos (face, full body, lifestyle)</li>
+        <li>Discuss your interests, goals, and values</li>
+        <li>Be clear about what you're looking for</li>
+        <li>Keep conversations pleasant and respectful</li>
+      </ul>
+    </div>
+
+    <div class="rule dont">
+      <strong>✗ DON'T:</strong>
+      <ul>
+        <li>Post sexually explicit photos or content</li>
+        <li>Share nude or intimate images</li>
+        <li>Send unsolicited explicit messages</li>
+        <li>Use offensive language or slurs</li>
+        <li>Make racist, sexist, homophobic, or discriminatory comments</li>
+        <li>Share graphic violence or illegal content</li>
+        <li>Post screenshots of conversations without consent</li>
+      </ul>
+    </div>
+
+    <h2>🚫 PROHIBITED BEHAVIOR</h2>
+    
+    <h3>Harassment & Abuse (Prohibited under South African Law)</h3>
+    <p>MEENGLE has zero tolerance for harassment, bullying, or abuse in violation of the Promotion of Equality and Prevention of Unfair Discrimination Act (PEPUDA).</p>
+    <ul>
+      <li>Repeated unwanted messages = harassment</li>
+      <li>Threats, insults, or degrading language</li>
+      <li>Threatening violence or harm</li>
+      <li>Doxxing (sharing someone's personal information)</li>
+      <li>Coordinated attacks by multiple users</li>
+    </ul>
+
+    <h3>Discrimination & Hate Speech (Illegal in South Africa)</h3>
+    <ul>
+      <li>Racist, sexist, religious, or ethnic slurs (illegal under PEPUDA)</li>
+      <li>Discriminating based on race, gender, religion, sexual orientation, disability</li>
+      <li>Hate speech or extremist content</li>
+    </ul>
+
+    <h3>Sexual Offences & Exploitation</h3>
+    <p>In accordance with the Criminal Law (Sexual Offences and Related Matters) Amendment Act:</p>
+    <ul>
+      <li>Child exploitation or any contact with minors for sexual purposes (illegal)</li>
+      <li>Non-consensual sharing of intimate images (illegal)</li>
+      <li>Sexual harassment or coercion</li>
+      <li>Human trafficking or modern slavery</li>
+    </ul>
+
+    <h3>Fraud & Scams</h3>
+    <ul>
+      <li>Catfishing or using fake identities</li>
+      <li>Romance scams or asking for money</li>
+      <li>Fake investment opportunities</li>
+      <li>Cryptocurrency or MLM schemes</li>
+      <li>Phishing or malicious links</li>
+    </ul>
+
+    <h3>Commercial Activity & Spam</h3>
+    <ul>
+      <li>Promoting businesses or services</li>
+      <li>Advertising products or affiliate links</li>
+      <li>Selling subscriptions, courses, or goods</li>
+      <li>Spam or mass messaging</li>
+    </ul>
+
+    <h3>Illegal Activity (South African Law)</h3>
+    <ul>
+      <li>Promoting illegal substances or weapons</li>
+      <li>Soliciting illegal services</li>
+      <li>Child exploitation or abuse (SERIOUS CRIME)</li>
+      <li>Human trafficking or modern slavery</li>
+      <li>Cybercrime or hacking</li>
+      <li>Any other criminal activity under South African law</li>
+    </ul>
+
+    <h2>📸 PHOTO GUIDELINES</h2>
+    
+    <div class="rule do">
+      <strong>✓ ACCEPTABLE PHOTOS:</strong>
+      <ul>
+        <li>Clear, recent photos of your face</li>
+        <li>Full-body shots showing who you are</li>
+        <li>Lifestyle photos (hobbies, travel, activities)</li>
+        <li>Group photos (clearly marked as not you)</li>
+        <li>Photos without heavy filters</li>
+      </ul>
+    </div>
+
+    <div class="rule dont">
+      <strong>✗ NOT ALLOWED:</strong>
+      <ul>
+        <li>Explicit or nude photos</li>
+        <li>Photos of other people without permission (privacy violation)</li>
+        <li>Graphic or violent content</li>
+        <li>Photos of animals presented as yourself</li>
+        <li>Excessively filtered or misleading photos</li>
+        <li>Copyrighted celebrity photos</li>
+        <li>Screenshots of other people's profiles</li>
+      </ul>
+    </div>
+
+    <h2>🚩 REPORT & BLOCK</h2>
+    
+    <p>If you encounter someone violating these guidelines:</p>
+    <ul>
+      <li><strong>Block:</strong> Click the block button to prevent them from messaging</li>
+      <li><strong>Report:</strong> Use the report feature to alert our moderation team</li>
+      <li><strong>Details:</strong> Provide specific examples of the violation</li>
+      <li><strong>Screenshot:</strong> Include screenshots of problematic messages</li>
+      <li><strong>Police Report:</strong> For serious crimes, contact South African Police Service (SAPS)</li>
+      <li><strong>Don't Engage:</strong> Do not respond to or engage with violations</li>
+    </ul>
+
+    <p><strong>Our moderation team reviews all reports within 24 hours.</strong> We take every report seriously and may report serious crimes to SAPS.</p>
+
+    <h2>⚖️ ENFORCEMENT & CONSEQUENCES</h2>
+    
+    <p>Violations of these guidelines result in:</p>
+    <ul>
+      <li><strong>First Offense:</strong> Warning or temporary suspension (24 hours - 7 days)</li>
+      <li><strong>Second Offense:</strong> Extended suspension (7 days - 30 days)</li>
+      <li><strong>Third Offense:</strong> Permanent ban from MEENGLE</li>
+      <li><strong>Severe Violations:</strong> Immediate permanent ban + police report (harassment, illegal activity, hate speech, sexual crimes)</li>
+    </ul>
+
+    <p>Banned users cannot create new accounts or use MEENGLE services.</p>
+
+    <h2>💡 TIPS FOR A GREAT EXPERIENCE</h2>
+    
+    <ol>
+      <li><strong>Be Yourself:</strong> Authenticity is attractive and safe. Don't pretend to be someone you're not.</li>
+      <li><strong>Respect Boundaries:</strong> If someone isn't interested, accept it gracefully.</li>
+      <li><strong>Stay Safe:</strong> Never rush to meet or share personal information.</li>
+      <li><strong>Communicate Clearly:</strong> Be upfront about what you're looking for.</li>
+      <li><strong>Use Descriptive Bios:</strong> Help potential matches understand who you are.</li>
+      <li><strong>Respond Thoughtfully:</strong> Personalized messages work better than generic openers.</li>
+      <li><strong>Report Issues:</strong> Help us keep MEENGLE safe by reporting violations.</li>
+      <li><strong>Trust Your Instincts:</strong> If something feels wrong, it probably is.</li>
+      <li><strong>Meet in Public:</strong> Always arrange first meetings in public places.</li>
+      <li><strong>Dating should be enjoyable, not stressful:</strong> Take breaks if needed.</li>
+    </ol>
+
+    <h2>🇿🇦 SOUTH AFRICAN-SPECIFIC GUIDANCE</h2>
+    
+    <div class="sa-law">
+      <strong>Safety in South Africa:</strong>
+      <ul>
+        <li>Meet in safe, well-populated public venues (Sandton, Canal Walk, Menlyn, The Grove, etc. depending on your province)</li>
+        <li>Use registered taxis or ride services (Uber, Bolt, Indriver) for transportation</li>
+        <li>Tell friends and family your location via WhatsApp or call them</li>
+        <li>Be aware of safety concerns in your area and plan accordingly</li>
+        <li>If threatened or harassed, contact SAPS (South African Police Service) on 10177 or 0860 10 10 10</li>
+        <li>Report serious crimes to your provincial police station or SAPS Crime Line: 086 001 0600</li>
+      </ul>
+    </div>
+
+    <h2>❓ QUESTIONS?</h2>
+    
+    <p>If you have questions about these guidelines or need to report a violation:</p>
+    <ul>
+      <li><strong>Email:</strong> support@meengle.co.za</li>
+      <li><strong>In-App Report:</strong> Use the report feature on any profile or message</li>
+      <li><strong>Safety Team:</strong> safety@meengle.co.za (for safety concerns)</li>
+      <li><strong>Emergency:</strong> Contact SAPS or local emergency services</li>
+    </ul>
+
+    <div class="warning">
+      <strong>Remember:</strong> MEENGLE is a community. We all play a role in keeping it safe, respectful, and fun. Thank you for being a responsible member of the MEENGLE community in South Africa! 💚
+    </div>
+
+    <hr style="margin: 40px 0; border: none; border-top: 2px solid #eee;">
+    <p style="font-size: 12px; color: #999;">© 2024 MEENGLE (PTY) LTD. All rights reserved. Registered in South Africa.</p>
+  </div>
+</body>
+</html>

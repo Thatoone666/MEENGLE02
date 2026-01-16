@@ -1,0 +1,159 @@
+/* Feature Gated Section Styles */
+
+.feature-gated {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.feature-gated.blurred {
+  filter: blur(8px);
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+/* Overlay */
+.feature-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 107, 107, 0.1),
+    rgba(255, 107, 107, 0.05)
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  backdrop-filter: blur(4px);
+  border-radius: 12px;
+}
+
+/* Overlay Content */
+.overlay-content {
+  text-align: center;
+  background: white;
+  padding: 30px;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(255, 107, 107, 0.2);
+  animation: popIn 0.4s ease;
+}
+
+.overlay-icon {
+  font-size: 48px;
+  margin-bottom: 15px;
+  animation: bounce 0.6s ease;
+}
+
+.overlay-content h3 {
+  margin: 0 0 10px 0;
+  font-size: 20px;
+  color: #333;
+  font-weight: 700;
+}
+
+.overlay-content p {
+  margin: 0 0 20px 0;
+  font-size: 14px;
+  color: #666;
+  line-height: 1.5;
+  max-width: 300px;
+}
+
+/* Unlock Button */
+.overlay-unlock-btn {
+  padding: 12px 30px;
+  background: linear-gradient(135deg, #ff6b6b, #ff5252);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+  pointer-events: auto;
+}
+
+.overlay-unlock-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255, 107, 107, 0.4);
+}
+
+.overlay-unlock-btn:active {
+  transform: translateY(0);
+}
+
+/* Loading State */
+.feature-gated-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  color: #999;
+  font-size: 14px;
+}
+
+/* Animations */
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+/* Dark Theme Support */
+@media (prefers-color-scheme: dark) {
+  .overlay-content {
+    background: #1e1e1e;
+  }
+
+  .overlay-content h3 {
+    color: #fff;
+  }
+
+  .overlay-content p {
+    color: #aaa;
+  }
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .overlay-content {
+    padding: 20px;
+    max-width: 90%;
+  }
+
+  .overlay-icon {
+    font-size: 40px;
+  }
+
+  .overlay-content h3 {
+    font-size: 18px;
+  }
+
+  .overlay-content p {
+    font-size: 13px;
+  }
+
+  .overlay-unlock-btn {
+    padding: 10px 20px;
+    font-size: 13px;
+    width: 100%;
+  }
+}

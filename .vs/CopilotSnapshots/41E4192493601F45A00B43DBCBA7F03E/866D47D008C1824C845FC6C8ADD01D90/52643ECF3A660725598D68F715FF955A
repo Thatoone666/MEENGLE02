@@ -1,0 +1,100 @@
+﻿const express = require('express');
+const router = express.Router();
+const auth = require('../middleware/auth');
+const { Date: DateModel } = require('../models/featureModels');
+
+router.get('/suggestions', auth, async (req, res) => {
+  try {
+    const suggestions = await DateModel.find({ status: 'open' }).limit(10);
+    res.json({ success: true, suggestions });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/', auth, async (req, res) => {
+  try {
+    const { matchId, title, location, proposedTime, vibe, timeEstimate } = req.body;
+    
+    if (!matchId || !title || !location) {
+      return res.status(400).json({ success: false, error: 'Missing required fields' });
+    }
+    
+    const dateProposal = new DateModel({
+      fromUserId: req.user.id,
+      toUserId: matchId,
+      title,
+      location,
+      proposedTime: new Date(proposedTime),
+      vibe,
+      timeEstimate,
+      status: 'pending',
+      createdAt: new Date()
+    });
+    
+    await dateProposal.save();
+    res.json({ success: true, date: dateProposal });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.get('/history', auth, async (req, res) => {
+  try {
+    const userDates = await DateModel.find({
+      $or: [
+        { fromUserId: req.user.id },
+        { toUserId: req.user.id }
+      ]
+    }).sort({ createdAt: -1 });
+    res.json({ success: true, dates: userDates });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/:id/accept', auth, async (req, res) => {
+  try {
+    const date = await DateModel.findByIdAndUpdate(
+      req.params.id,
+      { status: 'accepted', acceptedAt: new Date() },
+      { new: true }
+    );
+    
+    if (!date) {
+      return res.status(404).json({ success: false, error: 'Date not found' });
+    }
+    
+    if (date.toUserId !== req.user.id && date.fromUserId !== req.user.id) {
+      return res.status(403).json({ success: false, error: 'Not authorized' });
+    }
+    
+    res.json({ success: true, date });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/:id/decline', auth, async (req, res) => {
+  try {
+    const date = await DateModel.findByIdAndUpdate(
+      req.params.id,
+      { status: 'declined', declinedAt: new Date() },
+      { new: true }
+    );
+    
+    if (!date) {
+      return res.status(404).json({ success: false, error: 'Date not found' });
+    }
+    
+    if (date.toUserId !== req.user.id && date.fromUserId !== req.user.id) {
+      return res.status(403).json({ success: false, error: 'Not authorized' });
+    }
+    
+    res.json({ success: true, date });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+module.exports = router;

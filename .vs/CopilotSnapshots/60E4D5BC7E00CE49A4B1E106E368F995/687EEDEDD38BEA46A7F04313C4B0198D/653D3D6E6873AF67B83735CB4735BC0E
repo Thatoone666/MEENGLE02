@@ -1,0 +1,147 @@
+﻿# Quick Start Guide - Authentication Tests
+
+## 🚀 Get Started in 3 Steps
+
+### Step 1: Install Dependencies
+```bash
+cd backend
+npm install
+```
+
+### Step 2: Run Tests
+```bash
+npm test
+```
+
+### Step 3: Watch Tests (Development)
+```bash
+npm run test:watch
+```
+
+## ✅ Expected Output
+
+```
+Auth API
+  ✓ should signup a new user and return token (234ms)
+  ✓ should reject signup with missing required fields (89ms)
+  ✓ should reject signup with password less than 8 characters (92ms)
+  ✓ should login an existing user (156ms)
+  ✓ should reject login with invalid credentials (78ms)
+  ✓ should reject login with wrong password (145ms)
+
+6 passing (2.8s)
+```
+
+## 📋 What Gets Tested
+
+### Signup Endpoint (`POST /api/auth/signup`)
+- ✅ Creates new user with email, password, and name
+- ✅ Returns JWT token
+- ✅ Validates required fields
+- ✅ Validates password length (min 8 characters)
+
+### Login Endpoint (`POST /api/auth/login`)
+- ✅ Authenticates with correct credentials
+- ✅ Returns JWT token
+- ✅ Rejects non-existent user
+- ✅ Rejects incorrect password
+
+## 🔧 Requirements
+
+- **Node.js**: >= 18.0.0
+- **RAM**: 2GB minimum (for MongoDB Memory Server)
+- **Disk**: 500MB free (MongoDB Memory Server binary)
+
+## 📚 Documentation
+
+- **Setup Details**: `backend/tests/ENVIRONMENT.md`
+- **Full Documentation**: `backend/tests/README.md`
+- **Implementation Details**: `backend/tests/IMPLEMENTATION.md`
+
+## 🐛 Troubleshooting
+
+### Tests Timeout
+```bash
+# Increase timeout to 60 seconds
+npx mocha tests/auth.test.js --timeout 60000
+```
+
+### MongoDB Memory Server Fails
+- Ensure sufficient disk space (500MB+)
+- Check internet connection (downloads binary on first run)
+- Restart test: `npm test`
+
+### Module Import Errors
+```bash
+# Verify all dependencies installed
+npm ls
+
+# Clear node_modules and reinstall
+rm -rf node_modules package-lock.json
+npm install
+```
+
+## 🎯 Common Commands
+
+| Command | Description |
+|---------|-------------|
+| `npm test` | Run all tests |
+| `npm run test:watch` | Run tests in watch mode |
+| `npm run lint` | Check code style |
+| `npm run format` | Auto-format code |
+| `npm run dev` | Start development server |
+
+## 📖 File Structure
+
+```
+backend/
+├── tests/
+│   ├── auth.test.js          # Authentication tests
+│   ├── test-helpers.js       # Test setup/teardown
+│   ├── README.md             # Full documentation
+│   ├── ENVIRONMENT.md        # Environment setup
+│   └── IMPLEMENTATION.md     # Implementation details
+├── routes/
+│   └── auth.js               # Auth endpoints
+├── models/
+│   └── User.js               # User model
+├── .mocharc.json             # Mocha config
+├── jest.config.js            # Jest config (optional)
+└── package.json              # Dependencies
+```
+
+## 🔐 Authentication Flow Tested
+
+1. **User Signup**
+   ```
+   POST /api/auth/signup
+   Body: { email, password, name }
+   Response: { token, user, refreshToken }
+   ```
+
+2. **User Login**
+   ```
+   POST /api/auth/login
+   Body: { email, password }
+   Response: { token, user, refreshToken }
+   ```
+
+## 📝 Notes
+
+- Tests use in-memory MongoDB (no external database needed)
+- Each test run starts with a clean database
+- Passwords are hashed with bcryptjs before storage
+- Email sending is non-blocking (won't fail tests if email service down)
+- JWT tokens expire in 7 days for access, 30 days for refresh
+
+## Next Steps
+
+1. ✅ Run tests to verify setup: `npm test`
+2. 📖 Read detailed docs: `cat backend/tests/README.md`
+3. 🧪 Add more tests for other endpoints
+4. 🔄 Integrate tests into CI/CD pipeline
+5. 📊 Generate coverage reports: `npm test -- --coverage`
+
+---
+
+**Questions?** Check the documentation files in `backend/tests/` directory.

@@ -1,0 +1,644 @@
+﻿# ?? MEENGLE APK BUILD CHECKLIST
+
+## ?? Pre-Build Requirements
+
+### Prerequisites Installed
+- [ ] Node.js v16+ (`node --version`)
+- [ ] npm v7+ (`npm --version`)
+- [ ] Java JDK 11+ (`java -version`)
+- [ ] Android Studio
+- [ ] Android SDK (API 28+)
+- [ ] Gradle (comes with Android Studio)
+
+### Capacitor & Dependencies
+- [ ] Capacitor CLI: `npm install -g @capacitor/cli`
+- [ ] Android platform: `npm install @capacitor/android`
+- [ ] Dependencies installed: `cd frontend && npm install`
+
+---
+
+## ?? Build Phase
+
+### Web App Build
+- [ ] Web app successfully built (74 files in `dist/`)
+- [ ] All HTML pages present in `dist/pages/`
+- [ ] All CSS files in `dist/assets/css/`
+- [ ] All JS files in `dist/assets/js/`
+- [ ] `manifest.json` in `dist/`
+- [ ] `service-worker.js` in `dist/`
+- [ ] `index.html` in `dist/`
+- [ ] No build errors or warnings
+
+### Capacitor Configuration
+- [ ] `capacitor.config.json` reviewed
+- [ ] App ID: `com.meengle.app` ?
+- [ ] Web directory: `dist` ?
+- [ ] App name: "Meengle" ?
+- [ ] Version updated if necessary
+
+### Android Configuration
+- [ ] Android project exists: `android/` folder
+- [ ] `android/build.gradle` configured
+- [ ] `android/settings.gradle` configured
+- [ ] `android/app/build.gradle.kts` configured
+- [ ] Package name: `com.meengle.app` ?
+
+---
+
+## ?? Sync & Build
+
+### Sync Web Assets
+```bash
+npx cap sync
+```
+- [ ] Command executed successfully
+- [ ] No errors in output
+- [ ] Web assets copied to `android/app/src/main/assets/public/`
+- [ ] Plugins synced
+
+### Build Options
+
+#### Option A: Capacitor CLI Build
+```bash
+npx cap build android
+```
+- [ ] Build initiated successfully
+- [ ] Android Studio opened (if not already)
+- [ ] Build in IDE completed
+- [ ] APK generated in `android/app/build/outputs/apk/debug/`
+
+#### Option B: Android Studio Build
+```bash
+npx cap open android
+```
+- [ ] Android Studio opened with project
+- [ ] Project indexed successfully (no red squiggles)
+- [ ] Build ? Build APK(s) clicked
+- [ ] Build completed without errors
+- [ ] APK found in outputs folder
+
+#### Option C: Command Line Gradle
+```bash
+cd android
+./gradlew assembleDebug
+cd ..
+```
+- [ ] Build command executed
+- [ ] No compilation errors
+- [ ] APK generated: `android/app/build/outputs/apk/debug/app-debug.apk`
+
+---
+
+## ?? Testing Phase
+
+### Pre-Installation Testing
+- [ ] APK file exists and is > 10MB
+- [ ] APK file is not corrupted
+- [ ] Device/emulator connected: `adb devices`
+- [ ] USB debugging enabled (if physical device)
+- [ ] Storage space available on device (> 100MB)
+
+### Installation
+```bash
+adb install app-debug.apk
+```
+- [ ] APK installed successfully
+- [ ] No "app already installed" errors
+- [ ] App icon appears on home screen
+- [ ] App opens without crashing
+
+### Functional Testing
+
+#### Authentication
+- [ ] Login page loads
+- [ ] Login form functional
+- [ ] Can enter email & password
+- [ ] Submit button works
+- [ ] Error messages display for invalid input
+- [ ] Password reset link works
+- [ ] Signup page works
+- [ ] Terms & privacy links work on signup
+
+#### Main App
+- [ ] After login, main dashboard loads
+- [ ] Navigation works (bottom nav or menu)
+- [ ] Can browse matches
+- [ ] Can view profile
+- [ ] Can access settings
+- [ ] Can logout
+
+#### Messaging (if implemented)
+- [ ] Chat page loads
+- [ ] Can send messages
+- [ ] Messages display in conversation
+- [ ] Typing indicator works
+- [ ] File/image attachments work
+
+#### Notifications (if implemented)
+- [ ] Notification permissions requested
+- [ ] Notifications appear
+- [ ] Clicking notification opens correct page
+- [ ] Badge count updates
+
+#### Legal Pages
+- [ ] Terms page loads and is readable
+- [ ] Privacy page loads and is readable
+- [ ] About page loads
+- [ ] Contact info displays
+
+#### Payment (if implemented)
+- [ ] Payment page loads
+- [ ] Payment form secure (no test data visible)
+- [ ] Pricing displays correctly in ZAR
+- [ ] Subscribe button functional
+
+### Performance Testing
+- [ ] App launches in < 3 seconds
+- [ ] Pages load smoothly
+- [ ] Scrolling is smooth (60fps)
+- [ ] No lag on button clicks
+- [ ] Images load quickly
+- [ ] No excessive memory usage
+- [ ] Battery drain is acceptable
+
+### Offline Testing
+- [ ] Turn off WiFi/mobile data
+- [ ] App displays cached content
+- [ ] Messages queue for sending
+- [ ] Reconnect to internet
+- [ ] Queued messages send
+- [ ] No app crashes
+
+### Screen Size Testing
+- [ ] Test on multiple screen sizes
+- [ ] Phone (360x640px)
+- [ ] Phone (412x732px)
+- [ ] Tablet (768x1024px)
+- [ ] All UI elements visible
+- [ ] No overlapping text
+- [ ] Buttons accessible on all sizes
+
+### Orientation Testing
+- [ ] Portrait mode works
+- [ ] Landscape mode works
+- [ ] Rotation doesn't crash app
+- [ ] UI adapts to orientation
+- [ ] Safe area respected (notch, home button)
+
+### Gesture Testing
+- [ ] Touch interactions responsive
+- [ ] Swipe gestures work (if implemented)
+- [ ] Long press works (if implemented)
+- [ ] Double tap works (if implemented)
+- [ ] Pinch zoom works (if applicable)
+
+### Hardware Integration
+- [ ] Camera permission works (if used)
+- [ ] Photo gallery access works (if used)
+- [ ] Microphone permission works (if used)
+- [ ] Location permission works (if used)
+- [ ] Push notifications work (if implemented)
+
+---
+
+## ?? Debug & Troubleshooting
+
+### Check Logs
+```bash
+# View Android logs
+adb logcat
+
+# Filter for app logs
+adb logcat | grep meengle
+
+# Save logs
+adb logcat > app.log
+```
+- [ ] No ERROR logs
+- [ ] No FATAL logs
+- [ ] Check warnings if any
+
+### Chrome DevTools Debugging
+```bash
+# Open Chrome
+chrome://inspect
+
+# Find your app
+# Click "inspect"
+```
+- [ ] Console tab clean (no red errors)
+- [ ] Network tab shows successful requests
+- [ ] Application tab shows Service Worker
+- [ ] Storage shows localStorage/sessionStorage
+
+### Common Issues
+
+#### APK Installation Fails
+- [ ] Check: `adb uninstall com.meengle.app`
+- [ ] Then: `adb install app-debug.apk`
+- [ ] If still fails: Check Android version compatibility
+- [ ] Verify APK is valid: `adb shell pm list packages | grep meengle`
+
+#### App Crashes on Launch
+- [ ] Check logcat: `adb logcat`
+- [ ] Look for NullPointerException or ClassNotFoundException
+- [ ] Verify all resources are present
+- [ ] Check manifest is valid
+- [ ] Try clean rebuild: `cd android && ./gradlew clean`
+
+#### Features Not Working
+- [ ] Check API endpoint is correct
+- [ ] Verify network connection
+- [ ] Check Chrome DevTools console
+- [ ] Check network requests succeed
+- [ ] Verify API returns expected data
+
+#### Performance Issues
+- [ ] Profile with Chrome DevTools
+- [ ] Check for memory leaks
+- [ ] Optimize images
+- [ ] Reduce bundle size if possible
+- [ ] Check for infinite loops
+
+#### Offline Mode Not Working
+- [ ] Verify service-worker.js is loaded
+- [ ] Check IndexedDB in DevTools
+- [ ] Verify cache strategy
+- [ ] Test in private/incognito mode
+- [ ] Clear all storage and retry
+
+---
+
+## ?? Release Build Phase
+
+### Prerequisites for Release
+- [ ] All functional tests passed
+- [ ] No critical bugs remaining
+- [ ] All features tested
+- [ ] Performance acceptable
+- [ ] Privacy policy finalized
+- [ ] Terms of Service finalized
+- [ ] Support email configured
+- [ ] Version number updated
+
+### Create Signing Keystore
+```bash
+keytool -genkey -v -keystore meengle.keystore \
+  -keyalg RSA -keysize 2048 -validity 10000 \
+  -alias meengle-release
+```
+- [ ] Keystore file created: `meengle.keystore`
+- [ ] Password set and saved securely
+- [ ] Store path saved: `~/.android/meengle.keystore` (recommended)
+- [ ] Keystore backed up in secure location
+
+### Build Release APK
+```bash
+cd android
+./gradlew assembleRelease
+cd ..
+```
+- [ ] Build completed successfully
+- [ ] APK generated: `android/app/build/outputs/apk/release/app-release-unsigned.apk`
+- [ ] File size reasonable (< 50MB)
+- [ ] No build warnings about resources
+
+### Sign Release APK
+```bash
+jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 \
+  -keystore ~/.android/meengle.keystore \
+  android/app/build/outputs/apk/release/app-release-unsigned.apk \
+  meengle-release
+```
+- [ ] Enter keystore password correctly
+- [ ] Signing completed successfully
+- [ ] Signed APK created
+
+### Align Release APK
+```bash
+zipalign -v 4 \
+  android/app/build/outputs/apk/release/app-release-unsigned.apk \
+  meengle-release.apk
+```
+- [ ] Alignment completed successfully
+- [ ] Final APK file: `meengle-release.apk` created
+- [ ] File size reasonable
+- [ ] APK ready for distribution
+
+### Verify Signed APK
+```bash
+# Verify signature
+jarsigner -verify -verbose -certs meengle-release.apk
+
+# Or use apksigner (better)
+apksigner verify --print-certs meengle-release.apk
+```
+- [ ] Signature verified successfully
+- [ ] Certificate details correct
+- [ ] No warning messages
+
+---
+
+## ?? Google Play Store Submission
+
+### Create Developer Account
+- [ ] Google Play Console account created
+- [ ] Developer program agreement accepted
+- [ ] Payment method added
+- [ ] $25 one-time registration fee paid
+
+### Create App Listing
+- [ ] New app created in console
+- [ ] App name: "Meengle"
+- [ ] Package name: `com.meengle.app` ?
+- [ ] App category: Social
+- [ ] Content rating: Completed (usually 16+)
+
+### Complete Store Listing
+- [ ] Short description (50 characters)
+  - Example: "Dating app with communities and real connections"
+- [ ] Full description (4000 characters)
+  - Include all features, privacy commitment, safety
+- [ ] Screenshots (2-8 required)
+  - 540x720 or 1440x2560 PNG
+  - Show main features
+  - Highlight unique selling points
+- [ ] Preview video (optional, 15-30 seconds)
+  - Show app in action
+  - Highlight key features
+- [ ] App icon (512x512 PNG)
+  - Clear and recognizable
+  - Safe zone: 48dp margin
+- [ ] Feature image (1024x500 PNG)
+  - Represents app purpose
+- [ ] Promotional banner (1778x1000 PNG)
+  - Optional but recommended
+
+### Provide App Details
+- [ ] Privacy policy URL
+  - Must be publicly accessible
+  - POPIA compliant ?
+- [ ] Developer website
+- [ ] Support email: legal@meengle.co.za
+- [ ] Contact email
+- [ ] News and events (optional)
+
+### Content Rating Questionnaire
+- [ ] Completed IARC questionnaire
+- [ ] Selected appropriate rating (usually PEGI 12 or 16)
+- [ ] Confirmed ESRB, IARC ratings
+- [ ] Understood age restrictions
+
+### Permissions Review
+- [ ] Camera (if photo feature used)
+- [ ] Microphone (if call feature used)
+- [ ] Location (if location features used)
+- [ ] Contacts (if contact sync used)
+- [ ] Storage
+- [ ] All permissions justified
+- [ ] Privacy policy updated
+
+### Legal & Compliance
+- [ ] Privacy Policy reviewed
+- [ ] Terms of Service reviewed
+- [ ] POPIA compliance confirmed ?
+- [ ] South African business details added
+- [ ] Contact information verified
+- [ ] Support email active
+
+### Release Configuration
+- [ ] Internal testing: APK uploaded
+- [ ] All features tested
+- [ ] Rollout plan: Staged rollout recommended
+  - Start: 1% of users
+  - Monitor: 24-48 hours
+  - Increase: 10%, 25%, 50%, 100%
+
+### Final Review
+- [ ] All required information provided
+- [ ] All screenshots uploaded
+- [ ] Privacy policy set
+- [ ] Rating confirmed
+- [ ] Terms accepted
+- [ ] APK signed and verified
+- [ ] Content policies reviewed
+- [ ] No blocked countries (app available worldwide)
+
+---
+
+## ? Pre-Launch Final Checklist
+
+### Code Quality
+- [ ] No console errors or warnings (critical)
+- [ ] No NullPointerExceptions
+- [ ] No ClassNotFoundExceptions
+- [ ] API calls successful
+- [ ] Database operations working
+- [ ] File operations secure
+- [ ] No hardcoded secrets/keys
+
+### Security
+- [ ] API endpoint uses HTTPS
+- [ ] No sensitive data in logs
+- [ ] No sensitive data in storage (unencrypted)
+- [ ] User password hashed
+- [ ] Authentication tokens secure
+- [ ] CSRF protection enabled
+- [ ] Input validation implemented
+- [ ] XSS protection implemented
+
+### Performance
+- [ ] First load < 3 seconds
+- [ ] Page transitions smooth
+- [ ] Image loading optimized
+- [ ] Bundle size optimized
+- [ ] Memory usage acceptable
+- [ ] Battery drain acceptable
+- [ ] Network usage efficient
+- [ ] Lighthouse score > 80
+
+### Functionality
+- [ ] All core features working
+- [ ] All pages load correctly
+- [ ] All forms submit successfully
+- [ ] Error handling proper
+- [ ] Empty states handled
+- [ ] Loading states show
+- [ ] No console warnings
+- [ ] No 404 errors
+
+### Compliance
+- [ ] POPIA compliant ?
+- [ ] Terms of Service included ?
+- [ ] Privacy Policy included ?
+- [ ] Legal disclaimer present
+- [ ] Age restriction 18+ enforced
+- [ ] Content policy compliant
+- [ ] No prohibited content
+- [ ] No broken links
+
+### Testing Coverage
+- [ ] UI tested on 3+ screen sizes
+- [ ] Tested in portrait and landscape
+- [ ] Tested on min Android version (5.0+)
+- [ ] Tested on latest Android version
+- [ ] Offline mode tested
+- [ ] Background operations tested
+- [ ] Permissions tested
+- [ ] All navigation tested
+
+### Deployment
+- [ ] Release APK signed
+- [ ] Release APK aligned
+- [ ] Signature verified
+- [ ] Store listing complete
+- [ ] Screenshots approved
+- [ ] Description finalized
+- [ ] Version number set
+- [ ] Release notes prepared
+
+---
+
+## ?? Launch Steps
+
+### 24 Hours Before Launch
+- [ ] Do final full test on real device
+- [ ] Check all links work
+- [ ] Verify support email responsive
+- [ ] Review store listing one more time
+- [ ] Prepare launch announcement
+- [ ] Notify team of launch timing
+
+### Launch Day
+1. [ ] Submit app for review (if not already)
+   - Status will show in console
+   - Usually takes 2-4 hours
+
+2. [ ] Prepare for review response
+   - Have answers ready for common questions
+   - Be ready to fix issues if flagged
+
+3. [ ] Once approved, publish:
+   - Set rollout to 1% initially
+   - Monitor crash rate & ratings
+   - Increase rollout gradually
+
+4. [ ] Monitor closely:
+   - Check crash logs regularly
+   - Respond to user reviews
+   - Fix bugs if reported
+   - Monitor performance metrics
+
+### Post-Launch (Week 1)
+- [ ] Monitor daily active users
+- [ ] Check ratings and reviews
+- [ ] Monitor crash-free rate
+- [ ] Monitor performance metrics
+- [ ] Address user feedback
+- [ ] Fix critical bugs immediately
+- [ ] Plan updates for Week 2
+
+### Post-Launch (Week 2+)
+- [ ] Monitor engagement metrics
+- [ ] Plan feature improvements
+- [ ] Monitor retention rate
+- [ ] Plan marketing strategy
+- [ ] Consider paid promotion
+- [ ] Plan next release cycle
+
+---
+
+## ?? Success Metrics
+
+### Target KPIs
+- [ ] Installs: 1000+ in first month
+- [ ] Ratings: 4.0+ stars average
+- [ ] Crash-free rate: > 99%
+- [ ] Active users: 50%+ retention day 1
+- [ ] Session length: > 5 minutes average
+- [ ] User feedback: Mostly positive
+
+---
+
+## ?? Post-Launch Support
+
+### Monitor Channels
+- [ ] Google Play Console (daily)
+- [ ] Support email (check daily)
+- [ ] User reviews (check daily)
+- [ ] Crash logs (check daily)
+- [ ] Performance metrics (check weekly)
+
+### Issue Response SLA
+- [ ] Critical bugs: Fix within 24 hours
+- [ ] Major bugs: Fix within 48 hours
+- [ ] Minor bugs: Fix within 1 week
+- [ ] Feature requests: Review weekly
+- [ ] User support: Respond within 24 hours
+
+---
+
+## ?? Launch Complete!
+
+Once you've completed this checklist and successfully published:
+
+- [ ] App is live on Google Play Store
+- [ ] Getting real users
+- [ ] Receiving user feedback
+- [ ] Monitoring metrics
+- [ ] Planning next features
+- [ ] Celebrating the launch! ??
+
+---
+
+## ?? Quick Reference
+
+### Key Commands
+```bash
+# Build web
+npm run build
+
+# Sync with Android
+npx cap sync
+
+# Build debug APK
+npx cap build android
+
+# Install on device
+adb install app-debug.apk
+
+# View logs
+adb logcat
+
+# Build release APK
+cd android && ./gradlew assembleRelease
+
+# Sign release APK
+jarsigner -verbose -sigalg SHA1withRSA ...
+
+# Align APK
+zipalign -v 4 input.apk output.apk
+```
+
+### Important Files
+- `capacitor.config.json` - Capacitor config
+- `android/app/build.gradle.kts` - Android config
+- `frontend/manifest.json` - PWA manifest
+- `dist/` - Built web app
+- `meengle.keystore` - Signing key (KEEP SAFE!)
+
+### Key URLs
+- Google Play Console: https://play.google.com/console
+- Android Docs: https://developer.android.com
+- Capacitor Docs: https://capacitorjs.com
+- Java Keytool: https://docs.oracle.com/javase/tutorial/security/
+
+---
+
+**Checklist Version**: 1.0  
+**Last Updated**: January 2024  
+**Status**: Ready for Use ?
+
+Print this checklist and check off items as you complete them!
+
+Good luck with your launch! ??

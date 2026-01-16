@@ -1,0 +1,225 @@
+﻿import 'package:flutter/foundation.dart';
+import '../models/meengle_moment.dart';
+import '../services/moments_service.dart';
+
+class MomentsProvider extends ChangeNotifier {
+  final MomentsService _service = MomentsService();
+  
+  List<MeengleMoment> _moments = [];
+  bool _isLoading = false;
+  bool _isRefreshing = false;
+  String? _error;
+  DateTime? _lastFetchTime;
+
+  List<MeengleMoment> get moments => _moments;
+  bool get isLoading => _isLoading;
+  bool get isRefreshing => _isRefreshing;
+  String? get error => _error;
+  bool get hasError => _error != null;
+  bool get isEmpty => _moments.isEmpty && !_isLoading;
+  int get momentCount => _moments.length;
+  DateTime? get lastFetchTime => _lastFetchTime;
+
+  /// Load active moments from service
+  /// Sets loading state and handles errors gracefully
+  Future<void> loadMoments() async {
+    if (_isLoading) return;
+    
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    
+    try {
+      _moments = await _service.getActiveMoments();
+      _lastFetchTime = DateTime.now();
+      _error = null;
+    } catch (e) {
+      _error = _formatError(e);
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Refresh moments with pull-to-refresh behavior
+  Future<void> refreshMoments() async {
+    if (_isRefreshing) return;
+    
+    _isRefreshing = true;
+    _error = null;
+    notifyListeners();
+    
+    try {
+      _moments = await _service.getActiveMoments();
+      _lastFetchTime = DateTime.now();
+      _error = null;
+    } catch (e) {
+      _error = _formatError(e);
+    } finally {
+      _isRefreshing = false;
+      notifyListeners();
+    }
+  }
+
+  /// Accept a moment match
+  /// Uses optimistic updates for better UX
+  Future<bool> acceptMoment(String momentId) async {
+    try {
+      final idx = _moments.indexWhere((m) => m.id == momentId);
+      if (idx < 0) {
+        _error = 'Moment not found';
+        notifyListeners();
+        return false;
+      }
+
+      // Optimistic update
+      final originalMoment = _moments[idx];
+      _moments[idx] = _moments[idx].copyWith(
+        status: 'accepted',
+      );
+      notifyListeners();
+
+      final result = await _service.acceptMoment(momentId);
+      if (result != null) {
+        _moments[idx] = result;
+        _error = null;
+        notifyListeners();
+        return true;
+      } else {
+        // Rollback on failure
+        _moments[idx] = originalMoment;
+        _error = 'Failed to accept moment';
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _error = _formatError(e);
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Reject/decline a moment
+  /// Removes moment from list on success
+  Future<bool> rejectMoment(String momentId) async {
+    try {
+      final idx = _moments.indexWhere((m) => m.id == momentId);
+      if (idx < 0) {
+        _error = 'Moment not found';
+        notifyListeners();
+        return false;
+      }
+
+      // Optimistic removal
+      final originalMoment = _moments.removeAt(idx);
+      notifyListeners();
+
+      final success = await _service.rejectMoment(momentId);
+      if (!success) {
+        // Rollback on failure
+        _moments.insert(idx, originalMoment);
+        _error = 'Failed to reject moment';
+        notifyListeners();
+        return false;
+      }
+
+      _error = null;
+      return true;
+    } catch (e) {
+      _error = _formatError(e);
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Extend a moment match duration
+  /// Uses optimistic updates for better UX
+  Future<bool> extendMoment(String momentId) async {
+    try {
+      final idx = _moments.indexWhere((m) => m.id == momentId);
+      if (idx < 0) {
+        _error = 'Moment not found';
+        notifyListeners();
+        return false;
+      }
+
+      // Optimistic update
+      final originalMoment = _moments[idx];
+      _moments[idx] = _moments[idx].copyWith(
+        expiresAt: DateTime.now().add(const Duration(hours: 24)),
+      );
+      notifyListeners();
+
+      final result = await _service.extendMoment(momentId);
+      if (result != null) {
+        _moments[idx] = result;
+        _error = null;
+        notifyListeners();
+        return true;
+      } else {
+        // Rollback on failure
+        _moments[idx] = originalMoment;
+        _error = 'Failed to extend moment';
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _error = _formatError(e);
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Get a specific moment by ID
+  MeengleMoment? getMomentById(String momentId) {
+    try {
+      return _moments.firstWhere((m) => m.id == momentId);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Get remaining time for a moment
+  Duration? getMomentRemainingTime(String momentId) {
+    final moment = getMomentById(momentId);
+    if (moment == null || moment.expiresAt == null) return null;
+    
+    final remaining = moment.expiresAt!.difference(DateTime.now());
+    return remaining.isNegative ? Duration.zero : remaining;
+  }
+
+  /// Check if a moment is expired
+  bool isMomentExpired(String momentId) {
+    final moment = getMomentById(momentId);
+    if (moment?.expiresAt == null) return false;
+    return DateTime.now().isAfter(moment!.expiresAt!);
+  }
+
+  /// Clear all moments and error state
+  void clear() {
+    _moments = [];
+    _error = null;
+    _isLoading = false;
+    _isRefreshing = false;
+    notifyListeners();
+  }
+
+  /// Clear error message
+  void clearError() {
+    _error = null;
+    notifyListeners();
+  }
+
+  /// Format error message for user display
+  String _formatError(dynamic error) {
+    if (error is String) return error;
+    if (error is Exception) return error.toString().replaceAll('Exception: ', '');
+    return 'An unexpected error occurred';
+  }
+
+  @override
+  void dispose() {
+    clear();
+    super.dispose();
+  }
+}

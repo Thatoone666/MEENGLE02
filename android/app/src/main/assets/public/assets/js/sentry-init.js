@@ -1,0 +1,2 @@
+(()=>{(async function(){try{let t=await(await fetch("/config")).json();if(!t||!t.sentryDsn)return;let n=document.createElement("script");n.src="https://browser.sentry-cdn.com/7.64.0/bundle.min.js",n.crossOrigin="anonymous",n.onload=()=>{Sentry.init({dsn:t.sentryDsn,tracesSampleRate:.02})},document.head.appendChild(n)}catch(e){console.error("Sentry init error",e)}})();})();
+//# sourceMappingURL=sentry-init.js.map

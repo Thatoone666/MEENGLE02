@@ -1,0 +1,95 @@
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:07:39:15 +0000] \"GET /api/profile HTTP/1.1\" 401 44 \"-\" \"-\"","timestamp":"2025-09-19T07:39:15.020Z"}
+{"level":"info","message":"Server started on port 3000","timestamp":"2025-09-19T07:42:09.527Z"}
+{"level":"error","message":"Failed to connect to MongoDB connect ECONNREFUSED ::1:27017, connect ECONNREFUSED 127.0.0.1:27017","reason":{"commonWireVersion":0,"compatible":true,"heartbeatFrequencyMS":10000,"localThresholdMS":15,"logicalSessionTimeoutMinutes":null,"maxElectionId":null,"maxSetVersion":null,"servers":{},"setName":null,"stale":false,"type":"Unknown"},"stack":"MongooseServerSelectionError: connect ECONNREFUSED ::1:27017, connect ECONNREFUSED 127.0.0.1:27017\n    at _handleConnectionErrors (C:\\Users\\thusowaver\\Desktop\\Coding Mingle\\node_modules\\mongoose\\lib\\connection.js:816:11)\n    at NativeConnection.openUri (C:\\Users\\thusowaver\\Desktop\\Coding Mingle\\node_modules\\mongoose\\lib\\connection.js:791:11)","timestamp":"2025-09-19T07:42:38.971Z"}
+{"level":"info","message":"Server started on port 3000","timestamp":"2025-09-19T07:44:15.935Z"}
+{"level":"info","message":"Server started on port 4001","timestamp":"2025-09-19T07:44:26.252Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:07:44:26 +0000] \"GET /healthz HTTP/1.1\" 200 34 \"-\" \"curl/8.13.0\"","timestamp":"2025-09-19T07:44:26.540Z"}
+{"level":"error","message":"Failed to connect to MongoDB connect ECONNREFUSED ::1:27017, connect ECONNREFUSED 127.0.0.1:27017","reason":{"commonWireVersion":0,"compatible":true,"heartbeatFrequencyMS":10000,"localThresholdMS":15,"logicalSessionTimeoutMinutes":null,"maxElectionId":null,"maxSetVersion":null,"servers":{},"setName":null,"stale":false,"type":"Unknown"},"stack":"MongooseServerSelectionError: connect ECONNREFUSED ::1:27017, connect ECONNREFUSED 127.0.0.1:27017\n    at _handleConnectionErrors (C:\\Users\\thusowaver\\Desktop\\Coding Mingle\\node_modules\\mongoose\\lib\\connection.js:816:11)\n    at NativeConnection.openUri (C:\\Users\\thusowaver\\Desktop\\Coding Mingle\\node_modules\\mongoose\\lib\\connection.js:791:11)","timestamp":"2025-09-19T07:44:45.758Z"}
+{"level":"error","message":"Failed to connect to MongoDB connect ECONNREFUSED ::1:27017, connect ECONNREFUSED 127.0.0.1:27017","reason":{"commonWireVersion":0,"compatible":true,"heartbeatFrequencyMS":10000,"localThresholdMS":15,"logicalSessionTimeoutMinutes":null,"maxElectionId":null,"maxSetVersion":null,"servers":{},"setName":null,"stale":false,"type":"Unknown"},"stack":"MongooseServerSelectionError: connect ECONNREFUSED ::1:27017, connect ECONNREFUSED 127.0.0.1:27017\n    at _handleConnectionErrors (C:\\Users\\thusowaver\\Desktop\\Coding Mingle\\node_modules\\mongoose\\lib\\connection.js:816:11)\n    at NativeConnection.openUri (C:\\Users\\thusowaver\\Desktop\\Coding Mingle\\node_modules\\mongoose\\lib\\connection.js:791:11)","timestamp":"2025-09-19T07:44:56.141Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:08:13:27 +0000] \"GET /api/profile HTTP/1.1\" 401 44 \"-\" \"-\"","timestamp":"2025-09-19T08:13:27.166Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:08:28:01 +0000] \"GET /api/profile HTTP/1.1\" 401 44 \"-\" \"-\"","timestamp":"2025-09-19T08:28:01.699Z"}
+{"level":"error","message":"Failed to connect to MongoDB Topology is closed","stack":"MongoTopologyClosedError: Topology is closed\n    at C:\\Users\\thusowaver\\Desktop\\Coding Mingle\\node_modules\\mongodb\\lib\\sdam\\topology.js:218:46\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","timestamp":"2025-09-19T08:28:03.577Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:08:29:10 +0000] \"POST /api/signup HTTP/1.1\" 201 256 \"-\" \"-\"","timestamp":"2025-09-19T08:29:10.808Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:08:29:11 +0000] \"POST /api/login HTTP/1.1\" 200 257 \"-\" \"-\"","timestamp":"2025-09-19T08:29:11.113Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:08:29:11 +0000] \"GET /api/profile HTTP/1.1\" 401 44 \"-\" \"-\"","timestamp":"2025-09-19T08:29:11.182Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:08:29:12 +0000] \"POST /api/login HTTP/1.1\" 200 258 \"-\" \"-\"","timestamp":"2025-09-19T08:29:12.080Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:08:29:12 +0000] \"POST /api/upload HTTP/1.1\" 200 51 \"-\" \"-\"","timestamp":"2025-09-19T08:29:12.154Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:08:32:11 +0000] \"POST /api/signup HTTP/1.1\" 201 256 \"-\" \"-\"","timestamp":"2025-09-19T08:32:11.321Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:08:32:11 +0000] \"POST /api/login HTTP/1.1\" 200 257 \"-\" \"-\"","timestamp":"2025-09-19T08:32:11.617Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:08:32:11 +0000] \"GET /api/profile HTTP/1.1\" 401 44 \"-\" \"-\"","timestamp":"2025-09-19T08:32:11.668Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:08:32:12 +0000] \"POST /api/login HTTP/1.1\" 200 258 \"-\" \"-\"","timestamp":"2025-09-19T08:32:12.663Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:08:32:12 +0000] \"POST /api/upload HTTP/1.1\" 200 51 \"-\" \"-\"","timestamp":"2025-09-19T08:32:12.687Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:08:33:55 +0000] \"POST /api/signup HTTP/1.1\" 201 256 \"-\" \"-\"","timestamp":"2025-09-19T08:33:55.951Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:08:33:56 +0000] \"POST /api/login HTTP/1.1\" 200 257 \"-\" \"-\"","timestamp":"2025-09-19T08:33:56.253Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:08:33:56 +0000] \"GET /api/profile HTTP/1.1\" 401 44 \"-\" \"-\"","timestamp":"2025-09-19T08:33:56.318Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:08:33:57 +0000] \"POST /api/login HTTP/1.1\" 200 258 \"-\" \"-\"","timestamp":"2025-09-19T08:33:57.235Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:08:33:57 +0000] \"POST /api/upload HTTP/1.1\" 200 51 \"-\" \"-\"","timestamp":"2025-09-19T08:33:57.262Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:08:37:49 +0000] \"POST /api/signup HTTP/1.1\" 201 256 \"-\" \"-\"","timestamp":"2025-09-19T08:37:49.944Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:08:37:50 +0000] \"POST /api/login HTTP/1.1\" 200 257 \"-\" \"-\"","timestamp":"2025-09-19T08:37:50.255Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:08:37:50 +0000] \"GET /api/profile HTTP/1.1\" 401 44 \"-\" \"-\"","timestamp":"2025-09-19T08:37:50.305Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:08:37:51 +0000] \"POST /api/login HTTP/1.1\" 200 258 \"-\" \"-\"","timestamp":"2025-09-19T08:37:51.300Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:08:37:51 +0000] \"POST /api/upload HTTP/1.1\" 200 51 \"-\" \"-\"","timestamp":"2025-09-19T08:37:51.328Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:08:39:42 +0000] \"POST /api/signup HTTP/1.1\" 201 256 \"-\" \"-\"","timestamp":"2025-09-19T08:39:42.504Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:08:39:42 +0000] \"POST /api/login HTTP/1.1\" 200 257 \"-\" \"-\"","timestamp":"2025-09-19T08:39:42.808Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:08:39:42 +0000] \"GET /api/profile HTTP/1.1\" 401 44 \"-\" \"-\"","timestamp":"2025-09-19T08:39:42.868Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:08:39:43 +0000] \"POST /api/login HTTP/1.1\" 200 258 \"-\" \"-\"","timestamp":"2025-09-19T08:39:43.721Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:08:39:43 +0000] \"POST /api/upload HTTP/1.1\" 200 51 \"-\" \"-\"","timestamp":"2025-09-19T08:39:43.770Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:08:42:54 +0000] \"POST /api/signup HTTP/1.1\" 201 256 \"-\" \"-\"","timestamp":"2025-09-19T08:42:54.689Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:08:42:54 +0000] \"POST /api/login HTTP/1.1\" 200 257 \"-\" \"-\"","timestamp":"2025-09-19T08:42:54.996Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:08:42:55 +0000] \"GET /api/profile HTTP/1.1\" 401 44 \"-\" \"-\"","timestamp":"2025-09-19T08:42:55.064Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:08:42:55 +0000] \"POST /api/login HTTP/1.1\" 200 258 \"-\" \"-\"","timestamp":"2025-09-19T08:42:55.956Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:08:42:55 +0000] \"POST /api/upload HTTP/1.1\" 200 51 \"-\" \"-\"","timestamp":"2025-09-19T08:42:55.981Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:09:09:30 +0000] \"POST /api/signup HTTP/1.1\" 201 256 \"-\" \"-\"","timestamp":"2025-09-19T09:09:30.563Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:09:09:30 +0000] \"POST /api/login HTTP/1.1\" 200 257 \"-\" \"-\"","timestamp":"2025-09-19T09:09:30.926Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:09:09:31 +0000] \"GET /api/profile HTTP/1.1\" 401 44 \"-\" \"-\"","timestamp":"2025-09-19T09:09:31.006Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:09:09:32 +0000] \"POST /api/login HTTP/1.1\" 200 258 \"-\" \"-\"","timestamp":"2025-09-19T09:09:32.085Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:09:09:32 +0000] \"POST /api/upload HTTP/1.1\" 200 51 \"-\" \"-\"","timestamp":"2025-09-19T09:09:32.140Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:09:29:19 +0000] \"POST /api/signup HTTP/1.1\" 201 256 \"-\" \"-\"","timestamp":"2025-09-19T09:29:19.882Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:09:29:20 +0000] \"POST /api/login HTTP/1.1\" 200 257 \"-\" \"-\"","timestamp":"2025-09-19T09:29:20.231Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:09:29:20 +0000] \"GET /api/profile HTTP/1.1\" 401 44 \"-\" \"-\"","timestamp":"2025-09-19T09:29:20.327Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:09:29:21 +0000] \"POST /api/login HTTP/1.1\" 200 258 \"-\" \"-\"","timestamp":"2025-09-19T09:29:21.417Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:09:29:21 +0000] \"POST /api/upload HTTP/1.1\" 200 51 \"-\" \"-\"","timestamp":"2025-09-19T09:29:21.465Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:10:01:05 +0000] \"GET /api/profile HTTP/1.1\" 401 44 \"-\" \"-\"","timestamp":"2025-09-19T10:01:05.218Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:10:01:08 +0000] \"POST /api/login HTTP/1.1\" 200 258 \"-\" \"-\"","timestamp":"2025-09-19T10:01:08.734Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:10:01:08 +0000] \"POST /api/upload HTTP/1.1\" 200 51 \"-\" \"-\"","timestamp":"2025-09-19T10:01:08.776Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:10:02:26 +0000] \"POST /api/signup HTTP/1.1\" 201 256 \"-\" \"-\"","timestamp":"2025-09-19T10:02:26.001Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:10:02:26 +0000] \"POST /api/login HTTP/1.1\" 200 257 \"-\" \"-\"","timestamp":"2025-09-19T10:02:26.319Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:10:02:27 +0000] \"GET /api/profile HTTP/1.1\" 401 44 \"-\" \"-\"","timestamp":"2025-09-19T10:02:27.601Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:10:02:28 +0000] \"POST /api/login HTTP/1.1\" 200 258 \"-\" \"-\"","timestamp":"2025-09-19T10:02:28.653Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:10:02:28 +0000] \"POST /api/upload HTTP/1.1\" 200 51 \"-\" \"-\"","timestamp":"2025-09-19T10:02:28.682Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:10:06:46 +0000] \"POST /api/signup HTTP/1.1\" 201 256 \"-\" \"-\"","timestamp":"2025-09-19T10:06:46.830Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:10:06:47 +0000] \"POST /api/login HTTP/1.1\" 200 257 \"-\" \"-\"","timestamp":"2025-09-19T10:06:47.148Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:10:06:47 +0000] \"GET /api/profile HTTP/1.1\" 401 44 \"-\" \"-\"","timestamp":"2025-09-19T10:06:47.499Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:10:06:48 +0000] \"POST /api/login HTTP/1.1\" 200 258 \"-\" \"-\"","timestamp":"2025-09-19T10:06:48.680Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:10:06:48 +0000] \"POST /api/upload HTTP/1.1\" 200 51 \"-\" \"-\"","timestamp":"2025-09-19T10:06:48.733Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:10:10:37 +0000] \"POST /api/signup HTTP/1.1\" 201 256 \"-\" \"-\"","timestamp":"2025-09-19T10:10:37.744Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:10:10:38 +0000] \"POST /api/login HTTP/1.1\" 200 257 \"-\" \"-\"","timestamp":"2025-09-19T10:10:38.119Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:10:10:38 +0000] \"GET /api/profile HTTP/1.1\" 401 44 \"-\" \"-\"","timestamp":"2025-09-19T10:10:38.282Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:10:10:39 +0000] \"POST /api/login HTTP/1.1\" 200 258 \"-\" \"-\"","timestamp":"2025-09-19T10:10:39.324Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:10:10:39 +0000] \"POST /api/upload HTTP/1.1\" 200 51 \"-\" \"-\"","timestamp":"2025-09-19T10:10:39.355Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:10:14:37 +0000] \"POST /api/signup HTTP/1.1\" 201 256 \"-\" \"-\"","timestamp":"2025-09-19T10:14:37.802Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:10:14:38 +0000] \"POST /api/login HTTP/1.1\" 200 257 \"-\" \"-\"","timestamp":"2025-09-19T10:14:38.117Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:10:14:38 +0000] \"GET /api/profile HTTP/1.1\" 401 44 \"-\" \"-\"","timestamp":"2025-09-19T10:14:38.401Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:10:14:39 +0000] \"POST /api/login HTTP/1.1\" 200 258 \"-\" \"-\"","timestamp":"2025-09-19T10:14:39.301Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:10:14:39 +0000] \"POST /api/upload HTTP/1.1\" 200 51 \"-\" \"-\"","timestamp":"2025-09-19T10:14:39.337Z"}
+{"level":"info","message":"::1 - - [19/Sep/2025:10:15:45 +0000] \"GET /metrics HTTP/1.1\" 404 146 \"-\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0\"","timestamp":"2025-09-19T10:15:45.906Z"}
+{"level":"info","message":"::1 - - [19/Sep/2025:10:15:47 +0000] \"GET /metrics HTTP/1.1\" 404 146 \"-\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0\"","timestamp":"2025-09-19T10:15:47.008Z"}
+{"level":"info","message":"::1 - - [19/Sep/2025:10:16:09 +0000] \"GET /metrics HTTP/1.1\" 404 146 \"-\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0\"","timestamp":"2025-09-19T10:16:09.477Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:10:26:51 +0000] \"GET /api/profile HTTP/1.1\" 401 44 \"-\" \"-\"","timestamp":"2025-09-19T10:26:51.750Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:10:27:41 +0000] \"POST /api/signup HTTP/1.1\" 201 256 \"-\" \"-\"","timestamp":"2025-09-19T10:27:41.810Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:10:27:42 +0000] \"POST /api/login HTTP/1.1\" 200 257 \"-\" \"-\"","timestamp":"2025-09-19T10:27:42.135Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:10:27:42 +0000] \"GET /api/profile HTTP/1.1\" 401 44 \"-\" \"-\"","timestamp":"2025-09-19T10:27:42.297Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:10:27:43 +0000] \"POST /api/login HTTP/1.1\" 200 258 \"-\" \"-\"","timestamp":"2025-09-19T10:27:43.613Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:10:27:43 +0000] \"POST /api/upload HTTP/1.1\" 200 51 \"-\" \"-\"","timestamp":"2025-09-19T10:27:43.656Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:10:30:16 +0000] \"POST /api/signup HTTP/1.1\" 201 256 \"-\" \"-\"","timestamp":"2025-09-19T10:30:16.319Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:10:30:16 +0000] \"POST /api/login HTTP/1.1\" 200 257 \"-\" \"-\"","timestamp":"2025-09-19T10:30:16.635Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:10:30:17 +0000] \"GET /api/profile HTTP/1.1\" 401 44 \"-\" \"-\"","timestamp":"2025-09-19T10:30:17.038Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:10:30:18 +0000] \"POST /api/login HTTP/1.1\" 200 258 \"-\" \"-\"","timestamp":"2025-09-19T10:30:18.222Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:10:30:18 +0000] \"POST /api/upload HTTP/1.1\" 200 51 \"-\" \"-\"","timestamp":"2025-09-19T10:30:18.269Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:10:35:17 +0000] \"POST /api/signup HTTP/1.1\" 201 256 \"-\" \"-\"","timestamp":"2025-09-19T10:35:17.404Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:10:35:17 +0000] \"POST /api/login HTTP/1.1\" 200 257 \"-\" \"-\"","timestamp":"2025-09-19T10:35:17.736Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:10:35:17 +0000] \"GET /api/profile HTTP/1.1\" 401 44 \"-\" \"-\"","timestamp":"2025-09-19T10:35:17.997Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:10:35:19 +0000] \"POST /api/login HTTP/1.1\" 200 258 \"-\" \"-\"","timestamp":"2025-09-19T10:35:19.065Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [19/Sep/2025:10:35:19 +0000] \"POST /api/upload HTTP/1.1\" 200 51 \"-\" \"-\"","timestamp":"2025-09-19T10:35:19.118Z"}
+{"level":"info","message":"Server started on port 3000","timestamp":"2025-09-19T20:31:54.329Z"}
+{"level":"error","message":"Failed to connect to MongoDB connect ECONNREFUSED ::1:27017, connect ECONNREFUSED 127.0.0.1:27017","reason":{"commonWireVersion":0,"compatible":true,"heartbeatFrequencyMS":10000,"localThresholdMS":15,"logicalSessionTimeoutMinutes":null,"maxElectionId":null,"maxSetVersion":null,"servers":{},"setName":null,"stale":false,"type":"Unknown"},"stack":"MongooseServerSelectionError: connect ECONNREFUSED ::1:27017, connect ECONNREFUSED 127.0.0.1:27017\n    at _handleConnectionErrors (C:\\Users\\thusowaver\\Desktop\\Coding Mingle\\node_modules\\mongoose\\lib\\connection.js:816:11)\n    at NativeConnection.openUri (C:\\Users\\thusowaver\\Desktop\\Coding Mingle\\node_modules\\mongoose\\lib\\connection.js:791:11)","timestamp":"2025-09-19T20:32:23.240Z"}

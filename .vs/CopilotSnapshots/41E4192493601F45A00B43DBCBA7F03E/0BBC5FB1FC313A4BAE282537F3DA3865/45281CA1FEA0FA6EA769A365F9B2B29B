@@ -1,0 +1,16 @@
+﻿
+## Local backend environment (do NOT commit this file with real credentials)
+
+# MongoDB connection (Atlas SRV form). Password contains an '@' so it's URL-encoded as %40.
+MONGO_URI=mongodb+srv://thusowaver_db:HumbulaN%401@thusowaver.44lvgja.mongodb.net/meengle?retryWrites=true&w=majority
+
+# If you prefer to use a local MongoDB, you can set:
+# MONGO_URI=mongodb://localhost:27017/meengle
+
+# Other secrets (replace with your real values)
+JWT_SECRET=your_super_secret_jwt_key
+STRIPE_SECRET=sk_test_YOUR_SECRET_KEY
+PAYFAST_MERCHANT_ID=10000100
+PAYFAST_MERCHANT_KEY=46f0cd694581a
+
+# Security note: keep this file out of source control. Use a secrets manager for production.

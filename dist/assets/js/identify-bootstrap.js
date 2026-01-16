@@ -1,0 +1,2 @@
+(()=>{(function(){try{let i=localStorage.getItem("token"),n=localStorage.getItem("userId"),o=e=>{try{window.MeengleAnalytics&&typeof window.MeengleAnalytics.identify=="function"&&window.MeengleAnalytics.identify(e,{authenticated:!0})}catch(t){}};i&&n?o(n):i&&!n&&async function(){try{let e=await fetch("/api/profile",{headers:{Authorization:`Bearer ${i}`}});if(!e.ok)return;let t=await e.json();t&&t._id&&(localStorage.setItem("userId",t._id),o(t._id))}catch(e){}}()}catch(i){}})();})();
+//# sourceMappingURL=identify-bootstrap.js.map

@@ -1,0 +1,43 @@
+﻿import express from 'express';
+import { verifyToken } from './auth.js';
+import mongoose from 'mongoose';
+
+const router = express.Router();
+
+const discoverySchema = new mongoose.Schema({
+  userId: String,
+  filters: mongoose.Schema.Types.Mixed,
+  createdAt: { type: Date, default: Date.now }
+});
+
+let Discovery;
+try {
+  Discovery = mongoose.model('Discovery', discoverySchema);
+} catch {
+  Discovery = mongoose.model('Discovery');
+}
+
+router.get('/filters', verifyToken, async (req, res) => {
+  try {
+    const discovery = await Discovery.findOne({ userId: req.userId });
+    res.json(discovery || { filters: {} });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch filters' });
+  }
+});
+
+router.post('/filters/save', verifyToken, async (req, res) => {
+  try {
+    const { filters } = req.body;
+    const discovery = await Discovery.findOneAndUpdate(
+      { userId: req.userId },
+      { filters },
+      { upsert: true, new: true }
+    );
+    res.json({ success: true, discovery });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to save filters' });
+  }
+});
+
+export default router;

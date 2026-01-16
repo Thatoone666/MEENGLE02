@@ -1,0 +1,195 @@
+﻿import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../models/meengle_roam.dart';
+import '../providers/roam_provider.dart';
+
+class RoamScreen extends StatefulWidget {
+  const RoamScreen({super.key});
+
+  @override
+  State<RoamScreen> createState() => _RoamScreenState();
+}
+
+class _RoamScreenState extends State<RoamScreen> {
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      if (mounted) {
+        context.read<RoamProvider>().loadRoams();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0F0F0F),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF1A1A1A),
+        title: const Text('MEENGLE ROAM', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
+        centerTitle: true,
+        elevation: 0,
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (value) {
+                context.read<RoamProvider>().filterByCity(value);
+              },
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'Search destinations...',
+                hintStyle: const TextStyle(color: Colors.white30),
+                prefixIcon: Icon(Icons.search, color: Colors.amber.shade700),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.amber.shade700),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.amber.shade700, width: 1.5),
+                ),
+                filled: true,
+                fillColor: const Color(0xFF1A1A1A),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Consumer<RoamProvider>(
+              builder: (context, provider, _) {
+                if (provider.isLoading) {
+                  return Center(child: CircularProgressIndicator(color: Colors.amber.shade700));
+                }
+
+                if (provider.roams.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.flight_takeoff, size: 64, color: Colors.amber.shade700),
+                        const SizedBox(height: 16),
+                        const Text('No travelers found', style: TextStyle(color: Colors.white70, fontSize: 16)),
+                      ],
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.all(12),
+                  itemCount: provider.roams.length,
+                  itemBuilder: (context, index) {
+                    final roam = provider.roams[index];
+                    return _RoamTripCard(trip: roam, onJoin: () {});
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RoamTripCard extends StatelessWidget {
+  final MeengleRoam trip;
+  final VoidCallback onJoin;
+
+  const _RoamTripCard({required this.trip, required this.onJoin});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.amber.shade700, width: 1.5),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(trip.currentCity, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                    Text('Traveling for ${trip.durationFormatted}', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Text('ROAMING', style: TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            const Text('Interests', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 6,
+              children: trip.travelInterests.map((interest) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade700.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(interest, style: TextStyle(color: Colors.amber.shade700, fontSize: 10)),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 12),
+            const Text('Looking For', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 6,
+              children: trip.lookingFor.map((type) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(type, style: TextStyle(color: Colors.blue[300], fontSize: 10)),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: onJoin,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.amber.shade700,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                child: const Text('Connect', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

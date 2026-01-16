@@ -1,0 +1,233 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy - MEENGLE</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.6;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      background: #f5f5f5;
+      color: #333;
+    }
+    .container {
+      background: white;
+      padding: 40px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #667eea;
+      border-bottom: 3px solid #667eea;
+      padding-bottom: 15px;
+    }
+    h2 {
+      color: #667eea;
+      margin-top: 30px;
+    }
+    .last-updated {
+      color: #999;
+      font-style: italic;
+      margin-bottom: 30px;
+    }
+    .section {
+      margin-bottom: 25px;
+    }
+    .highlight {
+      background: #f0f7ff;
+      border-left: 4px solid #667eea;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔒 MEENGLE - PRIVACY POLICY</h1>
+    <p class="last-updated">Last Updated: January 2024</p>
+
+    <div class="section">
+      <h2>1. INTRODUCTION</h2>
+      <p>At MEENGLE, we respect your privacy and are committed to protecting your personal data. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our website, mobile application, and related services.</p>
+      <p><strong>Please read this policy carefully.</strong> If you do not agree with our practices, please do not use MEENGLE.</p>
+    </div>
+
+    <div class="section">
+      <h2>2. WHAT INFORMATION DO WE COLLECT?</h2>
+      <h3>A. Information You Provide Directly</h3>
+      <ul>
+        <li><strong>Account Registration:</strong> Name, email, phone number, date of birth, location, gender, sexual orientation</li>
+        <li><strong>Profile Information:</strong> Bio, interests, photos, relationship goals, education, occupation</li>
+        <li><strong>Payment Information:</strong> Credit card details (processed via Stripe; we do NOT store full card numbers)</li>
+        <li><strong>Messages & Communications:</strong> All messages between users</li>
+        <li><strong>Support Requests:</strong> Emails, complaints, and customer service interactions</li>
+      </ul>
+
+      <h3>B. Information Collected Automatically</h3>
+      <ul>
+        <li><strong>Device Information:</strong> IP address, device type, operating system, browser type</li>
+        <li><strong>Usage Data:</strong> Pages visited, features used, interactions, time spent, clicks</li>
+        <li><strong>Location Data:</strong> Approximate location (if you grant permission) for matching purposes</li>
+        <li><strong>Cookies & Tracking:</strong> Session cookies, preference cookies, analytics tracking</li>
+        <li><strong>Log Data:</strong> Server logs including timestamps, access times, referring sources</li>
+      </ul>
+
+      <h3>C. Information from Third Parties</h3>
+      <ul>
+        <li>Social media platforms (if you use social login)</li>
+        <li>Payment processors (Stripe for transaction verification)</li>
+        <li>Law enforcement (if legally required)</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>3. HOW DO WE USE YOUR INFORMATION?</h2>
+      <p>We use collected information for the following purposes:</p>
+      <ul>
+        <li><strong>Service Delivery:</strong> Creating and maintaining your account, matching you with potential partners</li>
+        <li><strong>Communication:</strong> Sending updates, notifications, security alerts, and responses to inquiries</li>
+        <li><strong>Personalization:</strong> Tailoring the app to your preferences and interests</li>
+        <li><strong>Analytics:</strong> Understanding how users interact with MEENGLE to improve the service</li>
+        <li><strong>Safety & Security:</strong> Detecting fraud, abuse, spam, and unauthorized access</li>
+        <li><strong>Legal Compliance:</strong> Complying with laws, regulations, and legal requests</li>
+        <li><strong>Marketing:</strong> Sending optional promotional emails (you can opt-out anytime)</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>4. DO WE SHARE YOUR INFORMATION?</h2>
+      <h3>A. Information We DO Share</h3>
+      <ul>
+        <li><strong>With Other Users:</strong> Your profile information (name, photos, bio, interests) is visible to other MEENGLE users for matching purposes</li>
+        <li><strong>Service Providers:</strong> Third parties that help us operate (Stripe for payments, SendGrid for emails, AWS for hosting)</li>
+        <li><strong>Legal Requirements:</strong> If required by law, court order, or government request</li>
+        <li><strong>Business Transfers:</strong> If MEENGLE is acquired or merges, your data may be transferred</li>
+        <li><strong>With Consent:</strong> If you explicitly authorize sharing with specific parties</li>
+      </ul>
+
+      <h3>B. Information We DO NOT Share</h3>
+      <div class="highlight">
+        <strong>✓ We DO NOT sell your personal data to advertisers or data brokers</strong>
+      </div>
+      <ul>
+        <li>We do not share your private messages with anyone</li>
+        <li>We do not share your email with other users</li>
+        <li>We do not share your phone number with other users</li>
+        <li>We do not share your payment information with other users</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>5. DATA RETENTION</h2>
+      <p>We retain your information for as long as necessary to provide services:</p>
+      <ul>
+        <li><strong>Active Accounts:</strong> All information retained while your account is active</li>
+        <li><strong>Deleted Accounts:</strong> Most data deleted within 30 days; some legal/fraud data retained for up to 7 years</li>
+        <li><strong>Messages:</strong> Deleted when both users delete a conversation (or within 90 days of account deletion)</li>
+        <li><strong>Payment Records:</strong> Retained for 7 years for tax and legal compliance</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>6. YOUR PRIVACY RIGHTS</h2>
+      <p>Depending on your location, you may have the following rights:</p>
+      <ul>
+        <li><strong>Right to Access:</strong> Request a copy of your personal data</li>
+        <li><strong>Right to Correction:</strong> Update inaccurate information</li>
+        <li><strong>Right to Deletion:</strong> Request deletion of your account and data</li>
+        <li><strong>Right to Portability:</strong> Receive your data in a structured format</li>
+        <li><strong>Right to Opt-Out:</strong> Unsubscribe from marketing communications</li>
+        <li><strong>Right to Restrict Processing:</strong> Limit how we use your data</li>
+        <li><strong>Right to Object:</strong> Object to certain data processing</li>
+      </ul>
+      <p>To exercise these rights, contact us at <strong>privacy@meengle.com</strong></p>
+    </div>
+
+    <div class="section">
+      <h2>7. DATA SECURITY</h2>
+      <p>We implement industry-standard security measures to protect your data:</p>
+      <ul>
+        <li><strong>Encryption:</strong> All data in transit uses SSL/TLS encryption (https)</li>
+        <li><strong>Password Protection:</strong> Passwords are hashed with bcryptjs</li>
+        <li><strong>Access Controls:</strong> Only authorized employees can access user data</li>
+        <li><strong>Firewalls & Monitoring:</strong> 24/7 security monitoring and intrusion detection</li>
+        <li><strong>Regular Audits:</strong> Regular security assessments and penetration testing</li>
+      </ul>
+      <p><strong>However,</strong> no security system is 100% impenetrable. We cannot guarantee absolute security.</p>
+    </div>
+
+    <div class="section">
+      <h2>8. COOKIES & TRACKING</h2>
+      <p>MEENGLE uses cookies for:</p>
+      <ul>
+        <li><strong>Essential Cookies:</strong> Maintaining your session, security</li>
+        <li><strong>Analytics Cookies:</strong> Understanding user behavior (Google Analytics)</li>
+        <li><strong>Preference Cookies:</strong> Remembering your settings</li>
+      </ul>
+      <p>You can control cookies through your browser settings. Disabling cookies may affect some features.</p>
+    </div>
+
+    <div class="section">
+      <h2>9. CHILDREN'S PRIVACY</h2>
+      <p>MEENGLE is not intended for users under 18 years old. We do not knowingly collect information from children. If we discover a child has created an account, we will delete it immediately.</p>
+    </div>
+
+    <div class="section">
+      <h2>10. INTERNATIONAL DATA TRANSFERS</h2>
+      <p>If you use MEENGLE from outside the United States, your information may be transferred to, stored in, and processed in countries with different data protection laws. By using MEENGLE, you consent to this transfer.</p>
+    </div>
+
+    <div class="section">
+      <h2>11. THIRD-PARTY LINKS</h2>
+      <p>MEENGLE may contain links to third-party websites. We are not responsible for their privacy practices. Please review their privacy policies before providing information.</p>
+    </div>
+
+    <div class="section">
+      <h2>12. CALIFORNIA PRIVACY RIGHTS (CCPA)</h2>
+      <p>If you are a California resident, you have the following rights under the CCPA:</p>
+      <ul>
+        <li>Right to know what personal data is collected, used, and shared</li>
+        <li>Right to delete personal data</li>
+        <li>Right to opt-out of the "sale" of personal data</li>
+        <li>Right to non-discrimination for exercising CCPA rights</li>
+      </ul>
+      <p>To exercise CCPA rights, submit a request to <strong>privacy@meengle.com</strong></p>
+    </div>
+
+    <div class="section">
+      <h2>13. GDPR COMPLIANCE (EU RESIDENTS)</h2>
+      <p>If you are in the European Union, MEENGLE complies with the General Data Protection Regulation (GDPR):</p>
+      <ul>
+        <li>We process data based on your consent and legitimate interest</li>
+        <li>You have the rights listed in Section 6 above</li>
+        <li>Our Data Protection Officer can be reached at <strong>dpo@meengle.com</strong></li>
+        <li>You have the right to lodge a complaint with your local data protection authority</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>14. UPDATES TO THIS POLICY</h2>
+      <p>We may update this Privacy Policy at any time. Changes become effective when posted. If we make material changes, we will notify you by email or prominent notice on the app.</p>
+    </div>
+
+    <div class="section">
+      <h2>15. CONTACT US</h2>
+      <p>If you have questions or concerns about this Privacy Policy, please contact:</p>
+      <ul>
+        <li><strong>Email:</strong> privacy@meengle.com</li>
+        <li><strong>Mailing Address:</strong> MEENGLE, Inc. [Your Address]</li>
+        <li><strong>Data Protection Officer:</strong> dpo@meengle.com</li>
+        <li><strong>Phone:</strong> [Your Support Number]</li>
+      </ul>
+    </div>
+
+    <hr style="margin: 40px 0; border: none; border-top: 2px solid #eee;">
+    <p style="font-size: 12px; color: #999;">© 2024 MEENGLE, Inc. All rights reserved.</p>
+  </div>
+</body>
+</html>

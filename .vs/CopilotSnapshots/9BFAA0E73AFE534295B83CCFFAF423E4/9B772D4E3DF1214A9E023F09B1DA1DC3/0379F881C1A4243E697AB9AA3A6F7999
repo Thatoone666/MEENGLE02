@@ -1,0 +1,119 @@
+﻿import mongoose from 'mongoose';
+
+describe('ObjectId Validation', () => {
+  test('Valid ObjectId', () => {
+    const id = new mongoose.Types.ObjectId();
+    expect(mongoose.Types.ObjectId.isValid(id)).toBe(true);
+  });
+
+  test('Invalid ObjectId', () => {
+    expect(mongoose.Types.ObjectId.isValid('not-an-id')).toBe(false);
+  });
+});
+
+describe('Message Validation', () => {
+  const validateMessage = (msg) => {
+    if (!msg || msg.trim().length === 0) return false;
+    if (msg.length > 5000) return false;
+    return true;
+  };
+
+  test('Valid message', () => {
+    expect(validateMessage('Hello world')).toBe(true);
+  });
+
+  test('Empty message', () => {
+    expect(validateMessage('')).toBe(false);
+  });
+
+  test('Whitespace only', () => {
+    expect(validateMessage('   ')).toBe(false);
+  });
+
+  test('Message too long', () => {
+    expect(validateMessage('x'.repeat(5001))).toBe(false);
+  });
+});
+
+describe('Coordinate Validation', () => {
+  const validateCoordinates = (lat, lng) => {
+    if (typeof lat !== 'number' || typeof lng !== 'number') return false;
+    if (lat < -90 || lat > 90) return false;
+    if (lng < -180 || lng > 180) return false;
+    return true;
+  };
+
+  test('Valid coordinates', () => {
+    expect(validateCoordinates(-25.7461, 28.2313)).toBe(true);
+  });
+
+  test('Invalid latitude', () => {
+    expect(validateCoordinates(91, 28.2313)).toBe(false);
+  });
+
+  test('Invalid longitude', () => {
+    expect(validateCoordinates(-25.7461, 181)).toBe(false);
+  });
+
+  test('Non-numeric', () => {
+    expect(validateCoordinates('25', '28')).toBe(false);
+  });
+});
+
+describe('Payment Tier Validation', () => {
+  const TIER_PRICES = {
+    free: { monthly: 0, annual: 0 },
+    premium: { monthly: 99, annual: 990 },
+    gold: { monthly: 199, annual: 1990 }
+  };
+
+  const validateTier = (tier) => {
+    return TIER_PRICES.hasOwnProperty(tier);
+  };
+
+  test('Valid tier', () => {
+    expect(validateTier('premium')).toBe(true);
+  });
+
+  test('Invalid tier', () => {
+    expect(validateTier('invalid')).toBe(false);
+  });
+
+  test('Get price', () => {
+    expect(TIER_PRICES['premium'].monthly).toBe(99);
+  });
+});
+
+describe('Date Utilities', () => {
+  test('Renewal date calculation', () => {
+    const now = new Date('2025-01-15');
+    const renewal = new Date(now);
+    renewal.setMonth(renewal.getMonth() + 1);
+    expect(renewal.getMonth()).toBe(1);
+    expect(renewal.getDate()).toBe(15);
+  });
+
+  test('Refund window check', () => {
+    const purchaseDate = new Date(Date.now() - 20 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    expect(purchaseDate > thirtyDaysAgo).toBe(true);
+  });
+});
+
+describe('String Sanitization', () => {
+  const sanitize = (str) => {
+    return str.replace(/[<>]/g, '').trim();
+  };
+
+  test('Remove HTML tags', () => {
+    expect(sanitize('<script>alert("xss")</script>')).toBe('scriptalert("xss")/script');
+  });
+
+  test('Trim whitespace', () => {
+    expect(sanitize('  hello world  ')).toBe('hello world');
+  });
+
+  test('Safe string passes', () => {
+    expect(sanitize('hello world')).toBe('hello world');
+  });
+});

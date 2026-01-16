@@ -1,0 +1,625 @@
+﻿const express = require('express');
+const router = express.Router();
+const mongoose = require('mongoose');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const User = require('../models/User');
+const { authenticateToken } = require('../middleware/auth');
+
+// Tier definitions with pricing for all billing cycles
+const TIERS = {
+  free: {
+    name: 'Spark',
+    displayName: 'Spark',
+    weeklyPrice: 0,
+    monthlyPrice: 0,
+    annualPrice: 0,
+    features: [
+      '25 swipes per day',
+      'Basic profile',
+      'See matches',
+      'Send messages',
+      'Basic filters',
+      'Standard chat',
+    ],
+  },
+  spark: {
+    name: 'Spark+',
+    displayName: 'Spark+',
+    weeklyPrice: 2.99,
+    monthlyPrice: 5.99,
+    annualPrice: 59.99,
+    stripeWeeklyPriceId: process.env.STRIPE_SPARK_WEEKLY_PRICE_ID,
+    stripeMonthlyPriceId: process.env.STRIPE_SPARK_MONTHLY_PRICE_ID,
+    stripeAnnualPriceId: process.env.STRIPE_SPARK_ANNUAL_PRICE_ID,
+    features: [
+      '100 swipes per day',
+      'Enhanced profile',
+      'See who likes you',
+      'Priority visibility',
+      'Advanced filters',
+      'Message templates',
+      'Search preferences',
+      'Read receipts',
+    ],
+  },
+  flame: {
+    name: 'Flame',
+    displayName: 'Flame',
+    weeklyPrice: 5.99,
+    monthlyPrice: 11.99,
+    annualPrice: 119.99,
+    stripeWeeklyPriceId: process.env.STRIPE_FLAME_WEEKLY_PRICE_ID,
+    stripeMonthlyPriceId: process.env.STRIPE_FLAME_MONTHLY_PRICE_ID,
+    stripeAnnualPriceId: process.env.STRIPE_FLAME_ANNUAL_PRICE_ID,
+    features: [
+      'Unlimited swipes',
+      'Verified badge',
+      'Super likes (10/week)',
+      'Rewind feature',
+      'Passport mode',
+      'Video profiles',
+      'Advanced matching',
+      'Spotlight boost',
+      '24/7 priority support',
+    ],
+  },
+  wildfire: {
+    name: 'Wildfire',
+    displayName: 'Wildfire',
+    weeklyPrice: 11.99,
+    monthlyPrice: 23.99,
+    annualPrice: 239.99,
+    stripeWeeklyPriceId: process.env.STRIPE_WILDFIRE_WEEKLY_PRICE_ID,
+    stripeMonthlyPriceId: process.env.STRIPE_WILDFIRE_MONTHLY_PRICE_ID,
+    stripeAnnualPriceId: process.env.STRIPE_WILDFIRE_ANNUAL_PRICE_ID,
+    features: [
+      'All Flame features',
+      'Unlimited super likes',
+      'Concierge service',
+      'Advanced analytics',
+      'Profile ghosting',
+      'Incognito mode',
+      'Premium notifications',
+      'Exclusive events',
+      'VIP support',
+      'Custom profile banner',
+      'Special badge',
+    ],
+  },
+};
+
+// Subscription Schema
+const subscriptionSchema = new mongoose.Schema({
+  userId: { type: String, required: true, unique: true },
+  tier: { 
+    type: String, 
+    enum: Object.keys(TIERS),
+    default: 'free' 
+  },
+  billingCycle: {
+    type: String,
+    enum: ['weekly', 'monthly', 'annual'],
+    default: 'monthly',
+  },
+  stripeCustomerId: String,
+  stripeSubscriptionId: String,
+  status: {
+    type: String,
+    enum: ['active', 'canceled', 'expired', 'pending'],
+    default: 'pending',
+  },
+  currentPeriodStart: Date,
+  currentPeriodEnd: Date,
+  canceledAt: Date,
+  autoRenew: { type: Boolean, default: true },
+  renewalCount: { type: Number, default: 0 },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+const Subscription = mongoose.model('Subscription', subscriptionSchema);
+
+// GET /api/tiers - Get all tier information
+router.get('/tiers', (req, res) => {
+  try {
+    res.json({
+      success: true,
+      tiers: TIERS,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// GET /api/tiers/:tierId - Get specific tier
+router.get('/tiers/:tierId', (req, res) => {
+  try {
+    const tier = TIERS[req.params.tierId];
+    if (!tier) {
+      return res.status(404).json({
+        success: false,
+        error: 'Tier not found',
+      });
+    }
+    res.json({
+      success: true,
+      tier,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// GET /api/tiers/user/current - Get user's current subscription
+router.get('/user/current', authenticateToken, async (req, res) => {
+  try {
+    const subscription = await Subscription.findOne({ userId: req.user.id });
+    const currentTier = subscription?.tier || 'free';
+
+    res.json({
+      success: true,
+      subscription: subscription || {
+        userId: req.user.id,
+        tier: 'free',
+        status: 'active',
+        billingCycle: 'monthly',
+      },
+      tierInfo: TIERS[currentTier],
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// POST /api/tiers/create-checkout - Create Stripe checkout session
+router.post('/create-checkout', authenticateToken, async (req, res) => {
+  try {
+    const { tierId, billingCycle = 'monthly' } = req.body;
+    const tier = TIERS[tierId];
+
+    if (!tier || tierId === 'free') {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid tier',
+      });
+    }
+
+    // Get or create user subscription record
+    let subscription = await Subscription.findOne({ userId: req.user.id });
+    if (!subscription) {
+      subscription = new Subscription({
+        userId: req.user.id,
+        tier: 'free',
+        status: 'pending',
+        billingCycle: billingCycle,
+      });
+      await subscription.save();
+    }
+
+    // Get correct Stripe price ID based on billing cycle
+    let priceId;
+    switch (billingCycle) {
+      case 'weekly':
+        priceId = tier.stripeWeeklyPriceId;
+        break;
+      case 'monthly':
+        priceId = tier.stripeMonthlyPriceId;
+        break;
+      case 'annual':
+        priceId = tier.stripeAnnualPriceId;
+        break;
+      default:
+        priceId = tier.stripeMonthlyPriceId;
+    }
+
+    if (!priceId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Tier pricing not configured',
+      });
+    }
+
+    // Create Stripe checkout session
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      customer_email: req.user.email,
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ],
+      mode: 'subscription',
+      success_url: `${process.env.FRONTEND_URL}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.FRONTEND_URL}/subscription/cancel`,
+      metadata: {
+        userId: req.user.id,
+        tier: tierId,
+        billingCycle: billingCycle,
+      },
+    });
+
+    res.json({
+      success: true,
+      sessionId: session.id,
+      sessionUrl: session.url,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// POST /api/tiers/webhook - Stripe webhook handler
+router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+
+  try {
+    const event = stripe.webhooks.constructEvent(
+      req.body,
+      sig,
+      process.env.STRIPE_WEBHOOK_SECRET
+    );
+
+    switch (event.type) {
+      case 'checkout.session.completed':
+        await handleCheckoutSessionCompleted(event.data.object);
+        break;
+
+      case 'customer.subscription.updated':
+        await handleSubscriptionUpdated(event.data.object);
+        break;
+
+      case 'customer.subscription.deleted':
+        await handleSubscriptionCanceled(event.data.object);
+        break;
+
+      case 'invoice.payment_succeeded':
+        await handlePaymentSucceeded(event.data.object);
+        break;
+
+      case 'invoice.payment_failed':
+        await handlePaymentFailed(event.data.object);
+        break;
+    }
+
+    res.json({ received: true });
+  } catch (error) {
+    console.error('Webhook error:', error);
+    res.status(400).send(`Webhook Error: ${error.message}`);
+  }
+});
+
+// Webhook handlers
+async function handleCheckoutSessionCompleted(session) {
+  const { userId, tier, billingCycle } = session.metadata;
+
+  // Calculate expiry date based on billing cycle
+  let expiryDate;
+  const now = new Date();
+  switch (billingCycle) {
+    case 'weekly':
+      expiryDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+      break;
+    case 'monthly':
+      expiryDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      break;
+    case 'annual':
+      expiryDate = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000);
+      break;
+    default:
+      expiryDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+  }
+
+  const subscription = await Subscription.findOneAndUpdate(
+    { userId },
+    {
+      tier,
+      stripeCustomerId: session.customer,
+      stripeSubscriptionId: session.subscription,
+      status: 'active',
+      billingCycle,
+      currentPeriodStart: now,
+      currentPeriodEnd: expiryDate,
+      updatedAt: new Date(),
+    },
+    { new: true }
+  );
+
+  // Update user tier
+  await User.findByIdAndUpdate(userId, {
+    subscriptionTier: tier,
+    subscriptionExpires: expiryDate,
+  });
+}
+
+async function handleSubscriptionUpdated(stripeSubscription) {
+  const subscription = await Subscription.findOneAndUpdate(
+    { stripeSubscriptionId: stripeSubscription.id },
+    {
+      status: stripeSubscription.status,
+      currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
+      currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
+      updatedAt: new Date(),
+    },
+    { new: true }
+  );
+
+  if (subscription) {
+    await User.findByIdAndUpdate(subscription.userId, {
+      subscriptionExpires: subscription.currentPeriodEnd,
+    });
+  }
+}
+
+async function handleSubscriptionCanceled(stripeSubscription) {
+  const subscription = await Subscription.findOneAndUpdate(
+    { stripeSubscriptionId: stripeSubscription.id },
+    {
+      status: 'canceled',
+      canceledAt: new Date(),
+      tier: 'free',
+      updatedAt: new Date(),
+    },
+    { new: true }
+  );
+
+  if (subscription) {
+    await User.findByIdAndUpdate(subscription.userId, {
+      subscriptionTier: 'free',
+      subscriptionExpires: new Date(),
+    });
+  }
+}
+
+async function handlePaymentSucceeded(invoice) {
+  const subscription = await Subscription.findOne({
+    stripeSubscriptionId: invoice.subscription,
+  });
+
+  if (subscription) {
+    subscription.renewalCount += 1;
+    subscription.save();
+  }
+}
+
+async function handlePaymentFailed(invoice) {
+  const subscription = await Subscription.findOne({
+    stripeSubscriptionId: invoice.subscription,
+  });
+
+  if (subscription) {
+    subscription.status = 'payment_failed';
+    subscription.save();
+  }
+}
+
+// POST /api/tiers/upgrade - Upgrade/change subscription
+router.post('/upgrade', authenticateToken, async (req, res) => {
+  try {
+    const { newTier, billingCycle = 'monthly' } = req.body;
+    const subscription = await Subscription.findOne({ userId: req.user.id });
+
+    if (!subscription) {
+      return res.status(404).json({
+        success: false,
+        error: 'Subscription not found',
+      });
+    }
+
+    if (subscription.stripeSubscriptionId) {
+      // Get new price ID
+      const tier = TIERS[newTier];
+      let priceId;
+      switch (billingCycle) {
+        case 'weekly':
+          priceId = tier.stripeWeeklyPriceId;
+          break;
+        case 'monthly':
+          priceId = tier.stripeMonthlyPriceId;
+          break;
+        case 'annual':
+          priceId = tier.stripeAnnualPriceId;
+          break;
+        default:
+          priceId = tier.stripeMonthlyPriceId;
+      }
+
+      // Update existing Stripe subscription
+      const stripeSubscription = await stripe.subscriptions.retrieve(
+        subscription.stripeSubscriptionId
+      );
+
+      await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+        items: [
+          {
+            id: stripeSubscription.items.data[0].id,
+            price: priceId,
+          },
+        ],
+        proration_behavior: 'create_prorations',
+      });
+
+      // Update local subscription
+      subscription.tier = newTier;
+      subscription.billingCycle = billingCycle;
+      await subscription.save();
+    }
+
+    res.json({
+      success: true,
+      message: 'Subscription updated successfully',
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// POST /api/tiers/cancel - Cancel subscription
+router.post('/cancel', authenticateToken, async (req, res) => {
+  try {
+    const subscription = await Subscription.findOne({ userId: req.user.id });
+
+    if (!subscription || !subscription.stripeSubscriptionId) {
+      return res.status(404).json({
+        success: false,
+        error: 'Active subscription not found',
+      });
+    }
+
+    await stripe.subscriptions.del(subscription.stripeSubscriptionId);
+
+    res.json({
+      success: true,
+      message: 'Subscription canceled successfully',
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// POST /api/tiers/reactivate - Reactivate canceled subscription
+router.post('/reactivate', authenticateToken, async (req, res) => {
+  try {
+    const { tier, billingCycle = 'monthly' } = req.body;
+    const subscription = await Subscription.findOne({ userId: req.user.id });
+
+    if (!subscription) {
+      return res.status(404).json({
+        success: false,
+        error: 'Subscription not found',
+      });
+    }
+
+    if (subscription.stripeCustomerId) {
+      // Get price ID
+      const tierInfo = TIERS[tier];
+      let priceId;
+      switch (billingCycle) {
+        case 'weekly':
+          priceId = tierInfo.stripeWeeklyPriceId;
+          break;
+        case 'monthly':
+          priceId = tierInfo.stripeMonthlyPriceId;
+          break;
+        case 'annual':
+          priceId = tierInfo.stripeAnnualPriceId;
+          break;
+        default:
+          priceId = tierInfo.stripeMonthlyPriceId;
+      }
+
+      // Create new subscription for existing customer
+      const stripeSubscription = await stripe.subscriptions.create({
+        customer: subscription.stripeCustomerId,
+        items: [{ price: priceId }],
+        metadata: {
+          userId: req.user.id,
+          tier,
+          billingCycle,
+        },
+      });
+
+      subscription.tier = tier;
+      subscription.status = 'active';
+      subscription.stripeSubscriptionId = stripeSubscription.id;
+      subscription.billingCycle = billingCycle;
+      subscription.renewalCount = 0;
+      await subscription.save();
+    }
+
+    res.json({
+      success: true,
+      message: 'Subscription reactivated successfully',
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// GET /api/tiers/features - Get feature access for tier
+router.get('/features/:tier', (req, res) => {
+  try {
+    const tier = TIERS[req.params.tier];
+    if (!tier) {
+      return res.status(404).json({
+        success: false,
+        error: 'Tier not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      tier: req.params.tier,
+      features: tier.features,
+      featureCount: tier.features.length,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// GET /api/tiers/pricing/:tier - Get pricing for all billing cycles
+router.get('/pricing/:tier', (req, res) => {
+  try {
+    const tier = TIERS[req.params.tier];
+    if (!tier) {
+      return res.status(404).json({
+        success: false,
+        error: 'Tier not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      tier: req.params.tier,
+      pricing: {
+        weekly: {
+          price: tier.weeklyPrice,
+          priceId: tier.stripeWeeklyPriceId,
+          period: 'week',
+        },
+        monthly: {
+          price: tier.monthlyPrice,
+          priceId: tier.stripeMonthlyPriceId,
+          period: 'month',
+        },
+        annual: {
+          price: tier.annualPrice,
+          priceId: tier.stripeAnnualPriceId,
+          period: 'year',
+        },
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+module.exports = router;

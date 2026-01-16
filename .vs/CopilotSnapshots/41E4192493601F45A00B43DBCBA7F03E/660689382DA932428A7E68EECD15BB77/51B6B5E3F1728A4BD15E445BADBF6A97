@@ -1,0 +1,165 @@
+﻿const express = require('express');
+const router = express.Router();
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const auth = require('../middleware/auth');
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = path.join(__dirname, '../uploads/stories');
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  },
+});
+
+const fileFilter = (req, file, cb) => {
+  // Accept images only
+  const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+  if (allowedMimes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Invalid file type. Only images are allowed.'), false);
+  }
+};
+
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+});
+
+/**
+ * Upload story image
+ * POST /media/upload-story
+ */
+router.post('/upload-story', auth, upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'No file uploaded' });
+    }
+
+    // Generate URL for the uploaded file
+    const imageUrl = `${process.env.API_URL || 'http://localhost:3000'}/uploads/stories/${req.file.filename}`;
+
+    res.status(201).json({
+      success: true,
+      url: imageUrl,
+      imageUrl: imageUrl,
+      filename: req.file.filename,
+      size: req.file.size,
+    });
+  } catch (error) {
+    // Clean up uploaded file on error
+    if (req.file) {
+      fs.unlink(req.file.path, (err) => {
+        if (err) console.error('Error deleting file:', err);
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Upload failed',
+    });
+  }
+});
+
+/**
+ * Upload profile photo
+ * POST /media/upload-profile
+ */
+router.post('/upload-profile', auth, upload.single('photo'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'No file uploaded' });
+    }
+
+    const photoUrl = `${process.env.API_URL || 'http://localhost:3000'}/uploads/profiles/${req.file.filename}`;
+
+    res.status(201).json({
+      success: true,
+      url: photoUrl,
+      photoUrl: photoUrl,
+      filename: req.file.filename,
+      size: req.file.size,
+    });
+  } catch (error) {
+    if (req.file) {
+      fs.unlink(req.file.path, (err) => {
+        if (err) console.error('Error deleting file:', err);
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Upload failed',
+    });
+  }
+});
+
+/**
+ * Delete media file
+ * POST /media/delete
+ */
+router.post('/delete', auth, async (req, res) => {
+  try {
+    const { url } = req.body;
+
+    if (!url) {
+      return res.status(400).json({ success: false, error: 'URL required' });
+    }
+
+    // Extract filename from URL
+    const filename = url.split('/').pop();
+    const filePath = path.join(__dirname, '../uploads', filename);
+
+    // Delete file if it exists
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+
+    res.json({ success: true, message: 'File deleted' });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Delete failed',
+    });
+  }
+});
+
+/**
+ * Serve uploaded files
+ */
+router.get('/uploads/:type/:filename', (req, res) => {
+  try {
+    const { type, filename } = req.params;
+    const filePath = path.join(__dirname, '../uploads', type, filename);
+
+    // Security check - prevent directory traversal
+    if (!filePath.startsWith(path.join(__dirname, '../uploads'))) {
+      return res.status(403).json({ success: false, error: 'Forbidden' });
+    }
+
+    if (fs.existsSync(filePath)) {
+      res.sendFile(filePath);
+    } else {
+      res.status(404).json({ success: false, error: 'File not found' });
+    }
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+module.exports = router;

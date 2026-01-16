@@ -1,0 +1,148 @@
+﻿# ════════════════════════════════════════════════════════════════
+# MEENGLE PRODUCTION ENVIRONMENT VARIABLES
+# ════════════════════════════════════════════════════════════════
+# Copy this file to .env.production and fill in actual values
+# NEVER commit .env.production to version control
+# ════════════════════════════════════════════════════════════════
+
+# ─────────────────────────────────────────────────────────────────
+# SERVER CONFIGURATION
+# ─────────────────────────────────────────────────────────────────
+NODE_ENV=production
+PORT=3001
+CLIENT_URL=https://meengle.app
+
+# ─────────────────────────────────────────────────────────────────
+# DATABASE
+# ─────────────────────────────────────────────────────────────────
+# MongoDB connection string - REQUIRED
+# Format: mongodb+srv://username:password@cluster.mongodb.net/database
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/meengle_prod
+
+# Redis cache URL
+REDIS_URL=redis://:password@hostname:6379
+
+# ─────────────────────────────────────────────────────────────────
+# AUTHENTICATION & SECURITY
+# ─────────────────────────────────────────────────────────────────
+# JWT secret - REQUIRED (generate with: openssl rand -base64 32)
+JWT_SECRET=your-secure-jwt-secret-min-32-chars
+
+# JWT refresh secret (optional but recommended)
+JWT_REFRESH_SECRET=your-secure-refresh-secret-min-32-chars
+
+# Session secret for cookies
+SESSION_SECRET=your-secure-session-secret
+
+# ─────────────────────────────────────────────────────────────────
+# STRIPE PAYMENT INTEGRATION
+# ─────────────────────────────────────────────────────────────────
+# Get from https://dashboard.stripe.com/apikeys
+STRIPE_SECRET_KEY=sk_live_xxxxxxxxxxxxxxxxxxxxxxxx
+STRIPE_PUBLISHABLE_KEY=pk_live_xxxxxxxxxxxxxxxxxxxxxxxx
+
+# Webhook secret for Stripe events
+# Get from https://dashboard.stripe.com/webhooks after creating endpoint
+STRIPE_WEBHOOK_SECRET=whsec_xxxxxxxxxxxxxxxxxxxxxxxx
+
+# ─────────────────────────────────────────────────────────────────
+# FIREBASE CLOUD MESSAGING & AUTH
+# ─────────────────────────────────────────────────────────────────
+# From Firebase Console > Project Settings
+FIREBASE_PROJECT_ID=your-firebase-project-id
+FIREBASE_API_KEY=AIzaSyxxxxxxxxxxxxxxxxxxxxxxxx
+FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+FIREBASE_MESSAGING_SENDER_ID=123456789012
+FIREBASE_APP_ID=1:123456789012:web:xxxxxxxxxxxxxxxx
+
+# Firebase service account key (JSON string or file path)
+# CRITICAL: Use environment-specific service account
+FIREBASE_SERVICE_ACCOUNT_KEY={"type":"service_account","project_id":"..."}
+
+# ─────────────────────────────────────────────────────────────────
+# AWS S3 (Optional - for file uploads)
+# ─────────────────────────────────────────────────────────────────
+AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+AWS_REGION=us-east-1
+AWS_BUCKET_NAME=meengle-production
+
+# ─────────────────────────────────────────────────────────────────
+# MONITORING & ERROR TRACKING
+# ─────────────────────────────────────────────────────────────────
+# Sentry error tracking
+SENTRY_DSN=https://xxxxxx@xxxxxx.ingest.sentry.io/xxxxxx
+
+# New Relic APM
+NEW_RELIC_LICENSE_KEY=your-new-relic-license-key
+NEW_RELIC_APP_NAME=Meengle API
+
+# ─────────────────────────────────────────────────────────────────
+# EMAIL SERVICE
+# ─────────────────────────────────────────────────────────────────
+SENDGRID_API_KEY=SG.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+SENDGRID_FROM_EMAIL=noreply@meengle.app
+
+# ─────────────────────────────────────────────────────────────────
+# SMS/TWILIO (Optional - for verification codes)
+# ─────────────────────────────────────────────────────────────────
+TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_AUTH_TOKEN=your-twilio-auth-token
+TWILIO_PHONE_NUMBER=+1234567890
+
+# ─────────────────────────────────────────────────────────────────
+# FEATURES & SETTINGS
+# ─────────────────────────────────────────────────────────────────
+ENABLE_STORIES=true
+ENABLE_SPOTLIGHT=true
+ENABLE_MESSAGING=true
+ENABLE_NOTIFICATIONS=true
+
+# Maximum file upload size (bytes)
+MAX_FILE_SIZE=10737418240
+
+# Story expiration (hours)
+STORY_EXPIRATION_HOURS=24
+
+# ─────────────────────────────────────────────────────────────────
+# SECURITY HEADERS
+# ─────────────────────────────────────────────────────────────────
+# CORS allowed origins (comma-separated)
+CORS_ORIGINS=https://meengle.app,https://www.meengle.app
+
+# SSL/TLS
+FORCE_HTTPS=true
+HSTS_MAX_AGE=31536000
+
+# ─────────────────────────────────────────────────────────────────
+# RATE LIMITING
+# ─────────────────────────────────────────────────────────────────
+# Time window in milliseconds
+RATE_LIMIT_WINDOW=900000
+
+# Max requests per window
+RATE_LIMIT_MAX=100
+
+# ─────────────────────────────────────────────────────────────────
+# LOGGING
+# ─────────────────────────────────────────────────────────────────
+LOG_LEVEL=info
+LOG_FORMAT=json
+
+# ════════════════════════════════════════════════════════════════
+# DEPLOYMENT VERIFICATION CHECKLIST:
+# ════════════════════════════════════════════════════════════════
+# [ ] All REQUIRED variables filled in (marked above)
+# [ ] Database credentials verified in MongoDB Atlas
+# [ ] Stripe keys obtained from live account (not test)
+# [ ] Firebase service account created for production
+# [ ] JWT_SECRET is 32+ characters (use openssl rand -base64 32)
+# [ ] Stripe webhook endpoint configured
+# [ ] All secrets stored securely (never commit to git)
+# [ ] CORS_ORIGINS updated with actual domain
+# [ ] Email service configured and tested
+# [ ] Monitoring services (Sentry/New Relic) accounts created
+# [ ] SSL certificate installed on server
+# [ ] Secrets rotated and backup kept in secure vault
+# ════════════════════════════════════════════════════════════════

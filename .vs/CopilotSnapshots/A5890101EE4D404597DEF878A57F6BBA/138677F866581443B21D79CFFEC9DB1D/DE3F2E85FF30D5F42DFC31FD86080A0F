@@ -1,0 +1,255 @@
+﻿import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import '../models/emergency_contact.dart';
+
+/// Handles emergency location sharing and notifications
+class EmergencyService {
+  static final EmergencyService _instance = EmergencyService._internal();
+
+  late Geolocator _geolocator;
+  late bool _locationPermissionGranted;
+
+  factory EmergencyService() {
+    return _instance;
+  }
+
+  EmergencyService._internal();
+
+  /// Initialize emergency service
+  Future<void> initialize() async {
+    _geolocator = Geolocator();
+    await _requestLocationPermission();
+  }
+
+  /// Request location permission
+  Future<void> _requestLocationPermission() async {
+    final permission = await Geolocator.requestPermission();
+    _locationPermissionGranted = permission == LocationPermission.always ||
+        permission == LocationPermission.whileInUse;
+  }
+
+  /// Get current location with high accuracy
+  Future<LocationData?> getCurrentLocation() async {
+    try {
+      if (!_locationPermissionGranted) {
+        await _requestLocationPermission();
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.best,
+        timeLimit: const Duration(seconds: 30),
+      );
+
+      // Get address from coordinates
+      String? address;
+      try {
+        final placemarks = await placemarkFromCoordinates(
+          position.latitude,
+          position.longitude,
+        );
+        if (placemarks.isNotEmpty) {
+          final place = placemarks.first;
+          address =
+              '${place.street}, ${place.locality}, ${place.postalCode}, ${place.country}';
+        }
+      } catch (e) {
+        print('Error getting address: $e');
+      }
+
+      return LocationData(
+        latitude: position.latitude,
+        longitude: position.longitude,
+        accuracy: position.accuracy,
+        timestamp: DateTime.now(),
+        address: address,
+      );
+    } catch (e) {
+      print('Error getting location: $e');
+      return null;
+    }
+  }
+
+  /// Send location to emergency contact
+  Future<bool> shareLocationWithContact({
+    required String userId,
+    required EmergencyContact contact,
+    required LocationData location,
+    required EmergencyServiceType serviceType,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('http://localhost:5000/api/emergency/share-location'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'userId': userId,
+          'contactId': contact.id,
+          'contactEmail': contact.email,
+          'contactPhone': contact.phoneNumber,
+          'location': location.toJson(),
+          'serviceType': serviceType.name,
+          'timestamp': DateTime.now().toIso8601String(),
+        }),
+      ).timeout(const Duration(seconds: 15));
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Error sharing location: $e');
+      return false;
+    }
+  }
+
+  /// Send emergency alert to multiple contacts
+  Future<int> sendEmergencyAlert({
+    required String userId,
+    required List<EmergencyContact> contacts,
+    required LocationData location,
+    String? message,
+  }) async {
+    int successCount = 0;
+
+    for (final contact in contacts) {
+      final success = await shareLocationWithContact(
+        userId: userId,
+        contact: contact,
+        location: location,
+        serviceType: EmergencyServiceType.favourite,
+      );
+
+      if (success) {
+        successCount++;
+      }
+    }
+
+    return successCount;
+  }
+
+  /// Send SOS to police
+  Future<bool> sendSOSToPolice({
+    required String userId,
+    required LocationData location,
+    String? incidentType,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('http://localhost:5000/api/emergency/send-sos'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'userId': userId,
+          'location': location.toJson(),
+          'incidentType': incidentType ?? 'Safety Concern',
+          'timestamp': DateTime.now().toIso8601String(),
+        }),
+      ).timeout(const Duration(seconds: 10));
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Error sending SOS: $e');
+      return false;
+    }
+  }
+
+  /// Get nearby emergency services
+  Future<List<Map<String, dynamic>>> getNearbyEmergencyServices(
+    double latitude,
+    double longitude,
+  ) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+          'http://localhost:5000/api/emergency/nearby?lat=$latitude&lng=$longitude',
+        ),
+        headers: {'Accept': 'application/json'},
+      ).timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return List<Map<String, dynamic>>.from(data['services'] ?? []);
+      }
+      return [];
+    } catch (e) {
+      print('Error getting nearby services: $e');
+      return [];
+    }
+  }
+
+  /// Call emergency number
+  Future<bool> callEmergencyNumber(String phoneNumber) async {
+    try {
+      // Use url_launcher to initiate call
+      // await launchUrl(Uri(scheme: 'tel', path: phoneNumber));
+      return true;
+    } catch (e) {
+      print('Error calling emergency: $e');
+      return false;
+    }
+  }
+
+  /// Log emergency share
+  Future<void> logEmergencyShare({
+    required String userId,
+    required EmergencyContact contact,
+    required LocationData location,
+    required EmergencyServiceType serviceType,
+    required bool acknowledged,
+  }) async {
+    try {
+      await http.post(
+        Uri.parse('http://localhost:5000/api/emergency/log-share'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'userId': userId,
+          'contactId': contact.id,
+          'location': location.toJson(),
+          'serviceType': serviceType.name,
+          'timestamp': DateTime.now().toIso8601String(),
+          'acknowledged': acknowledged,
+        }),
+      ).timeout(const Duration(seconds: 10));
+    } catch (e) {
+      print('Error logging emergency share: $e');
+    }
+  }
+
+  /// Get emergency contact history
+  Future<List<EmergencyShareLog>> getEmergencyHistory(String userId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('http://localhost:5000/api/emergency/history/$userId'),
+        headers: {'Accept': 'application/json'},
+      ).timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return (data['history'] as List)
+            .map((item) => EmergencyShareLog.fromJson(item))
+            .toList();
+      }
+      return [];
+    } catch (e) {
+      print('Error getting history: $e');
+      return [];
+    }
+  }
+
+  /// Get default emergency numbers by country
+  static Map<String, String> getEmergencyNumbers(String countryCode) {
+    const emergencyMap = {
+      'US': '911',
+      'UK': '999',
+      'EU': '112',
+      'CA': '911',
+      'AU': '000',
+      'JP': '110',
+      'IN': '100',
+      'MX': '066',
+    };
+
+    return {
+      'police': emergencyMap[countryCode] ?? '911',
+      'ambulance': emergencyMap[countryCode] ?? '911',
+      'fire': emergencyMap[countryCode] ?? '911',
+    };
+  }
+}

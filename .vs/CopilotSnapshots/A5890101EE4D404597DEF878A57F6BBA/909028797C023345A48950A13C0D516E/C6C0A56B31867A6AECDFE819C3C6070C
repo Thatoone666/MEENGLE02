@@ -1,0 +1,235 @@
+﻿import 'package:flutter/material.dart';
+import '../../../models/meengle_date.dart';
+import '../../animations/premium_animations.dart';
+
+class DateIdeaCard extends StatefulWidget {
+  final MeengleDate dateIdea;
+  final VoidCallback onBook;
+  final VoidCallback onTap;
+
+  const DateIdeaCard({
+    required this.dateIdea,
+    required this.onBook,
+    required this.onTap,
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  State<DateIdeaCard> createState() => _DateIdeaCardState();
+}
+
+class _DateIdeaCardState extends State<DateIdeaCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _scaleController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scaleController = AnimationController(
+      duration: PremiumAnimations.medioDuration,
+      vsync: this,
+    );
+  }
+
+  @override
+  void dispose() {
+    _scaleController.dispose();
+    super.dispose();
+  }
+
+  void _onBook() {
+    _scaleController.forward().then((_) {
+      _scaleController.reverse();
+    });
+    widget.onBook();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: widget.onTap,
+      child: ScaleTransition(
+        scale: Tween<double>(begin: 1, end: 0.97).animate(
+          CurvedAnimation(parent: _scaleController, curve: Curves.easeOut),
+        ),
+        child: Card(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: Colors.amber.shade700, width: 1.5),
+          ),
+          color: const Color(0xFF1A1A1A),
+          elevation: 12,
+          shadowColor: Colors.amber.shade700,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: PremiumAnimations.premiumGlow(
+                color: Colors.amber.shade700,
+                intensity: 0.5,
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header with Icon and Category
+                  Row(
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.amber.shade700.withAlpha(51),
+                          boxShadow: PremiumAnimations.premiumGlow(
+                            color: Colors.amber.shade700,
+                            intensity: 0.3,
+                          ),
+                        ),
+                        padding: const EdgeInsets.all(8),
+                        child: Icon(
+                          Icons.location_on,
+                          color: Colors.amber.shade400,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              dateIdea.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.3,
+                              ),
+                            ),
+                            Text(
+                              dateIdea.category.label,
+                              style: TextStyle(
+                                color: Colors.grey.shade400,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Description
+                  Text(
+                    dateIdea.description,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.grey.shade300,
+                      fontSize: 13,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Cost and Duration Badges
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade900,
+                          borderRadius: BorderRadius.circular(6),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.amber.shade700.withAlpha(51),
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          dateIdea.costString,
+                          style: TextStyle(
+                            color: Colors.amber.shade400,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade900,
+                          borderRadius: BorderRadius.circular(6),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.blue.shade700.withAlpha(51),
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          dateIdea.durationFormatted,
+                          style: TextStyle(
+                            color: Colors.blue.shade400,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      ScaleTransition(
+                        scale: Tween<double>(begin: 1, end: 0.9).animate(
+                          CurvedAnimation(
+                            parent: _scaleController,
+                            curve: Curves.easeOut,
+                          ),
+                        ),
+                        child: ElevatedButton(
+                          onPressed: _onBook,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.amber.shade700,
+                            foregroundColor: Colors.black,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            elevation: 8,
+                            shadowColor: Colors.amber.shade700,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                          ),
+                          child: const Text(
+                            'Book',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

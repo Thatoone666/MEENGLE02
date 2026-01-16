@@ -1,0 +1,182 @@
+﻿import express from 'express';
+import http from 'http';
+import { Server } from 'socket.io';
+import path from 'path';
+import compression from 'compression';
+import helmet from 'helmet';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import mongoose from 'mongoose';
+import { authRouter } from './routes/auth.js';
+import matchingRouter from './routes/matching.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load environment variables
+dotenv.config({ path: path.resolve(__dirname, '.env') });
+
+// Connect to MongoDB
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log('✅ MongoDB connected'))
+  .catch(err => console.error('❌ MongoDB error:', err.message));
+
+const app = express();
+
+// Add security headers
+app.use(helmet());
+
+// Add compression middleware
+app.use(compression());
+
+// Basic middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// --- SOCKET.IO REAL-TIME CHAT SETUP ---
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: {
+        origin: process.env.NODE_ENV === 'production' 
+            ? ['https://meengle.app', 'https://www.meengle.app']
+            : process.env.CORS_ORIGIN || '*',
+        credentials: true,
+        methods: ['GET', 'POST']
+    },
+    transports: ['websocket', 'polling']
+});
+
+// Online status tracking
+const onlineUsers = new Map();
+const userSockets = new Map();
+const userChats = new Map(); // userId -> Set of open chats
+
+// ════════════════════════════════════════════════════════════════
+// SOCKET.IO EVENT HANDLERS
+// ════════════════════════════════════════════════════════════════
+
+io.on('connection', (socket) => {
+    console.log(`[SOCKET] Connected: ${socket.id}`);
+
+    // User comes online
+    socket.on('user-online', (data) => {
+        const { userId } = data;
+        onlineUsers.set(userId, { socketId: socket.id, connectedAt: new Date() });
+        userSockets.set(socket.id, userId);
+        io.emit('user-status-changed', { userId, status: 'online' });
+    });
+
+    // Chat: user joins conversation
+    socket.on('join-chat', (data) => {
+        const { userId, matchId } = data;
+        const roomId = [userId, matchId].sort().join('-');
+        socket.join(roomId);
+        
+        if (!userChats.has(userId)) {
+          userChats.set(userId, new Set());
+        }
+        userChats.get(userId).add(matchId);
+        
+        io.to(roomId).emit('user-joined', { userId });
+    });
+
+    // Chat: send message
+    socket.on('send-message', async (data) => {
+        try {
+            const { userId, matchId, message, timestamp } = data;
+            const roomId = [userId, matchId].sort().join('-');
+            
+            // Broadcast message
+            io.to(roomId).emit('receive-message', {
+                userId,
+                message,
+                timestamp: timestamp || new Date(),
+                read: false
+            });
+
+            console.log(`[CHAT] ${userId} → ${matchId}: ${message}`);
+        } catch (error) {
+            console.error('Message error:', error);
+        }
+    });
+
+    // Typing indicator
+    socket.on('typing', (data) => {
+        const { userId, matchId } = data;
+        const roomId = [userId, matchId].sort().join('-');
+        socket.to(roomId).emit('user-typing', { userId });
+    });
+
+    socket.on('stop-typing', (data) => {
+        const { userId, matchId } = data;
+        const roomId = [userId, matchId].sort().join('-');
+        socket.to(roomId).emit('user-stop-typing', { userId });
+    });
+
+    // Disconnect
+    socket.on('disconnect', () => {
+        const userId = userSockets.get(socket.id);
+        if (userId) {
+            onlineUsers.delete(userId);
+            userChats.delete(userId);
+            io.emit('user-status-changed', { userId, status: 'offline' });
+            console.log(`[OFFLINE] ${userId}`);
+        }
+        userSockets.delete(socket.id);
+    });
+});
+
+// ════════════════════════════════════════════════════════════════
+// ROUTES
+// ════════════════════════════════════════════════════════════════
+
+app.use('/api/auth', authRouter);
+app.use('/api/matches', matchingRouter);
+
+// ════════════════════════════════════════════════════════════════
+// REST API ENDPOINTS
+// ════════════════════════════════════════════════════════════════
+
+// Health check
+app.get('/health', (req, res) => {
+    res.json({ 
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        onlineUsers: onlineUsers.size,
+        mongoConnected: mongoose.connection.readyState === 1
+    });
+});
+
+// Test endpoint
+app.get('/api/test', (req, res) => {
+    res.json({ 
+        message: 'Backend is working!',
+        timestamp: new Date().toISOString()
+    });
+});
+
+// 404 handler
+app.use((req, res) => {
+    res.status(404).json({ error: 'Not found' });
+});
+
+const PORT = process.env.PORT || 3001;
+
+const runningServer = server.listen(PORT, () => {
+    console.log(`\n${'═'.repeat(60)}`);
+    console.log('🚀 MEENGLE SERVER STARTED');
+    console.log('═'.repeat(60));
+    console.log(`📍 Port: ${PORT}`);
+    console.log(`⏰ ${new Date().toISOString()}`);
+    console.log('═'.repeat(60));
+    console.log('\n✅ Ready\n');
+});
+
+// Graceful shutdown
+process.on('SIGINT', () => {
+    console.log('\nShutting down...');
+    runningServer.close(() => process.exit(0));
+});
+
+export { app, server, io };

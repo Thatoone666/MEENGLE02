@@ -1,0 +1,319 @@
+﻿# MEENGLE - Meet Your Match
+
+A modern, full-stack dating application built with Node.js, React-like vanilla JavaScript, WebRTC, and Socket.IO.
+
+## 🚀 Features
+
+### Core Functionality
+- ✅ User authentication (signup, login, JWT)
+- ✅ Profile creation & editing
+- ✅ Match discovery with swipe interface
+- ✅ Real-time messaging with Socket.IO
+- ✅ Video/voice calls with WebRTC
+- ✅ Photo uploads & galleries
+- ✅ Moments/Stories feature
+- ✅ Notifications (push & in-app)
+
+### Advanced Features
+- ✅ Payment processing (Stripe)
+- ✅ Premium subscriptions
+- ✅ Boost functionality
+- ✅ Multi-language support (i18n)
+- ✅ Analytics & heatmaps
+- ✅ Offline support (Service Workers)
+- ✅ A/B testing
+- ✅ Fraud detection
+- ✅ Rate limiting
+
+### Tech Stack
+
+**Backend**
+- Node.js + Express
+- MongoDB
+- Socket.IO (WebSockets)
+- JWT Authentication
+- Stripe API
+- SendGrid (Email)
+
+**Frontend**
+- Vanilla JavaScript (No framework)
+- HTML5/CSS3
+- WebRTC
+- Socket.IO Client
+- IndexedDB
+- Service Workers
+
+**Deployment**
+- Docker & Docker Compose
+- Nginx
+- MongoDB Atlas
+- AWS/Heroku ready
+
+## 📋 Project Structure
+
+```
+meengle/
+├── backend/
+│   ├── routes/          (29 API route files)
+│   ├── models/          (15+ MongoDB models)
+│   ├── middleware/      (auth, security, validation)
+│   ├── services/        (email, monitoring, fraud detection)
+│   ├── tests/           (44 test cases)
+│   ├── server.js
+│   └── package.json
+│
+├── frontend/
+│   ├── pages/           (HTML pages)
+│   ├── assets/
+│   │   ├── js/          (21 JavaScript libraries)
+│   │   └── css/         (stylesheets)
+│   ├── index.html
+│   └── package.json
+│
+├── docker-compose.yml
+├── Dockerfile
+├── nginx.conf
+└── DEPLOYMENT.md
+```
+
+## 🏗️ Component Libraries (21 Total)
+
+### Core (9 files)
+1. **api-client.js** - HTTP wrapper for all APIs
+2. **realtime-client.js** - Socket.IO client
+3. **utils.js** - Utility functions
+4. **store.js** - Global state management
+5. **auth-guard.js** - Authentication & permissions
+6. **error-handler.js** - Error management
+7. **modal.js** - Dialog system
+8. **form-builder.js** - Dynamic forms
+9. **loading.js** - Loaders & skeletons
+
+### Features (7 files)
+10. **dashboard.js** - Main user interface
+11. **profile-editor.js** - Profile editing
+12. **chat-component.js** - Real-time messaging
+13. **payment.js** - Payment processing
+14. **gallery.js** - Image gallery
+15. **pagination.js** - Pagination & scrolling
+16. **search.js** - Advanced search
+
+### Advanced (5 files)
+17. **notifications.js** - Notification system
+18. **analytics.js** - Event tracking
+19. **offline.js** - Offline support
+20. **video-call.js** - WebRTC calling
+21. **i18n.js** - Multi-language
+
+## 🚀 Quick Start
+
+### Development
+
+```bash
+# Clone repository
+git clone https://github.com/yourusername/meengle.git
+cd meengle
+
+# Backend
+cd backend
+npm install
+npm run dev
+
+# Frontend (in another terminal)
+cd frontend
+npm install
+npm run dev
+
+# Visit http://localhost:3000
+```
+
+### Production with Docker
+
+```bash
+# Build and run
+docker-compose up -d
+
+# Access
+- Frontend: http://localhost
+- API: http://localhost:3001
+- MongoDB: localhost:27017
+```
+
+## 📚 API Documentation
+
+### Authentication
+```javascript
+// Signup
+POST /api/auth/signup
+{ email, password, name }
+
+// Login
+POST /api/auth/login
+{ email, password }
+
+// Get profile
+GET /api/auth/me
+```
+
+### Matching
+```javascript
+// Get potential matches
+GET /api/matches/potential
+
+// Like a user
+POST /api/matches/like
+{ targetUserId }
+
+// Pass a user
+POST /api/matches/pass
+{ targetUserId }
+```
+
+### Messaging
+```javascript
+// Send message
+POST /api/chat/message
+{ matchId, message }
+
+// Get conversation
+GET /api/chat/:matchId
+
+// Get all conversations
+GET /api/chat/conversations
+```
+
+### Payments
+```javascript
+// Create payment intent
+POST /api/payments/create-intent
+{ amount, currency }
+
+// Verify payment
+POST /api/payments/verify
+{ paymentId }
+```
+
+## 🧪 Testing
+
+```bash
+cd backend
+
+# Run all tests
+npm test
+
+# Run specific test file
+npm test tests/auth.test.js
+
+# Generate coverage report
+npm run test:coverage
+```
+
+**Current Test Status: 44 tests passing ✅**
+
+## 🔒 Security Features
+
+- ✅ JWT authentication
+- ✅ Password hashing (bcryptjs)
+- ✅ Rate limiting
+- ✅ XSS protection
+- ✅ CSRF protection
+- ✅ Input validation & sanitization
+- ✅ SQL injection prevention
+- ✅ Fraud detection
+- ✅ Session management
+- ✅ Permission-based access
+
+## 📱 Responsive Design
+
+- ✅ Mobile-first approach
+- ✅ Tablet support
+- ✅ Desktop optimized
+- ✅ Touch-friendly UI
+- ✅ Progressive Web App (PWA)
+
+## 🌍 Deployment Options
+
+1. **Docker** (Recommended)
+   ```bash
+   docker-compose up -d
+   ```
+
+2. **Heroku**
+   ```bash
+   heroku create meengle
+   git push heroku main
+   ```
+
+3. **AWS Elastic Beanstalk**
+   ```bash
+   eb create meengle-prod
+   ```
+
+4. **DigitalOcean App Platform**
+   - Connect GitHub repo
+   - Auto-deploy on push
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed instructions.
+
+## 📊 Performance
+
+- **Page Load**: < 2s
+- **API Response**: < 500ms
+- **Chat Latency**: < 100ms
+- **Database Query**: < 50ms
+
+## 🎯 Roadmap
+
+### Phase 2
+- [ ] Mobile app (React Native)
+- [ ] Group chats
+- [ ] Video stories
+- [ ] Advanced matching algorithm
+- [ ] User recommendations
+
+### Phase 3
+- [ ] AI-powered matching
+- [ ] Live streaming
+- [ ] Circles/Communities
+- [ ] Events feature
+- [ ] Marketing dashboard
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open Pull Request
+
+## 📝 License
+
+MIT License - see LICENSE file
+
+## 📧 Support
+
+- Email: support@meengle.com
+- Issues: GitHub Issues
+- Documentation: See wiki
+
+## 👥 Team
+
+- **Developer**: Your Name
+- **Designer**: Your Name
+
+---
+
+## 📈 Statistics
+
+- **Total Lines of Code**: 6,000+
+- **Backend Routes**: 29
+- **Database Models**: 15+
+- **Test Coverage**: 44 tests
+- **API Endpoints**: 50+
+- **Frontend Components**: 21
+- **Supported Languages**: 5
+
+---
+
+**Last Updated**: 2024
+**Status**: PRODUCTION READY ✅

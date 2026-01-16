@@ -1,0 +1,58 @@
+﻿const express = require('express');
+const router = express.Router();
+const auth = require('../middleware/auth');
+const LocationChat = require('../models/LocationChat');
+const User = require('../models/User');
+
+// Get messages for a location
+router.get('/:locationName', auth, async (req, res) => {
+    try {
+        const locationName = decodeURIComponent(req.params.locationName);
+        let chat = await LocationChat.findOne({ locationName });
+        if (!chat) return res.json([]);
+        res.json(chat.messages);
+    } catch (err) {
+        err.status = 500;
+        err.message = err.message || 'Server Error';
+        next(err);
+    }
+});
+
+// Post a new message to a location chat
+router.post('/:locationName', auth, async (req, res) => {
+    try {
+        const locationName = decodeURIComponent(req.params.locationName);
+        const { text } = req.body;
+        if (!text) return res.status(400).json({ msg: 'Message required' });
+        let chat = await LocationChat.findOneAndUpdate(
+            { locationName },
+            { $push: { messages: { userId: req.user.id, text, createdAt: new Date() } } },
+            { new: true, upsert: true }
+        );
+        res.json(chat.messages);
+    } catch (err) {
+        err.status = 500;
+        err.message = err.message || 'Server Error';
+        next(err);
+    }
+});
+
+// Diamond-only chat room logic
+router.get('/diamond/:locationName', auth, async (req, res) => {
+    try {
+        const locationName = decodeURIComponent(req.params.locationName);
+        const user = await User.findById(req.userId);
+        if (user.subscriptionTier !== 'diamond') {
+            return res.status(403).json({ message: 'Diamond members only' });
+        }
+        let chat = await LocationChat.findOne({ locationName });
+        if (!chat) return res.json([]);
+        res.json(chat.messages);
+    } catch (err) {
+        err.status = 500;
+        err.message = err.message || 'Server Error';
+        next(err);
+    }
+});
+
+module.exports = router;

@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FAQ - MEENGLE</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.6;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      background: #f5f5f5;
+      color: #333;
+    }
+    .container {
+      background: white;
+      padding: 40px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #667eea;
+      border-bottom: 3px solid #667eea;
+      padding-bottom: 15px;
+    }
+    .faq-category {
+      margin: 40px 0;
+    }
+    .faq-category h2 {
+      color: #667eea;
+      margin-top: 0;
+    }
+    .faq-item {
+      margin: 20px 0;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 20px;
+    }
+    .faq-item:last-child {
+      border-bottom: none;
+    }
+    .faq-question {
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px;
+      background: #f9f9f9;
+      border-radius: 6px;
+      transition: all 0.3s;
+    }
+    .faq-question:hover {
+      background: #f0f7ff;
+      color: #667eea;
+    }
+    .faq-toggle {
+      font-size: 20px;
+      transition: transform 0.3s;
+    }
+    .faq-question.active .faq-toggle {
+      transform: rotate(180deg);
+    }
+    .faq-answer {
+      display: none;
+      padding: 15px 15px 0;
+      color: #666;
+      line-height: 1.8;
+    }
+    .faq-answer.active {
+      display: block;
+      animation: slideDown 0.3s ease;
+    }
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>? MEENGLE - FREQUENTLY ASKED QUESTIONS</h1>
+
+    <div class="faq-category">
+      <h2>?? Getting Started</h2>
+
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFAQ(this)">
+          <span>How do I create a MEENGLE account?</span>
+          <span class="faq-toggle">?</span>
+        </div>
+        <div class="faq-answer">
+          <p>1. Download the MEENGLE app or visit meengle.com<br>
+          2. Click "Sign Up"<br>
+          3. Enter your email and create a password<br>
+          4. Verify your email<br>
+          5. Complete your profile (add photos, bio, interests)<br>
+          6. Start discovering matches!</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFAQ(this)">
+          <span>Do I need to use my real name and photo?</span>
+          <span class="faq-toggle">?</span>
+        </div>
+        <div class="faq-answer">
+          <p>Yes. MEENGLE requires authentic profiles to maintain trust and safety. We ask for your real first name and clear, recent photos of yourself. Catfishing is against our community guidelines and may result in account suspension.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFAQ(this)">
+          <span>Is MEENGLE safe?</span>
+          <span class="faq-toggle">?</span>
+        </div>
+        <div class="faq-answer">
+          <p>MEENGLE has multiple safety features: photo verification, profile review, blocking/reporting tools, and AI fraud detection. However, no app is 100% safe. Always meet in public, verify information independently, and trust your instincts. Never send money to someone you haven't met.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFAQ(this)">
+          <span>What age do I need to be to use MEENGLE?</span>
+          <span class="faq-toggle">?</span>
+        </div>
+        <div class="faq-answer">
+          <p>You must be at least 18 years old. We verify age during signup and remove underage accounts immediately.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="faq-category">
+      <h2>?? Matching & Messaging</h2>
+
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFAQ(this)">
+          <span>How does the matching algorithm work?</span>
+          <span class="faq-toggle">?</span>
+        </div>
+        <div class="faq-answer">
+          <p>MEENGLE uses AI-powered matching based on: location, age preferences, interests, values, activity, and mutual interests. The algorithm learns from your interactions to improve suggestions over time.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFAQ(this)">
+          <span>Can I search for specific people?</span>
+          <span class="faq-toggle">?</span>
+        </div>
+        <div class="faq-answer">
+          <p>Yes! Use Advanced Search to filter by age, location, interests, height, education, and more. You can also adjust your preferences in Settings to refine what MEENGLE shows you.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFAQ(this)">
+          <span>What happens if I like someone?</span>
+          <span class="faq-toggle">?</span>
+        </div>
+        <div class="faq-answer">
+          <p>If you like someone and they like you back, it's a Match! You can then message each other. If they haven't seen your profile yet, they'll see a notification that you liked them.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFAQ(this)">
+          <span>Can I unsend a message?</span>
+          <span class="faq-toggle">?</span>
+        </div>
+        <div class="faq-answer">
+          <p>You can delete messages you send within 1 hour. The recipient will see "[Message deleted]" but your conversation history remains. You cannot permanently delete an entire chat without blocking.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFAQ(this)">
+          <span>Can I block someone?</span>
+          <span class="faq-toggle">?</span>
+        </div>
+        <div class="faq-answer">
+          <p>Yes. Click the ? menu on their profile or message and select "Block." They cannot see your profile, message you, or match with you again. You can unblock anytime in your blocked list.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="faq-category">
+      <h2>?? Payments & Premium</h2>
+
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFAQ(this)">
+          <span>Is MEENGLE free?</span>
+          <span class="faq-toggle">?</span>
+        </div>
+        <div class="faq-answer">
+          <p>Yes, MEENGLE is free to use. You can swipe, match, and message for free. Premium features like unlimited swipes, advanced filters, and Boosts are optional paid upgrades.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFAQ(this)">
+          <span>What's the difference between free and premium?</span>
+          <span class="faq-toggle">?</span>
+        </div>
+        <div class="faq-answer">
+          <p><strong>Free:</strong> 10 daily swipes, basic messaging, standard recommendations<br>
+          <strong>Premium:</strong> Unlimited swipes, advanced search, no ads, Boost feature, see who liked you<br>
+          <strong>VIP:</strong> All Premium features + concierge matchmaking, priority support</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFAQ(this)">
+          <span>How much does premium cost?</span>
+          <span class="faq-toggle">?</span>
+        </div>
+        <div class="faq-answer">
+          <p>Pricing varies by region and subscription length:<br>
+          • Monthly: $9.99/month<br>
+          • 3 Months: $19.99 (?$6.67/month)<br>
+          • Annual: $49.99 (?$4.17/month)<br>
+          VIP pricing available upon request.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFAQ(this)">
+          <span>Can I cancel my subscription?</span>
+          <span class="faq-toggle">?</span>
+        </div>
+        <div class="faq-answer">
+          <p>Yes, cancel anytime in your account settings. You must cancel at least 24 hours before renewal to avoid being charged. You'll keep premium features until the billing period ends.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFAQ(this)">
+          <span>Is my payment information secure?</span>
+          <span class="faq-toggle">?</span>
+        </div>
+        <div class="faq-answer">
+          <p>Yes. MEENGLE uses Stripe for payment processing with industry-standard PCI DSS compliance. We never store your full credit card number, only a secure token.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="faq-category">
+      <h2>?? Privacy & Security</h2>
+
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFAQ(this)">
+          <span>Will my friends see my MEENGLE profile?</span>
+          <span class="faq-toggle">?</span>
+        </div>
+        <div class="faq-answer">
+          <p>MEENGLE doesn't connect to your social media. Your profile is only visible to other MEENGLE users. You can block specific people if you'd prefer they don't see your profile.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFAQ(this)">
+          <span>Does MEENGLE sell my data?</span>
+          <span class="faq-toggle">?</span>
+        </div>
+        <div class="faq-answer">
+          <p>No. We do NOT sell personal data to advertisers, brokers, or third parties. We may share data with service providers (Stripe, SendGrid, AWS) who help run MEENGLE under strict contracts.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFAQ(this)">
+          <span>Can I export my data?</span>
+          <span class="faq-toggle">?</span>
+        </div>
+        <div class="faq-answer">
+          <p>Yes. Go to Settings ? Data & Privacy ? Download My Data. You'll receive a copy of your profile info, messages, photos, and activity in JSON format within 7 days.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFAQ(this)">
+          <span>How do I delete my account?</span>
+          <span class="faq-toggle">?</span>
+        </div>
+        <div class="faq-answer">
+          <p>Go to Settings ? Account ? Delete Account. Confirm your password and decision. Your account will be deleted within 30 days. Data like messages and photos are deleted within 90 days.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="faq-category">
+      <h2>?? Support & Issues</h2>
+
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFAQ(this)">
+          <span>How do I report someone for inappropriate behavior?</span>
+          <span class="faq-toggle">?</span>
+        </div>
+        <div class="faq-answer">
+          <p>Click the ? menu on their profile or message and select "Report." Choose the reason (harassment, spam, inappropriate content, etc.) and provide details. Our team reviews all reports within 24 hours.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFAQ(this)">
+          <span>My account was suspended. Why?</span>
+          <span class="faq-toggle">?</span>
+        </div>
+        <div class="faq-answer">
+          <p>Accounts may be suspended for violating Community Guidelines: fake profiles, harassment, explicit content, fraud, hate speech, etc. If you believe it's a mistake, email support@meengle.com with details.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFAQ(this)">
+          <span>I forgot my password. How do I reset it?</span>
+          <span class="faq-toggle">?</span>
+        </div>
+        <div class="faq-answer">
+          <p>On the login page, click "Forgot Password." Enter your email, and we'll send a reset link. Click the link and create a new password. The link expires in 24 hours.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFAQ(this)">
+          <span>I'm experiencing technical issues. What should I do?</span>
+          <span class="faq-toggle">?</span>
+        </div>
+        <div class="faq-answer">
+          <p>1. Try refreshing the page/app<br>
+          2. Clear your browser cache and cookies<br>
+          3. Update to the latest app version<br>
+          4. Restart your device<br>
+          If issues persist, contact support@meengle.com with details and screenshots.</p>
+        </div>
+      </div>
+    </div>
+
+    <hr style="margin: 40px 0; border: none; border-top: 2px solid #eee;">
+    
+    <div style="background: #f0f7ff; padding: 20px; border-radius: 8px;">
+      <p><strong>Still have questions?</strong> Contact us at <strong>support@meengle.com</strong> or visit our Help Center.</p>
+    </div>
+
+    <p style="font-size: 12px; color: #999; margin-top: 20px;">© 2024 MEENGLE, Inc. All rights reserved.</p>
+  </div>
+
+  <script>
+    function toggleFAQ(element) {
+      const question = element;
+      const answer = element.nextElementSibling;
+      
+      question.classList.toggle('active');
+      answer.classList.toggle('active');
+    }
+  </script>
+</body>
+</html>

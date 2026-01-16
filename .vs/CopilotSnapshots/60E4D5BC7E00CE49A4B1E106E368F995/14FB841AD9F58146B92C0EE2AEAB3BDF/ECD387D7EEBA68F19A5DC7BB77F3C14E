@@ -1,0 +1,34 @@
+﻿#!/usr/bin/env node
+const fs = require('fs');
+const path = require('path');
+
+const filesToDelete = [
+  'backend/tests/README.md',
+  'backend/tests/ENVIRONMENT.md',
+  'backend/tests/IMPLEMENTATION.md',
+  'backend/tests/QUICKSTART.md',
+  'backend/tests/COMPLETION_SUMMARY.md',
+  'backend/tests/INDEX.md',
+  'backend/tests/ARCHITECTURE.md',
+  'backend/tests/COMPLETION.md',
+  'backend/tests/TEST_SUMMARY.txt',
+  'backend/tests/IMPLEMENTATION.js',
+  'backend/tests/FINAL_VERIFICATION.js',
+  'backend/tests/STATUS.js',
+  'backend/tests/EXECUTION_SUMMARY.js',
+  'backend/tests/READY_TO_EXECUTE.js',
+  'backend/tests/EXECUTE_NOW.js'
+];
+
+filesToDelete.forEach(file => {
+  try {
+    if (fs.existsSync(file)) {
+      fs.unlinkSync(file);
+      console.log(`✓ Deleted: ${file}`);
+    }
+  } catch (e) {
+    console.log(`✗ Failed: ${file}`);
+  }
+});
+
+console.log('\nDone! Pure code only - no documentation.');

@@ -1,0 +1,19 @@
+﻿{
+  "name": "meengle-frontend",
+  "version": "5.2.0",
+  "private": true,
+  "scripts": {
+    "build": "npm run build:all",
+    "build:all": "npm run build:js & npm run copy:html & npm run copy:assets",
+    "build:js": "esbuild assets/js/*.js --outdir=dist/assets/js --bundle --minify --sourcemap",
+    "copy:html": "if exist pages (xcopy pages dist /E /I /Y) && copy index.html dist\\index.html",
+    "copy:assets": "if exist assets (xcopy assets dist\\assets /E /I /Y) && if exist src (xcopy src dist\\src /E /I /Y)",
+    "start": "npm run dev",
+    "dev": "python -m http.server 3000 --directory .",
+    "watch": "esbuild assets/js/*.js --outdir=dist/assets/js --bundle --sourcemap --watch",
+    "clean": "if exist dist (rmdir /S /Q dist)"
+  },
+  "devDependencies": {
+    "esbuild": "^0.19.0"
+  }
+}

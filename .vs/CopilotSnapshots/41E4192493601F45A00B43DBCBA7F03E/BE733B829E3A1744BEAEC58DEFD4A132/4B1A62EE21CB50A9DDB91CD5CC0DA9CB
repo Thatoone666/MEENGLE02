@@ -1,0 +1,143 @@
+﻿const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+const path = require('path');
+const compression = require('compression');
+const helmet = require('helmet');
+
+// Load environment variables
+require('dotenv').config({ path: path.resolve(__dirname, '.env') });
+
+// ════════════════════════════════════════════════════════════════
+// CORE APPLICATION IMPORTS
+// ════════════════════════════════════════════════════════════════
+const connectDB = require('./config/db');
+const logger = require('./config/logger');
+const configureMiddleware = require('./middleware');
+const configureRoutes = require('./routes');
+const configureSocket = require('./socket');
+const { errorHandler, sentryErrorHandler } = require('./middleware/error');
+
+// Additional imports for new features
+const storiesRoutes = require('./routes/stories');
+const datesRoutes = require('./routes/dates');
+const spotlightRoutes = require('./routes/spotlight');
+const roamRoutes = require('./routes/roam');
+const discoveryRoutes = require('./routes/discovery');
+
+// ════════════════════════════════════════════════════════════════
+// INITIALIZE APPLICATION
+// ════════════════════════════════════════════════════════════════
+
+// Connect to database
+if (process.env.NODE_ENV !== 'test') {
+    connectDB();
+}
+
+const app = express();
+
+// Add security headers
+app.use(helmet());
+
+// Add compression middleware
+app.use(compression());
+
+// Configure middleware
+configureMiddleware(app);
+
+// --- SOCKET.IO REAL-TIME CHAT SETUP ---
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: {
+        origin: process.env.NODE_ENV === 'production' 
+            ? ['https://meengle.app', 'https://www.meengle.app']
+            : process.env.CORS_ORIGIN || '*',
+        credentials: true,
+        methods: ['GET', 'POST']
+    },
+    transports: ['websocket', 'polling'],
+    maxHttpBufferSize: 1e6,
+    pingTimeout: 60000,
+    pingInterval: 25000
+});
+
+// Configure socket.io
+configureSocket(io);
+
+// Configure routes with Socket.io instance
+configureRoutes(app, io);
+
+// Register all feature routes
+app.use('/api/stories', storiesRoutes);
+app.use('/api/dates', datesRoutes);
+app.use('/api/spotlight', spotlightRoutes);
+app.use('/api/roam', roamRoutes);
+app.use('/api/discovery', discoveryRoutes);
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.json({ 
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime()
+    });
+});
+
+// Centralized error handler
+app.use(errorHandler);
+
+// Sentry error handler (should be after all other middleware)
+if (process.env.SENTRY_DSN) {
+    app.use(sentryErrorHandler());
+}
+
+const PORT = process.env.PORT || 3001;
+
+// ════════════════════════════════════════════════════════════════
+// START SERVER
+// ════════════════════════════════════════════════════════════════
+
+const runningServer = server.listen(PORT, () => {
+    console.log(`\n${'═'.repeat(60)}`);
+    console.log('🚀 MEENGLE SERVER STARTED');
+    console.log('═'.repeat(60));
+    console.log(`📍 Port: ${PORT}`);
+    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`📦 Version: 1.0.0`);
+    console.log(`⏰ Started: ${new Date().toISOString()}`);
+    console.log('═'.repeat(60));
+    console.log('\n✅ Server ready to accept connections\n');
+    
+    if (process.env.NODE_ENV === 'production') {
+        console.log('📊 Monitoring & Metrics:');
+        console.log(`   • Health: http://localhost:${PORT}/health\n`);
+    }
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+    console.log('SIGTERM received: Closing server gracefully...');
+    runningServer.close(() => {
+        console.log('Server closed');
+        process.exit(0);
+    });
+});
+
+process.on('SIGINT', () => {
+    console.log('SIGINT received: Closing server gracefully...');
+    runningServer.close(() => {
+        console.log('Server closed');
+        process.exit(0);
+    });
+});
+
+// Unhandled rejection handler
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('❌ Unhandled Rejection:', reason);
+    if (process.env.SENTRY_DSN) {
+        const Sentry = require('@sentry/node');
+        Sentry.captureException(reason);
+    }
+});
+
+module.exports = { app, server, io };

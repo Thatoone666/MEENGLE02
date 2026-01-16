@@ -1,0 +1,282 @@
+﻿const express = require('express');
+const router = express.Router();
+const crypto = require('crypto');
+const auth = require('../middleware/auth');
+const stripe = require('stripe')(process.env.STRIPE_SECRET);
+const { Spotlight } = require('../models/featureModels');
+
+// Store reference to io for Socket.io events
+let io = null;
+
+// Initialize with Socket.io instance
+const setIO = (socketIO) => {
+  io = socketIO;
+};
+
+// Spotlight tier pricing (in cents)
+const TIER_PRICES = {
+  bronze: 499,    // $4.99
+  silver: 999,    // $9.99
+  gold: 1999,     // $19.99
+  platinum: 4999  // $49.99
+};
+
+const TIER_BOOST_HOURS = {
+  bronze: 1,
+  silver: 6,
+  gold: 24,
+  platinum: 72
+};
+
+// Create payment intent for Spotlight
+router.post('/spotlight/create-intent', auth, async (req, res) => {
+  try {
+    const { tier } = req.body;
+    
+    if (!TIER_PRICES[tier]) {
+      return res.status(400).json({ success: false, error: 'Invalid tier' });
+    }
+    
+    const amount = TIER_PRICES[tier];
+    
+    const intent = await stripe.paymentIntents.create({
+      amount,
+      currency: 'usd',
+      metadata: {
+        userId: req.user.id,
+        tier: tier,
+        feature: 'spotlight'
+      },
+      description: `Meengle Spotlight - ${tier} tier`
+    });
+    
+    res.json({
+      success: true,
+      clientSecret: intent.client_secret,
+      amount: amount,
+      tier: tier
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Confirm payment and activate spotlight
+router.post('/spotlight/confirm', auth, async (req, res) => {
+  try {
+    const { paymentIntentId, tier } = req.body;
+    
+    if (!TIER_PRICES[tier]) {
+      return res.status(400).json({ success: false, error: 'Invalid tier' });
+    }
+    
+    // Verify payment intent with Stripe
+    const intent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    
+    if (intent.status !== 'succeeded') {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Payment not completed' 
+      });
+    }
+    
+    // Create spotlight record
+    const boostHours = TIER_BOOST_HOURS[tier];
+    const expiresAt = new Date(Date.now() + boostHours * 60 * 60 * 1000);
+    
+    const spotlight = new Spotlight({
+      userId: req.user.id,
+      tier: tier,
+      active: true,
+      viewCount: 0,
+      passCount: 0,
+      dailyViewLimit: 1000,
+      purchasedAt: new Date(),
+      expiresAt: expiresAt,
+      paymentIntentId: paymentIntentId,
+      amount: TIER_PRICES[tier] / 100
+    });
+    
+    await spotlight.save();
+
+    // Emit Socket.io event for real-time notification
+    if (io) {
+      io.to(`user:${req.user.id}`).emit('payment:completed', {
+        type: 'spotlight_activated',
+        tier: tier,
+        boostHours: boostHours,
+        expiresAt: expiresAt.toIso8601String(),
+        spotlight: spotlight.toObject(),
+        timestamp: new Date()
+      });
+
+      // Also emit to all users for leaderboard updates
+      io.emit('spotlight:purchased', {
+        userId: req.user.id,
+        tier: tier,
+        timestamp: new Date()
+      });
+    }
+    
+    res.json({
+      success: true,
+      spotlight: spotlight,
+      message: `Spotlight activated for ${boostHours} hours!`
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get payment history
+router.get('/history', auth, async (req, res) => {
+  try {
+    const spotlights = await Spotlight.find({ userId: req.user.id })
+      .sort({ purchasedAt: -1 });
+    
+    res.json({
+      success: true,
+      payments: spotlights.map(s => ({
+        id: s._id,
+        tier: s.tier,
+        amount: s.amount,
+        date: s.purchasedAt,
+        status: new Date() < s.expiresAt ? 'active' : 'expired'
+      }))
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Stripe webhook
+router.post('/webhook', express.raw({type: 'application/json'}), async (req, res) => {
+  try {
+    const sig = req.headers['stripe-signature'];
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    
+    if (!webhookSecret) {
+      return res.json({ received: true });
+    }
+    
+    const event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+    
+    if (event.type === 'payment_intent.succeeded') {
+      console.log(`Payment succeeded: ${event.data.object.id}`);
+      
+      // Emit Socket.io event for payment success
+      if (io && event.data.object.metadata && event.data.object.metadata.userId) {
+        io.to(`user:${event.data.object.metadata.userId}`).emit('payment:status', {
+          type: 'success',
+          message: 'Payment processed successfully',
+          timestamp: new Date()
+        });
+      }
+    }
+    
+    if (event.type === 'payment_intent.payment_failed') {
+      console.log(`Payment failed: ${event.data.object.id}`);
+      
+      // Emit Socket.io event for payment failure
+      if (io && event.data.object.metadata && event.data.object.metadata.userId) {
+        io.to(`user:${event.data.object.metadata.userId}`).emit('payment:status', {
+          type: 'failed',
+          message: 'Payment processing failed',
+          error: event.data.object.last_payment_error?.message,
+          timestamp: new Date()
+        });
+      }
+    }
+    
+    res.json({received: true});
+  } catch (error) {
+    console.error('Webhook error:', error.message);
+    res.status(400).send(`Webhook Error: ${error.message}`);
+  }
+});
+
+// Legacy endpoints (kept for compatibility)
+
+router.post('/payfast', (req, res) => {
+    const { amount, item_name, email } = req.body;
+    const merchant_id = process.env.PAYFAST_MERCHANT_ID;
+    const merchant_key = process.env.PAYFAST_MERCHANT_KEY;
+    const return_url = `${process.env.FRONTEND_URL}/payment-success.html`;
+    const cancel_url = `${process.env.FRONTEND_URL}/payment-cancel.html`;
+    const notify_url = `${process.env.BACKEND_URL}/api/payment/payfast-notify`;
+
+    const data = {
+        merchant_id,
+        merchant_key,
+        return_url,
+        cancel_url,
+        notify_url,
+        amount,
+        item_name,
+        email_address: email
+    };
+
+    let signatureString = Object.keys(data)
+        .map(key => `${key}=${encodeURIComponent(data[key]).replace(/%20/g, '+')}`)
+        .join('&');
+    
+    const signature = crypto.createHash('md5').update(signatureString).digest('hex');
+    data.signature = signature;
+
+    res.json({
+        payfast_url: 'https://sandbox.payfast.co.za/eng/process',
+        data
+    });
+});
+
+// Stripe payment endpoint
+router.post('/stripe', async (req, res) => {
+    const { amount, item_name, email } = req.body;
+    try {
+        const paymentIntent = await stripe.paymentIntents.create({
+            amount: Math.round(parseFloat(amount) * 100), // Amount in cents
+            currency: 'zar',
+            description: item_name,
+            receipt_email: email
+        });
+        res.json({ clientSecret: paymentIntent.client_secret });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// PayPal payment endpoint
+router.post('/paypal', (req, res) => {
+    const { amount, item_name } = req.body;
+    const data = {
+        business: process.env.PAYPAL_BUSINESS_EMAIL,
+        item_name,
+        amount,
+        currency_code: 'ZAR',
+        return: `${process.env.FRONTEND_URL}/payment-success.html`,
+        cancel_return: `${process.env.FRONTEND_URL}/payment-cancel.html`,
+        notify_url: `${process.env.BACKEND_URL}/api/payment/paypal-notify`
+    };
+    res.json({
+        paypal_url: 'https://www.sandbox.paypal.com/cgi-bin/webscr',
+        data
+    });
+});
+
+// ITN (Instant Transaction Notification) handlers
+router.post('/payfast-notify', (req, res) => {
+    // Logic to handle PayFast ITN
+    console.log('PayFast ITN received:', req.body);
+    // Verify the notification and update order status in DB
+    res.sendStatus(200);
+});
+
+router.post('/paypal-notify', (req, res) => {
+    // Logic to handle PayPal IPN
+    console.log('PayPal IPN received:', req.body);
+    // Verify the notification and update order status in DB
+    res.sendStatus(200);
+});
+
+module.exports = router;
+module.exports.setIO = setIO;

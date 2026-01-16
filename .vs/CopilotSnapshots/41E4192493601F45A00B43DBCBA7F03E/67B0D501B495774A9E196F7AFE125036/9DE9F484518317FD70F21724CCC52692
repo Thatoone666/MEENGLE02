@@ -1,0 +1,354 @@
+﻿const express = require('express');
+const router = express.Router();
+const EmergencyContact = require('../models/EmergencyContact');
+const EmergencyLog = require('../models/EmergencyLog');
+const { authenticateToken } = require('../middleware/auth');
+const nodemailer = require('nodemailer');
+
+/// @route   GET /api/emergency/contacts/:userId
+/// @desc    Get emergency contacts for a user
+/// @access  Private
+router.get('/contacts/:userId', authenticateToken, async (req, res) => {
+  try {
+    const contacts = await EmergencyContact.find({
+      userId: req.params.userId,
+    });
+
+    res.json({
+      success: true,
+      contacts,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching contacts',
+      error: err.message,
+    });
+  }
+});
+
+/// @route   POST /api/emergency/contacts
+/// @desc    Add new emergency contact
+/// @access  Private
+router.post('/contacts', authenticateToken, async (req, res) => {
+  try {
+    const { userId, name, phoneNumber, email, isFavourite } = req.body;
+
+    const newContact = new EmergencyContact({
+      userId,
+      name,
+      phoneNumber,
+      email,
+      isFavourite,
+      addedAt: new Date(),
+    });
+
+    const contact = await newContact.save();
+
+    res.status(201).json({
+      success: true,
+      contact,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: 'Error adding contact',
+      error: err.message,
+    });
+  }
+});
+
+/// @route   PUT /api/emergency/contacts/:contactId/favourite
+/// @desc    Toggle favourite status
+/// @access  Private
+router.put('/contacts/:contactId/favourite', authenticateToken, async (req, res) => {
+  try {
+    const contact = await EmergencyContact.findById(req.params.contactId);
+    if (!contact) {
+      return res.status(404).json({ success: false, message: 'Contact not found' });
+    }
+
+    contact.isFavourite = !contact.isFavourite;
+    const updated = await contact.save();
+
+    res.json({
+      success: true,
+      contact: updated,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: 'Error updating contact',
+      error: err.message,
+    });
+  }
+});
+
+/// @route   DELETE /api/emergency/contacts/:contactId
+/// @desc    Delete emergency contact
+/// @access  Private
+router.delete('/contacts/:contactId', authenticateToken, async (req, res) => {
+  try {
+    await EmergencyContact.findByIdAndDelete(req.params.contactId);
+
+    res.json({
+      success: true,
+      message: 'Contact deleted',
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: 'Error deleting contact',
+      error: err.message,
+    });
+  }
+});
+
+/// @route   POST /api/emergency/share-location
+/// @desc    Share location with emergency contact
+/// @access  Private
+router.post('/share-location', authenticateToken, async (req, res) => {
+  try {
+    const {
+      userId,
+      contactId,
+      contactEmail,
+      contactPhone,
+      location,
+      serviceType,
+      timestamp,
+    } = req.body;
+
+    // Log the share
+    const log = new EmergencyLog({
+      userId,
+      contactId,
+      location,
+      serviceType,
+      sharedAt: new Date(timestamp),
+      acknowledged: false,
+    });
+
+    await log.save();
+
+    // Send notification email
+    await sendLocationEmail(
+      contactEmail,
+      contactPhone,
+      location,
+      serviceType,
+    );
+
+    // Could also send SMS, push notification, etc.
+
+    res.json({
+      success: true,
+      message: 'Location shared successfully',
+      log,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: 'Error sharing location',
+      error: err.message,
+    });
+  }
+});
+
+/// @route   POST /api/emergency/send-sos
+/// @desc    Send SOS alert to police
+/// @access  Private
+router.post('/send-sos', authenticateToken, async (req, res) => {
+  try {
+    const { userId, location, incidentType, timestamp } = req.body;
+
+    // Log the SOS
+    const log = new EmergencyLog({
+      userId,
+      contactId: 'POLICE',
+      location,
+      serviceType: 'police',
+      sharedAt: new Date(timestamp),
+      acknowledged: false,
+      notes: incidentType,
+    });
+
+    await log.save();
+
+    // Send to police/emergency services (integrate with real service)
+    await notifyEmergencyServices(userId, location, incidentType);
+
+    res.json({
+      success: true,
+      message: 'SOS alert sent to police',
+      log,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: 'Error sending SOS',
+      error: err.message,
+    });
+  }
+});
+
+/// @route   GET /api/emergency/nearby
+/// @desc    Get nearby emergency services
+/// @access  Private
+router.get('/nearby', authenticateToken, async (req, res) => {
+  try {
+    const { lat, lng } = req.query;
+
+    // In production, integrate with Google Maps Nearby Places API
+    // or local emergency service database
+
+    const services = [
+      {
+        id: '1',
+        name: 'City Police Station',
+        type: 'police',
+        distance: 0.5,
+        phone: '911',
+        address: '123 Main St',
+        coordinates: { lat: parseFloat(lat), lng: parseFloat(lng) },
+      },
+      {
+        id: '2',
+        name: 'Central Hospital',
+        type: 'hospital',
+        distance: 1.2,
+        phone: '911',
+        address: '456 Medical Ave',
+        coordinates: { lat: parseFloat(lat) + 0.01, lng: parseFloat(lng) + 0.01 },
+      },
+      {
+        id: '3',
+        name: 'Fire Station #5',
+        type: 'fire',
+        distance: 0.8,
+        phone: '911',
+        address: '789 Emergency Rd',
+        coordinates: { lat: parseFloat(lat) - 0.01, lng: parseFloat(lng) },
+      },
+    ];
+
+    res.json({
+      success: true,
+      services,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching nearby services',
+      error: err.message,
+    });
+  }
+});
+
+/// @route   POST /api/emergency/log-share
+/// @desc    Log emergency share action
+/// @access  Private
+router.post('/log-share', authenticateToken, async (req, res) => {
+  try {
+    const { userId, contactId, location, serviceType, timestamp, acknowledged } = req.body;
+
+    const log = new EmergencyLog({
+      userId,
+      contactId,
+      location,
+      serviceType,
+      sharedAt: new Date(timestamp),
+      acknowledged,
+    });
+
+    await log.save();
+
+    res.json({
+      success: true,
+      log,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: 'Error logging share',
+      error: err.message,
+    });
+  }
+});
+
+/// @route   GET /api/emergency/history/:userId
+/// @desc    Get emergency share history
+/// @access  Private
+router.get('/history/:userId', authenticateToken, async (req, res) => {
+  try {
+    const history = await EmergencyLog.find({
+      userId: req.params.userId,
+    }).sort({ sharedAt: -1 }).limit(50);
+
+    res.json({
+      success: true,
+      history,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching history',
+      error: err.message,
+    });
+  }
+});
+
+// Helper function: Send location email
+async function sendLocationEmail(email, phone, location, serviceType) {
+  try {
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD,
+      },
+    });
+
+    const mapUrl = `https://maps.google.com/?q=${location.latitude},${location.longitude}`;
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: '?? Emergency Safety Alert - Location Shared',
+      html: `
+        <h2>Emergency Safety Alert</h2>
+        <p>Someone has shared their location with you for safety purposes.</p>
+        <p><strong>Location:</strong> ${location.address || `${location.latitude}, ${location.longitude}`}</p>
+        <p><strong>Accuracy:</strong> ±${Math.round(location.accuracy)} meters</p>
+        <p><strong>Time:</strong> ${new Date(location.timestamp).toLocaleString()}</p>
+        <p><a href="${mapUrl}" style="background-color: #FF6B9A; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View on Map</a></p>
+        <p>Contact them immediately if needed: ${phone}</p>
+        <p style="color: #666; font-size: 12px;">This location sharing was initiated through the Meengle Safety Feature.</p>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+  } catch (err) {
+    console.error('Error sending email:', err);
+  }
+}
+
+// Helper function: Notify emergency services
+async function notifyEmergencyServices(userId, location, incidentType) {
+  try {
+    // In production, integrate with actual emergency dispatch system
+    console.log(`[EMERGENCY] User ${userId} sent SOS from ${location.address}`);
+    console.log(`Incident Type: ${incidentType}`);
+
+    // Could integrate with:
+    // - Police dispatch API
+    // - Emergency call centers
+    // - Local authorities
+    // - Emergency response apps
+
+  } catch (err) {
+    console.error('Error notifying emergency services:', err);
+  }
+}
+
+module.exports = router;

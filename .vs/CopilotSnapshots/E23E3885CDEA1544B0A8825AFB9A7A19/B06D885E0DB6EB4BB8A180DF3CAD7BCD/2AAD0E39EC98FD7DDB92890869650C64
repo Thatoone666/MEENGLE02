@@ -1,0 +1,50 @@
+﻿name: Build & Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install frontend dependencies
+        run: cd frontend && npm install
+
+      - name: Build frontend assets
+        run: cd frontend && npm run build:js 2>/dev/null || echo "JS build skipped"
+
+      - name: Copy files to dist
+        run: cd frontend && npm run copy:all
+
+      - name: Verify dist directory
+        run: |
+          ls -la dist/ | head -20
+          echo "✓ Build complete"
+
+      - name: Deploy to GitHub Pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
+
+      - name: Upload artifact for preview
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifact
+          path: dist/

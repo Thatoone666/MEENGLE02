@@ -1,0 +1,121 @@
+﻿# MEENGLE - COMPLETE EXECUTABLE TODO
+# Every file, every feature, every bug - MARKED AS TODO
+
+## BACKEND - CORE FUNCTIONALITY (30 tasks)
+- [ ] B1. Fix auth.js - Add email verification sending
+- [ ] B2. Fix auth.js - Add password reset email sending
+- [ ] B3. Fix matching.js - Implement distance filtering
+- [ ] B4. Fix matching.js - Fix "already liked" logic
+- [ ] B5. Fix matching.js - Add mutual match detection
+- [ ] B6. Fix chat.js - Persist messages to MongoDB
+- [ ] B7. Fix chat.js - Add message encryption
+- [ ] B8. Fix chat.js - Add read receipts
+- [ ] B9. Fix payment.js - Add Stripe SDK integration
+- [ ] B10. Fix payment.js - Add PayFast integration
+- [ ] B11. Fix payment.js - Actually charge cards
+- [ ] B12. Fix payment.js - Handle payment failures
+- [ ] B13. Fix payment.js - Update subscription on success
+- [ ] B14. Fix webhooks.js - Make Stripe webhook work
+- [ ] B15. Fix webhooks.js - Make PayFast webhook work
+- [ ] B16. Fix fraud.js - Actually suspend flagged accounts
+- [ ] B17. Fix notifications.js - Persist notifications
+- [ ] B18. Fix notifications.js - Send real push notifications
+- [ ] B19. Fix admin.js - Make dashboard actually functional
+- [ ] B20. Fix admin.js - Add user suspension logic
+- [ ] B21. server.js - Wire Socket.IO properly
+- [ ] B22. server.js - Test all 27 routes
+- [ ] B23. All routes - Add proper error handling
+- [ ] B24. All routes - Add input validation
+- [ ] B25. All routes - Add rate limiting globally
+- [ ] B26. Database - Add message encryption fields
+- [ ] B27. Database - Add audit logs
+- [ ] B28. Database - Add subscription tracking
+- [ ] B29. Security - Fix JWT token expiration
+- [ ] B30. Security - Add CSRF protection
+
+## FLUTTER - ALL SCREENS (25 tasks)
+- [ ] F1. main.dart - Wire all 15 screens properly
+- [ ] F2. api_service.dart - Add token validation
+- [ ] F3. api_service.dart - Add error handling
+- [ ] F4. api_service.dart - Add retry logic
+- [ ] F5. payment_service.dart - Integrate with Stripe
+- [ ] F6. payment_service.dart - Integrate with PayFast
+- [ ] F7. payment_service.dart - Handle card declines
+- [ ] F8. swipe_screen.dart - Fix swiping logic
+- [ ] F9. swipe_screen.dart - Add filter preferences
+- [ ] F10. chat_screen.dart - Connect to Socket.IO
+- [ ] F11. chat_screen.dart - Persist messages offline
+- [ ] F12. chat_screen.dart - Add typing indicators
+- [ ] F13. chat_screen.dart - Add read receipts
+- [ ] F14. premium_tier_screen.dart - Add all 12 payment methods
+- [ ] F15. premium_tier_screen.dart - Handle free trial
+- [ ] F16. premium_tier_screen.dart - Show subscription status
+- [ ] F17. profile_edit.dart - Add all profile fields
+- [ ] F18. profile_edit.dart - Add photo upload
+- [ ] F19. profile_edit.dart - Add verification
+- [ ] F20. settings_screen.dart - Add all settings
+- [ ] F21. All screens - Add loading states
+- [ ] F22. All screens - Add error states
+- [ ] F23. All screens - Add offline mode
+- [ ] F24. All screens - Test on device
+- [ ] F25. Build APK - Test on real Android
+
+## DOCUMENTATION (DELETE ALL BS - 10 tasks)
+- [ ] D1. Delete FINAL_EXECUTION_CARD.md
+- [ ] D2. Delete MEENGLE_FINAL_COMPLETION_SUMMARY.md
+- [ ] D3. Delete LAUNCH_READY_FINAL_SUMMARY.md
+- [ ] D4. Delete FINAL_EXECUTION_COMPLETE_LAUNCH_NOW.md
+- [ ] D5. Delete all 50+ "COMPLETE" docs
+- [ ] D6. Delete all 40+ "FINAL" docs
+- [ ] D7. Delete all 30+ "READY" docs
+- [ ] D8. Delete all pricing/competitor docs
+- [ ] D9. Keep only README.md
+- [ ] D10. Delete COMPLETE_TODO.md (this file)
+
+## CRITICAL BUGS TO FIX (10 tasks - DO THESE FIRST)
+- [ ] CRIT1. Payment doesn't charge - Fix payment.js to use Stripe API
+- [ ] CRIT2. Chat doesn't persist - Add MongoDB persistence to chat.js
+- [ ] CRIT3. Matching repeats users - Add checked flag to matching.js
+- [ ] CRIT4. No real-time chat - Wire Socket.IO in server.js
+- [ ] CRIT5. Admin can't suspend - Add suspension logic to admin.js
+- [ ] CRIT6. Tokens don't expire - Add refresh token logic
+- [ ] CRIT7. No validation - Add express-validator to all routes
+- [ ] CRIT8. Payments don't update - Wire webhooks to update subscriptions
+- [ ] CRIT9. No encryption - Add message encryption to chat
+- [ ] CRIT10. Flutter crashes - Fix api_service token handling
+
+## ENVIRONMENT & CONFIG (5 tasks)
+- [ ] E1. Fill .env with REAL Stripe keys
+- [ ] E2. Fill .env with REAL PayFast keys
+- [ ] E3. Add REAL MongoDB Atlas URL
+- [ ] E4. Add REAL email credentials
+- [ ] E5. Add REAL admin email
+
+## TESTING (8 tasks)
+- [ ] T1. Test signup flow end-to-end
+- [ ] T2. Test login flow end-to-end
+- [ ] T3. Test payment with real card
+- [ ] T4. Test chat persistence
+- [ ] T5. Test matching algorithm
+- [ ] T6. Test admin suspension
+- [ ] T7. Test Flutter all screens
+- [ ] T8. Load test with 100+ concurrent users
+
+## DEPLOYMENT (5 tasks)
+- [ ] DEP1. Deploy backend to production
+- [ ] DEP2. Deploy Flutter to TestFlight (iOS)
+- [ ] DEP3. Deploy Flutter to Google Play (Android)
+- [ ] DEP4. Set up monitoring in production
+- [ ] DEP5. Set up alerts for errors
+
+---
+
+## TOTAL: 93 TASKS
+
+**CRITICAL PATH (Do these first to have working app):**
+CRIT1, CRIT2, CRIT3, CRIT4, CRIT5, CRIT8, CRIT9
+B1, B2, B3, B4, B5, B6, F1, F5, F10
+
+That's 15 tasks = ~8 hours of real coding
+
+Ready?

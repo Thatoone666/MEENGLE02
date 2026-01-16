@@ -1,0 +1,174 @@
+/* Import Google Fonts - Poppins for premium typography */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+
+/*
+Premium & Vibrant Color Palette Inspired by Modern Dating Apps
+Primary: Vibrant Pink/Purple Tones
+Accent: Gold for premium features
+Typography: Clean and modern
+*/
+
+:root {
+    --primary-color: #C13584; /* Deep Magenta */
+    --secondary-color: #E1306C; /* Vibrant Pink */
+    --accent-color: #FFD700; /* Gold for premium highlights */
+    --background-color: #FBFBFD; /* very light, slightly cool */
+    --text-color: #111217; /* nearly-black for high legibility */
+    --muted-text: #6b6f76;
+    --border-color: #e9eaef; /* Subtle borders */
+    --card-background: #FFFFFF;
+    --glass-bg: rgba(255,255,255,0.65);
+    --font-family: 'Poppins', 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, 'Helvetica Neue', Arial;
+}
+
+/* Base */
+body {
+    background-color: var(--background-color);
+    font-family: var(--font-family);
+    color: var(--text-color);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1.45;
+    -webkit-text-size-adjust: 100%;
+}
+
+/* Utility: Responsive container */
+.container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+/* Headings */
+h1, .h1 {
+    font-size: 2.25rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0 0 0.5rem 0;
+}
+
+h2, .h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem 0;
+    color: var(--text-color);
+}
+
+/* Gradient Text for Headers */
+.gradient-text {
+    background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+/* Buttons */
+.btn-primary {
+    background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    font-weight: 600;
+    border-radius: 9999px; /* pill shape */
+    padding: 0.75rem 1.5rem;
+    transition: transform 0.22s cubic-bezier(.2,.8,.2,1), box-shadow 0.22s;
+    box-shadow: 0 8px 26px rgba(193,53,132,0.12), inset 0 -6px 18px rgba(0,0,0,0.06);
+    border: none;
+}
+
+.btn-primary:focus { box-shadow: 0 12px 30px rgba(193,53,132,0.14); }
+
+.btn-primary:hover {
+    transform: translateY(-3px) scale(1.01);
+    box-shadow: 0 14px 40px rgba(193,53,132,0.18);
+}
+
+/* Secondary button - subtle outline */
+.btn-secondary {
+    background: transparent;
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    padding: 0.6rem 1.1rem;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+}
+.btn-secondary:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    transform: translateY(-1px);
+}
+
+/* Input Fields */
+.form-input {
+    width: 100%;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+    background-color: var(--card-background);
+    transition: box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 4px 18px rgba(193,53,132,0.12);
+}
+
+/* Cards */
+.content-card {
+    background-color: var(--card-background);
+    border-radius: 1rem; /* More rounded corners */
+    box-shadow: 0 12px 40px rgba(10, 12, 15, 0.06);
+    padding: 1.5rem;
+    transition: transform 0.28s ease, box-shadow 0.28s ease;
+}
+
+.content-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 20px 60px rgba(10,12,15,0.10);
+}
+
+/* Premium Highlights */
+.premium-border {
+    border: 2px solid var(--accent-color);
+}
+
+.premium-glow {
+    box-shadow: 0 0 18px rgba(255,215,0,0.18);
+}
+
+.premium-tag {
+    background-color: var(--accent-color);
+    color: var(--text-color);
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.5rem;
+    text-transform: uppercase;
+}
+
+/* Avatar */
+.avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    object-fit: cover;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+    border: 3px solid rgba(255,255,255,0.65);
+}
+
+.avatar-sm { width: 40px; height: 40px; }
+
+/* Subtle motion for actionable elements */
+.focus-ring:focus {
+    outline: none;
+    box-shadow: 0 0 0 6px rgba(193,53,132,0.10);
+    border-radius: 12px;
+}
+
+/* Muted text */
+.muted { color: var(--muted-text); }
+
+/* Accessibility: high-contrast preference */
+@media (prefers-contrast: more) {
+    :root { --border-color: #cfcfcf; }
+    .content-card { box-shadow: 0 10px 40px rgba(0,0,0,0.18); }
+}

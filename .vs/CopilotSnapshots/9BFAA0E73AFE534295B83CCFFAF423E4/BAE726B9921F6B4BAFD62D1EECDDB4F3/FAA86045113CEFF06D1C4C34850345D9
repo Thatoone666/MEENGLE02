@@ -1,0 +1,205 @@
+﻿import { spawn } from 'child_process';
+import fs from 'fs';
+import path from 'path';
+import mongoose from 'mongoose';
+
+const BACKUP_DIR = process.env.BACKUP_DIR || './backups';
+
+if (!fs.existsSync(BACKUP_DIR)) {
+  fs.mkdirSync(BACKUP_DIR, { recursive: true });
+}
+
+export const createBackup = async () => {
+  try {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupPath = path.join(BACKUP_DIR, `meengle-backup-${timestamp}`);
+
+    const mongoUri = process.env.MONGO_URI;
+
+    return new Promise((resolve, reject) => {
+      const mongodump = spawn('mongodump', [
+        `--uri=${mongoUri}`,
+        `--out=${backupPath}`
+      ]);
+
+      mongodump.on('close', (code) => {
+        if (code === 0) {
+          console.log(`✅ Backup created: ${backupPath}`);
+          resolve({ success: true, path: backupPath, timestamp });
+        } else {
+          reject(new Error(`Backup failed with code ${code}`));
+        }
+      });
+
+      mongodump.on('error', (error) => {
+        reject(error);
+      });
+    });
+  } catch (error) {
+    console.error('Create backup error:', error);
+    throw error;
+  }
+};
+
+export const restoreBackup = async (backupPath) => {
+  try {
+    const mongoUri = process.env.MONGO_URI;
+
+    return new Promise((resolve, reject) => {
+      const mongorestore = spawn('mongorestore', [
+        `--uri=${mongoUri}`,
+        '--drop',
+        backupPath
+      ]);
+
+      mongorestore.on('close', (code) => {
+        if (code === 0) {
+          console.log(`✅ Backup restored from: ${backupPath}`);
+          resolve({ success: true });
+        } else {
+          reject(new Error(`Restore failed with code ${code}`));
+        }
+      });
+
+      mongorestore.on('error', (error) => {
+        reject(error);
+      });
+    });
+  } catch (error) {
+    console.error('Restore backup error:', error);
+    throw error;
+  }
+};
+
+export const listBackups = async () => {
+  try {
+    const files = fs.readdirSync(BACKUP_DIR);
+    const backups = files
+      .filter(f => f.startsWith('meengle-backup-'))
+      .map(f => ({
+        name: f,
+        path: path.join(BACKUP_DIR, f),
+        created: fs.statSync(path.join(BACKUP_DIR, f)).birthtime
+      }))
+      .sort((a, b) => b.created - a.created);
+
+    return backups;
+  } catch (error) {
+    console.error('List backups error:', error);
+    return [];
+  }
+};
+
+export const deleteOldBackups = async (retentionDays = 30) => {
+  try {
+    const now = Date.now();
+    const maxAge = retentionDays * 24 * 60 * 60 * 1000;
+
+    const files = fs.readdirSync(BACKUP_DIR);
+    let deletedCount = 0;
+
+    files.forEach(file => {
+      if (file.startsWith('meengle-backup-')) {
+        const filePath = path.join(BACKUP_DIR, file);
+        const stats = fs.statSync(filePath);
+        const fileAge = now - stats.birthtime.getTime();
+
+        if (fileAge > maxAge) {
+          fs.rmSync(filePath, { recursive: true });
+          deletedCount++;
+          console.log(`🗑️ Deleted old backup: ${file}`);
+        }
+      }
+    });
+
+    return { success: true, deletedCount };
+  } catch (error) {
+    console.error('Delete old backups error:', error);
+    throw error;
+  }
+};
+
+export const scheduleAutoBackup = (intervalHours = 24) => {
+  const intervalMs = intervalHours * 60 * 60 * 1000;
+
+  setInterval(async () => {
+    try {
+      await createBackup();
+      await deleteOldBackups(30);
+      console.log('✅ Auto-backup completed');
+    } catch (error) {
+      console.error('Auto-backup error:', error);
+    }
+  }, intervalMs);
+
+  console.log(`📅 Auto-backup scheduled every ${intervalHours} hours`);
+};
+
+export const exportDataGDPR = async (userId) => {
+  try {
+    const User = mongoose.model('User');
+    const Message = mongoose.model('Message');
+    const UserMatch = mongoose.model('UserMatch');
+    const FraudReport = mongoose.model('FraudReport');
+    const Subscription = mongoose.model('Subscription');
+
+    const userObjId = new mongoose.Types.ObjectId(userId);
+
+    const userData = await User.findById(userObjId).lean();
+    const messages = await Message.find({
+      $or: [{ senderId: userObjId }, { receiverId: userObjId }]
+    }).lean();
+    const matches = await UserMatch.find({ userId: userObjId }).lean();
+    const reports = await FraudReport.find({
+      $or: [{ reportedBy: userObjId }, { reportedUser: userObjId }]
+    }).lean();
+    const subscriptions = await Subscription.find({ userId: userObjId }).lean();
+
+    return {
+      user: userData,
+      messages,
+      matches,
+      reports,
+      subscriptions,
+      exportedAt: new Date()
+    };
+  } catch (error) {
+    console.error('Export GDPR error:', error);
+    throw error;
+  }
+};
+
+export const deleteUserDataGDPR = async (userId) => {
+  try {
+    const User = mongoose.model('User');
+    const Message = mongoose.model('Message');
+    const UserMatch = mongoose.model('UserMatch');
+    const FraudReport = mongoose.model('FraudReport');
+    const Subscription = mongoose.model('Subscription');
+
+    const userObjId = new mongoose.Types.ObjectId(userId);
+
+    await User.deleteOne({ _id: userObjId });
+    await Message.deleteMany({
+      $or: [{ senderId: userObjId }, { receiverId: userObjId }]
+    });
+    await UserMatch.deleteMany({ userId: userObjId });
+    await FraudReport.deleteMany({ reportedBy: userObjId });
+    await Subscription.deleteMany({ userId: userObjId });
+
+    return { success: true };
+  } catch (error) {
+    console.error('Delete GDPR data error:', error);
+    throw error;
+  }
+};
+
+export default {
+  createBackup,
+  restoreBackup,
+  listBackups,
+  deleteOldBackups,
+  scheduleAutoBackup,
+  exportDataGDPR,
+  deleteUserDataGDPR
+};

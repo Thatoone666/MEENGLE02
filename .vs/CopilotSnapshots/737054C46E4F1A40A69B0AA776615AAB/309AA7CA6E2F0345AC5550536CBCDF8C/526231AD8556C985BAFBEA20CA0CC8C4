@@ -1,0 +1,113 @@
+﻿module.exports = {
+  // Stripe configuration
+  stripe: {
+    secretKey: process.env.STRIPE_SECRET_KEY,
+    publishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
+    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+    apiVersion: '2023-10-16',
+  },
+
+  // Payment plans
+  plans: {
+    free: {
+      id: 'plan_free',
+      name: 'Free',
+      price: 0,
+      currency: 'usd',
+      interval: 'month',
+      features: [
+        'Basic profile',
+        'View matches',
+        'Send messages (limited)',
+      ],
+    },
+    spark: {
+      id: process.env.STRIPE_SPARK_PRICE_ID,
+      name: 'Spark',
+      price: 4.99,
+      currency: 'usd',
+      interval: 'month',
+      features: [
+        'Spark profile badge',
+        'Extended matches',
+        'More messages',
+        'Basic filters',
+        'Support',
+      ],
+    },
+    sparkplus: {
+      id: process.env.STRIPE_SPARKPLUS_PRICE_ID,
+      name: 'Spark+',
+      price: 9.99,
+      currency: 'usd',
+      interval: 'month',
+      features: [
+        'Spark+ profile badge',
+        'Unlimited matches',
+        'Unlimited messages',
+        'Advanced filters',
+        'Priority support',
+        'Rewind feature',
+      ],
+    },
+    flame: {
+      id: process.env.STRIPE_FLAME_PRICE_ID,
+      name: 'Flame',
+      price: 14.99,
+      currency: 'usd',
+      interval: 'month',
+      features: [
+        'Flame profile badge',
+        'All Spark+ features',
+        'Video calls',
+        'Exclusive matches',
+        'Premium filters',
+        'Dedicated support',
+      ],
+    },
+    wildfire: {
+      id: process.env.STRIPE_WILDFIRE_PRICE_ID,
+      name: 'Wildfire',
+      price: 24.99,
+      currency: 'usd',
+      interval: 'month',
+      features: [
+        'Wildfire VIP badge',
+        'All Flame features',
+        'Unlimited video calls',
+        'VIP events access',
+        'Priority matching',
+        'Concierge support',
+        'Exclusive perks',
+      ],
+    },
+  },
+
+  // Payment webhooks
+  webhooks: {
+    enabled: true,
+    retryAttempts: 3,
+    retryDelay: 60000, // 1 minute
+  },
+
+  // Currency configuration
+  currency: {
+    default: 'usd',
+    supported: ['usd', 'eur', 'gbp', 'cad', 'aud'],
+  },
+
+  // Payment timeout
+  timeout: 30000, // 30 seconds
+
+  // Refund policy
+  refund: {
+    enabled: true,
+    daysWindow: 30,
+  },
+
+  // VAT configuration
+  vat: {
+    enabled: process.env.ENABLE_VAT === 'true',
+    rate: 0.19, // 19% default
+  },
+};

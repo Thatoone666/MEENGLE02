@@ -1,0 +1,688 @@
+﻿import 'dart:async';
+import 'dart:ui';
+import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../widgets/online_indicator.dart';
+import '../services/socket_service.dart';
+import 'package:intl/intl.dart';
+import 'propose_date_dialog.dart';
+import 'ai_suggestions_dialog.dart';
+import '../services/api.dart';
+import '../widgets/message_bubble.dart';
+import '../widgets/typing_indicator.dart';
+import '../utils/animations.dart';
+import '../widgets/responsive_chat_layout.dart';
+import '../widgets/chat_info_panel.dart';
+
+class ChatScreen extends StatefulWidget {
+  final SocketService? socketService;
+  final String? userId;
+  final Map<String, dynamic>? match;
+  
+  const ChatScreen({
+    super.key,
+    this.socketService,
+    this.userId,
+    this.match,
+  });
+
+  @override
+  State<ChatScreen> createState() => _ChatScreenState();
+}
+
+class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
+  final _messageController = TextEditingController();
+  final _scrollController = ScrollController();
+  final List<Map<String, dynamic>> _messages = [];
+  bool _loading = true;
+  String? _userId;
+  Map<String, dynamic>? _match;
+  final socket = SocketService();
+  StreamSubscription? _historySub;
+  StreamSubscription? _messagesSub;
+  StreamSubscription? _typingSub;
+  StreamSubscription? _readSub;
+  StreamSubscription? _onlineStatusSub;
+  StreamSubscription? _messageReactedSub;
+  SocketService? _injectedSocket;
+  bool _ownsSocket = false;
+  bool _isOnline = false;
+  bool _isTyping = false;
+  Timer? _typingTimer;
+  DateTime? _lastReadTimestamp;
+
+  Map<String, dynamic>? _replyingToMessage;
+  String? _editingMessageId;
+  bool _showInfoPanel = false;
+
+  late AnimationController _slideController;
+
+  @override
+  void initState() {
+    super.initState();
+    _slideController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (widget.userId != null && widget.match != null) {
+      _userId = widget.userId;
+      _match = widget.match;
+      _initSocket();
+    } else {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is Map<String, dynamic>) {
+        _userId = args['userId']?.toString();
+        _match = args['match'];
+        if (_userId != null && _match != null) _initSocket();
+      }
+    }
+  }
+
+  void _initSocket() {
+    final matchId = _match?['id']?.toString() ?? _match?['_id']?.toString();
+    if (matchId == null) return;
+
+    _historySub?.cancel();
+    _messagesSub?.cancel();
+    _typingSub?.cancel();
+    _readSub?.cancel();
+    _onlineStatusSub?.cancel();
+    _messageReactedSub?.cancel();
+
+    _injectedSocket = widget.socketService ?? socket;
+    _ownsSocket = widget.socketService == null;
+    if (mounted) {
+      _injectedSocket!.connect(userId: _userId!, matchId: matchId);
+    }
+
+    _historySub = _injectedSocket!.history.listen((list) {
+      if (!mounted) return;
+      setState(() {
+        _messages.clear();
+        _messages.addAll(List<Map<String, dynamic>>.from(list.map((e) =>
+            e is Map ? Map<String, dynamic>.from(e) : {'text': e.toString()})));
+        _loading = false;
+      });
+      final lastReadByThem = list.lastWhere(
+          (m) => m['from'] != _userId && m['read'] == true,
+          orElse: () => null);
+      if (lastReadByThem != null && lastReadByThem['timestamp'] != null) {
+        final lastReadTime =
+            DateTime.tryParse(lastReadByThem['timestamp'].toString());
+        if (lastReadTime != null && mounted) {
+          setState(() => _lastReadTimestamp = lastReadTime);
+        }
+      }
+      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+    });
+
+    _messagesSub = _injectedSocket!.messages.listen((msg) {
+      if (!mounted) return;
+      setState(() => _messages.add(msg));
+      _slideController.forward(from: 0.0);
+      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+    });
+
+    _typingSub = _injectedSocket!.typing.listen((from) {
+      if (from != _userId) {
+        if (mounted) setState(() => _isTyping = true);
+        _typingTimer?.cancel();
+        _typingTimer = Timer(const Duration(seconds: 2), () {
+          if (mounted) setState(() => _isTyping = false);
+        });
+      }
+    });
+
+    _readSub = _injectedSocket!.read.listen((data) {
+      final from = data['from']?.toString();
+      if (from != _userId && data['timestamp'] != null) {
+        final readAt = DateTime.tryParse(data['timestamp'].toString());
+        if (readAt != null && mounted) {
+          setState(() => _lastReadTimestamp = readAt);
+        }
+      }
+    });
+
+    _onlineStatusSub = _injectedSocket!.onlineStatus.listen((data) {
+      final matchId = _match?['id']?.toString() ?? _match?['_id']?.toString();
+      if (matchId != null && data.containsKey(matchId)) {
+        final isOnline = data[matchId] == true;
+        if (mounted) setState(() => _isOnline = isOnline);
+      }
+    });
+
+    _injectedSocket!.messageEdited.listen((data) {
+      if (!mounted) return;
+      final index = _messages.indexWhere((m) => m['_id'] == data['id']);
+      if (index != -1) {
+        setState(() {
+          _messages[index]['text'] = data['text'];
+          _messages[index]['edited'] = true;
+        });
+      }
+    });
+
+    _injectedSocket!.messageDeleted.listen((id) {
+      if (!mounted) return;
+      setState(() => _messages.removeWhere((m) => m['_id'] == id));
+    });
+
+    _messageReactedSub = _injectedSocket!.messageReacted.listen((data) {
+      if (!mounted) return;
+      final index = _messages.indexWhere((m) => m['_id'] == data['messageId']);
+      if (index != -1) {
+        setState(() {
+          final reactions =
+              Map<String, String>.from(_messages[index]['reactions'] ?? {});
+          reactions[data['from']] = data['reaction'];
+          _messages[index]['reactions'] = reactions;
+        });
+      }
+    });
+  }
+
+  void _send() {
+    final text = _messageController.text.trim();
+    if (text.isEmpty) return;
+    final to = _match?['id']?.toString() ?? _match?['_id']?.toString();
+    if (_userId == null || to == null) return;
+
+    if (_editingMessageId != null) {
+      _injectedSocket?.editMessage(id: _editingMessageId!, text: text);
+      if (mounted) setState(() => _editingMessageId = null);
+    } else {
+      _injectedSocket?.sendMessage(
+          from: _userId!,
+          to: to,
+          text: text,
+          replyTo: _replyingToMessage?['_id']);
+    }
+
+    _messageController.clear();
+    if (mounted) setState(() => _replyingToMessage = null);
+  }
+
+  void _scrollToMessage(String messageId) {
+    // Find the message index
+    final index = _messages.indexWhere((m) => m['_id'] == messageId);
+    if (index != -1 && _scrollController.hasClients) {
+      // Calculate approximate scroll position (assumes uniform message height)
+      const messageHeight = 80.0;
+      final targetScroll = index * messageHeight;
+      
+      _scrollController.animateTo(
+        targetScroll,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    _scrollController.dispose();
+    _slideController.dispose();
+    _historySub?.cancel();
+    _messagesSub?.cancel();
+    _typingSub?.cancel();
+    _readSub?.cancel();
+    _onlineStatusSub?.cancel();
+    _messageReactedSub?.cancel();
+    _typingTimer?.cancel();
+    if (_ownsSocket) _injectedSocket?.disconnect();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final matchName = _match?['name'] ?? 'User';
+    final avatarUrl = _match?['images'] != null && _match!['images'].isNotEmpty
+        ? ApiService.resolveAssetUrl(_match!['images'][0])
+        : null;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWideScreen = constraints.maxWidth > 600;
+        final theme = Theme.of(context);
+        
+        Widget buildChatInput() {
+          return Container(
+            color: theme.colorScheme.surface.withAlpha(25),
+            child: _buildBottomBar(theme),
+          );
+        }
+
+        Widget buildMessageList() {
+          return _loading
+            ? const Center(child: CircularProgressIndicator(key: Key('chatLoadingIndicator')))
+            : ListView.builder(
+                controller: _scrollController,
+                padding: const EdgeInsets.only(top: 16, bottom: 16),
+                itemCount: _messages.length,
+                itemBuilder: (context, i) {
+                  final m = _messages[i];
+                  final isLast = i == _messages.length - 1;
+                  Widget messageWidget = _buildMessageItem(m, i);
+                  if (isLast) {
+                    return SlideTransition(
+                      position: MessageAnimations.slideInFromBottom(_slideController),
+                      child: FadeTransition(
+                        opacity: MessageAnimations.fadeIn(_slideController),
+                        child: ScaleTransition(
+                          scale: MessageAnimations.scale(_slideController),
+                          child: messageWidget,
+                        ),
+                      ),
+                    );
+                  }
+                  return messageWidget;
+                },
+              );
+        }
+
+        Widget buildAppBar() {
+          return AppBar(
+            backgroundColor: theme.colorScheme.surface.withAlpha(25),
+            elevation: 0,
+            flexibleSpace: ClipRect(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: Container(color: Colors.transparent),
+              ),
+            ),
+            title: Row(
+              children: [
+                CircleAvatar(
+                  radius: isWideScreen ? 24 : 20,
+                  backgroundImage: avatarUrl != null
+                      ? CachedNetworkImageProvider(avatarUrl)
+                      : null,
+                  child: avatarUrl == null ? const Icon(Icons.person) : null,
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      matchName,
+                      key: const Key('chatUserName'),
+                      style: TextStyle(fontSize: isWideScreen ? 20 : 16),
+                    ),
+                    OnlineIndicator(
+                      key: const Key('onlineStatus'),
+                      isOnline: _isOnline,
+                      size: isWideScreen ? 8 : 6,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            actions: _buildAppBarActions(),
+          );
+        }
+        
+        return Scaffold(
+          extendBodyBehindAppBar: true,
+          backgroundColor: Colors.transparent,
+          body: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  theme.colorScheme.surface,
+                  theme.colorScheme.surface.withAlpha(204)
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+            ),
+            child: SafeArea(
+              child: ResponsiveChatLayout(
+                isWideScreen: isWideScreen,
+                appBar: buildAppBar(),
+                messageList: buildMessageList(),
+                inputArea: buildChatInput(),
+                sidePanel: ChatInfoPanel(
+                  match: _match,
+                  isOnline: _isOnline,
+                  onClose: () => setState(() => _showInfoPanel = false),
+                ),
+                showSidePanel: _showInfoPanel,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMessageItem(Map<String, dynamic> m, int i) {
+    final from = m['from']?.toString();
+    final text = m['text']?.toString() ?? '';
+    final ts = m['timestamp'] != null
+        ? DateTime.tryParse(m['timestamp'].toString())
+        : null;
+    final time = ts != null ? DateFormat.Hm().format(ts.toLocal()) : '';
+    final mine = from == _userId;
+    final replyTo = m['replyTo'] as Map<String, dynamic>?;
+    final reactions = m['reactions'] as Map<String, String>?;
+
+    final lastMyMessageIndex =
+        _messages.lastIndexWhere((msg) => msg['from'] == _userId);
+    final isLastMessage = i == lastMyMessageIndex;
+    final isSeen = isLastMessage &&
+        mine &&
+        _lastReadTimestamp != null &&
+        ts != null &&
+        (ts.isAtSameMomentAs(_lastReadTimestamp!) ||
+            ts.isBefore(_lastReadTimestamp!));
+
+    final messageWidget = MessageBubble(
+      text: text,
+      isMine: mine,
+      replyText: replyTo?['text']?.toString(),
+      onReplyTap: replyTo != null ? () => _scrollToMessage(replyTo['messageId']?.toString() ?? '') : null,
+      time: time,
+      reactions: reactions,
+      isSeen: isSeen,
+      onLongPress: () => _showMessageMenu(context, m, mine),
+    );
+
+    if (i == _messages.length - 1) {
+      return SlideTransition(
+        position: MessageAnimations.slideInFromBottom(_slideController),
+        child: FadeTransition(
+          opacity: MessageAnimations.fadeIn(_slideController),
+          child: ScaleTransition(
+            scale: MessageAnimations.scale(_slideController),
+            child: messageWidget,
+          ),
+        ),
+      );
+    }
+
+    return messageWidget;
+  }
+
+  void _toggleInfoPanel() {
+    setState(() => _showInfoPanel = !_showInfoPanel);
+  }
+
+  List<Widget> _buildAppBarActions() {
+    return [
+      IconButton(
+        icon: const Icon(Icons.info_outline),
+        tooltip: 'Show Profile',
+        onPressed: _toggleInfoPanel,
+      ),
+      IconButton(
+        icon: const Icon(Icons.event),
+        tooltip: 'Propose Date',
+        onPressed: () {
+          if (_userId != null && _match != null) {
+            final toId = (_match?['id'] ?? _match?['_id'])?.toString() ?? '';
+            showDialog(
+                    context: context,
+                    builder: (_) =>
+                        ProposeDateDialog(fromUser: _userId!, toUser: toId))
+                .then((res) {
+              if (res != null) {
+                final to = toId;
+                final text =
+                    'I proposed a date: "${res['dateId'] ?? 'details'}"';
+                _injectedSocket?.sendMessage(
+                    from: _userId!, to: to, text: text);
+              }
+            });
+          }
+        },
+      ),
+      IconButton(
+        icon: const Icon(Icons.lightbulb_outline),
+        tooltip: 'AI Suggestions',
+        onPressed: () {
+          if (_userId != null && _match != null) {
+            final matchId = (_match?['id'] ?? _match?['_id'])?.toString() ?? '';
+            showDialog(
+                    context: context,
+                    builder: (_) =>
+                        AISuggestionsDialog(userId: _userId!, matchId: matchId))
+                .then((selected) {
+              if (selected is String) {
+                _messageController.text = selected;
+              }
+            });
+          }
+        },
+      ),
+      PopupMenuButton<String>(
+        onSelected: (value) {
+          // Handle more actions
+        },
+        itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+          const PopupMenuItem<String>(
+              value: 'share_eta', child: Text('Share ETA')),
+          const PopupMenuItem<String>(
+              value: 'schedule_boost', child: Text('Schedule Boost')),
+          const PopupMenuItem<String>(
+              value: 'voice_message', child: Text('Voice Message')),
+          const PopupMenuItem<String>(
+              value: 'create_event', child: Text('Create Event')),
+        ],
+      ),
+    ];
+  }
+
+  Widget _buildBottomBar(ThemeData theme) {
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+        child: Container(
+          padding: const EdgeInsets.all(8.0)
+              .copyWith(bottom: MediaQuery.of(context).padding.bottom),
+          color: Colors.black.withAlpha(51),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_replyingToMessage != null) _buildReplyPreview(),
+              if (_isTyping)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                  child: TypingIndicator(
+                    username: _match?['name'] ?? 'User',
+                    dotColor: Colors.white.withAlpha(179),
+                    textColor: Colors.white.withAlpha(179),
+                  ),
+                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      key: const Key('messageInput'),
+                      controller: _messageController,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        hintText: 'Message...',
+                        hintStyle:
+                            TextStyle(color: Colors.white.withAlpha(153)),
+                        filled: true,
+                        fillColor: Colors.white.withAlpha(26),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(30),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20, vertical: 10),
+                      ),
+                      onChanged: (s) {
+                        final to = _match?['id']?.toString() ??
+                            _match?['_id']?.toString();
+                        if (_userId != null && to != null) {
+                          _injectedSocket?.sendRead(from: _userId!, to: to);
+                          _injectedSocket?.sendTyping(from: _userId!, to: to);
+                        }
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Material(
+                    color: theme.colorScheme.primary,
+                    borderRadius: BorderRadius.circular(30),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(30),
+                      onTap: _send,
+                      child: Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Icon(
+                          _editingMessageId != null ? Icons.check : Icons.send,
+                          key: const Key('sendButton'),
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReplyPreview() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withAlpha(26),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Replying to:',
+                    style:
+                        TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                Text(_replyingToMessage!['text'] ?? '',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 12)),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close, size: 18),
+            onPressed: () => setState(() => _replyingToMessage = null),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showMessageMenu(
+      BuildContext context, Map<String, dynamic> message, bool isMine) {
+    final messageId = message['_id']?.toString();
+    if (messageId == null) return;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext bc) {
+        return ClipRRect(
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              color: Colors.black.withAlpha(77),
+              child: SafeArea(
+                child: Wrap(
+                  children: <Widget>[
+                    ListTile(
+                      leading: const Icon(Icons.reply),
+                      title: const Text('Reply'),
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        setState(() => _replyingToMessage = message);
+                      },
+                    ),
+                    const Divider(height: 1, color: Colors.white24),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 8.0, horizontal: 16.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children:
+                            ['❤️', '😂', '👍', '😢', '😮'].map((reaction) {
+                          return IconButton(
+                            icon: Text(reaction,
+                                style: const TextStyle(fontSize: 24)),
+                            onPressed: () => _react(reaction, messageId),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                    if (isMine) ...[
+                      const Divider(height: 1, color: Colors.white24),
+                      ListTile(
+                        leading: const Icon(Icons.edit),
+                        title: const Text('Edit'),
+                        onTap: () {
+                          Navigator.of(context).pop();
+                          setState(() {
+                            _editingMessageId = messageId;
+                            _messageController.text = message['text'] ?? '';
+                          });
+                        },
+                      ),
+                      ListTile(
+                        leading:
+                            const Icon(Icons.delete, color: Colors.redAccent),
+                        title: const Text('Delete',
+                            style: TextStyle(color: Colors.redAccent)),
+                        onTap: () {
+                          Navigator.of(context).pop();
+                          _injectedSocket?.deleteMessage(id: messageId);
+                        },
+                      ),
+                    ]
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _react(String reaction, String messageId) {
+    Navigator.of(context).pop();
+    if (_userId != null) {
+      _injectedSocket?.reactToMessage(
+          messageId: messageId, reaction: reaction, from: _userId!);
+    }
+  }
+}

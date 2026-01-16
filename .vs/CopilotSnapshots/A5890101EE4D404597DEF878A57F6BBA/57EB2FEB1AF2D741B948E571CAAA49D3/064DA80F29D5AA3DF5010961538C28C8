@@ -1,0 +1,437 @@
+﻿import 'package:flutter/material.dart';
+import 'package:meengle_flutter/models/meengle_verify.dart';
+import '../animations/premium_animations.dart';
+
+class VerificationStatusScreen extends StatefulWidget {
+  const VerificationStatusScreen({super.key});
+
+  @override
+  State<VerificationStatusScreen> createState() => _VerificationStatusScreenState();
+}
+
+class _VerificationStatusScreenState extends State<VerificationStatusScreen>
+    with SingleTickerProviderStateMixin {
+  int trustScore = 45;
+  late UserVerificationBadge badge;
+  late AnimationController _contentController;
+
+  @override
+  void initState() {
+    super.initState();
+    _contentController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+    _contentController.forward();
+
+    badge = UserVerificationBadge(
+      userId: 'user123',
+      trustScore: 45,
+      verifications: [
+        UserVerification(
+          id: '1',
+          userId: 'user123',
+          type: VerificationType.phone,
+          status: VerificationStatus.verified,
+          createdAt: DateTime.now(),
+          verifiedAt: DateTime.now(),
+        ),
+        UserVerification(
+          id: '2',
+          userId: 'user123',
+          type: VerificationType.email,
+          status: VerificationStatus.verified,
+          createdAt: DateTime.now(),
+          verifiedAt: DateTime.now(),
+        ),
+      ],
+      lastUpdated: DateTime.now(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _contentController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Verification Status',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
+        centerTitle: true,
+        backgroundColor: const Color(0xFF1A1A1A),
+        elevation: 0,
+      ),
+      backgroundColor: const Color(0xFF0F0F0F),
+      body: FadeTransition(
+        opacity: _contentController,
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0, 0.1),
+            end: Offset.zero,
+          ).animate(
+            CurvedAnimation(parent: _contentController, curve: Curves.easeOut),
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Trust score with animation
+                ScaleTransition(
+                  scale: Tween<double>(begin: 0.8, end: 1).animate(
+                    CurvedAnimation(
+                      parent: _contentController,
+                      curve: const Interval(0.0, 0.3, curve: Curves.elasticOut),
+                    ),
+                  ),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.amber.shade700,
+                          Colors.amber.shade600,
+                        ],
+                      ),
+                      boxShadow: PremiumAnimations.premiumGlow(
+                        color: Colors.amber.shade700,
+                        intensity: 0.6,
+                      ),
+                    ),
+                    padding: const EdgeInsets.all(24),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Trust Score',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '$trustScore/100',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: -1,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withAlpha(51),
+                            border: Border.all(
+                              color: Colors.white,
+                              width: 3,
+                            ),
+                            boxShadow: PremiumAnimations.premiumGlow(
+                              color: Colors.white,
+                              intensity: 0.4,
+                            ),
+                          ),
+                          child: Center(
+                            child: Text(
+                              '${(trustScore / 100 * 100).toStringAsFixed(0)}%',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Verified badges section
+                FadeTransition(
+                  opacity: Tween<double>(begin: 0, end: 1).animate(
+                    CurvedAnimation(
+                      parent: _contentController,
+                      curve: const Interval(0.2, 0.5, curve: Curves.easeOut),
+                    ),
+                  ),
+                  child: Text(
+                    'Verified With',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _buildBadge('Phone', Icons.phone, Colors.blue, true),
+                    _buildBadge('Email', Icons.email, Colors.purple, true),
+                    _buildBadge('Face', Icons.face, Colors.green, false),
+                    _buildBadge('Video', Icons.videocam, Colors.cyan, false),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // Boost your trust section
+                FadeTransition(
+                  opacity: Tween<double>(begin: 0, end: 1).animate(
+                    CurvedAnimation(
+                      parent: _contentController,
+                      curve: const Interval(0.4, 0.7, curve: Curves.easeOut),
+                    ),
+                  ),
+                  child: Text(
+                    'Boost Your Trust',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                for (int i = 0; i < 3; i++)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: FadeTransition(
+                      opacity: Tween<double>(begin: 0, end: 1).animate(
+                        CurvedAnimation(
+                          parent: _contentController,
+                          curve: Interval(
+                            (0.5 + (i * 0.12)).clamp(0.0, 0.9),
+                            (0.5 + ((i + 1) * 0.12)).clamp(0.0, 1.0),
+                            curve: Curves.easeOut,
+                          ),
+                        ),
+                      ),
+                      child: ScaleTransition(
+                        scale: Tween<double>(begin: 0.8, end: 1).animate(
+                          CurvedAnimation(
+                            parent: _contentController,
+                            curve: Interval(
+                              (0.5 + (i * 0.12)).clamp(0.0, 0.9),
+                              (0.5 + ((i + 1) * 0.12)).clamp(0.0, 1.0),
+                              curve: Curves.elasticOut,
+                            ),
+                          ),
+                        ),
+                        child: _buildVerificationOption(
+                          i == 0
+                              ? 'Face Recognition'
+                              : i == 1
+                                  ? 'Video Introduction'
+                                  : 'Government ID',
+                          i == 0
+                              ? 'Verify your face for +20 trust'
+                              : i == 1
+                                  ? 'Record a 10s intro for +15 trust'
+                                  : 'Verify your ID for +25 trust (Premium)',
+                          i == 0
+                              ? Icons.face
+                              : i == 1
+                                  ? Icons.videocam
+                                  : Icons.badge,
+                          i == 0
+                              ? Colors.green
+                              : i == 1
+                                  ? Colors.cyan
+                                  : Colors.amber,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBadge(
+    String label,
+    IconData icon,
+    Color color,
+    bool verified,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: verified ? color.withAlpha(51) : Colors.grey[800],
+        border: Border.all(
+          color: verified ? color : Colors.grey.shade700,
+          width: 1.5,
+        ),
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: verified
+            ? [
+                BoxShadow(
+                  color: color.withAlpha(51),
+                  blurRadius: 6,
+                ),
+              ]
+            : null,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            color: verified ? color : Colors.grey.shade600,
+            size: 16,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: verified ? color : Colors.grey.shade600,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.2,
+            ),
+          ),
+          if (verified) ...[
+            const SizedBox(width: 4),
+            Icon(Icons.check_circle, color: color, size: 12),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVerificationOption(
+    String title,
+    String description,
+    IconData icon,
+    Color color,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withAlpha(153), width: 1.5),
+        color: color.withAlpha(25),
+        boxShadow: [
+          BoxShadow(
+            color: color.withAlpha(51),
+            blurRadius: 6,
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: PremiumAnimations.premiumGlow(
+                color: color,
+                intensity: 0.4,
+              ),
+            ),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                Text(
+                  description,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[400],
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Icon(Icons.arrow_forward, color: color.withAlpha(204)),
+        ],
+      ),
+    );
+  }
+}
+
+class UserVerificationBadge {
+  final String userId;
+  final int trustScore;
+  final List<UserVerification> verifications;
+  final DateTime lastUpdated;
+
+  UserVerificationBadge({
+    required this.userId,
+    required this.trustScore,
+    required this.verifications,
+    required this.lastUpdated,
+  });
+}
+
+class UserVerification {
+  final String id;
+  final String userId;
+  final VerificationType type;
+  final VerificationStatus status;
+  final DateTime createdAt;
+  final DateTime verifiedAt;
+
+  UserVerification({
+    required this.id,
+    required this.userId,
+    required this.type,
+    required this.status,
+    required this.createdAt,
+    required this.verifiedAt,
+  });
+}
+
+enum VerificationType { phone, email, face, video, id }
+
+enum VerificationStatus { pending, verified, rejected }
+
+extension VerificationTypeExtension on VerificationType {
+  String get label {
+    switch (this) {
+      case VerificationType.phone:
+        return 'Phone';
+      case VerificationType.email:
+        return 'Email';
+      case VerificationType.face:
+        return 'Face';
+      case VerificationType.video:
+        return 'Video';
+      case VerificationType.id:
+        return 'ID';
+    }
+  }
+}

@@ -1,0 +1,81 @@
+﻿module.exports = {
+  // Stripe configuration
+  stripe: {
+    secretKey: process.env.STRIPE_SECRET_KEY,
+    publishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
+    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+    apiVersion: '2023-10-16',
+  },
+
+  // Payment plans
+  plans: {
+    free: {
+      id: 'plan_free',
+      name: 'Free',
+      price: 0,
+      currency: 'usd',
+      interval: 'month',
+      features: [
+        'Basic profile',
+        'View matches',
+        'Send messages (limited)',
+      ],
+    },
+    premium: {
+      id: process.env.STRIPE_PREMIUM_PRICE_ID,
+      name: 'Premium',
+      price: 9.99,
+      currency: 'usd',
+      interval: 'month',
+      features: [
+        'Premium profile',
+        'Unlimited matches',
+        'Unlimited messages',
+        'Advanced filters',
+        'Priority support',
+      ],
+    },
+    vip: {
+      id: process.env.STRIPE_VIP_PRICE_ID,
+      name: 'VIP',
+      price: 19.99,
+      currency: 'usd',
+      interval: 'month',
+      features: [
+        'VIP profile',
+        'All Premium features',
+        'Video calls',
+        'Dedicated support',
+        'Special events access',
+      ],
+    },
+  },
+
+  // Payment webhooks
+  webhooks: {
+    enabled: true,
+    retryAttempts: 3,
+    retryDelay: 60000, // 1 minute
+  },
+
+  // Currency configuration
+  currency: {
+    default: 'usd',
+    supported: ['usd', 'eur', 'gbp', 'cad', 'aud'],
+  },
+
+  // Payment timeout
+  timeout: 30000, // 30 seconds
+
+  // Refund policy
+  refund: {
+    enabled: true,
+    daysWindow: 30,
+  },
+
+  // VAT configuration
+  vat: {
+    enabled: process.env.ENABLE_VAT === 'true',
+    rate: 0.19, // 19% default
+  },
+};

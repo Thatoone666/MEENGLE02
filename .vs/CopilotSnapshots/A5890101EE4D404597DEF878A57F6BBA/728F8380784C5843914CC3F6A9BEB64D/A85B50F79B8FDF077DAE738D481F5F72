@@ -1,0 +1,229 @@
+﻿import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:meengle_app/providers/roam_provider.dart';
+import 'package:meengle_app/widgets/cards/roam_guide_card.dart';
+
+class RoamScreen extends StatefulWidget {
+  const RoamScreen({Key? key}) : super(key: key);
+
+  @override
+  State<RoamScreen> createState() => _RoamScreenState();
+}
+
+class _RoamScreenState extends State<RoamScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<RoamProvider>().loadRoam();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0F0F0F),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF1A1A1A),
+        title: const Text('Travel Mode'),
+        centerTitle: true,
+        elevation: 0,
+      ),
+      body: Consumer<RoamProvider>(
+        builder: (context, provider, child) {
+          if (provider.isLoading) {
+            return const Center(
+              child: CircularProgressIndicator(color: Color(0xFFD4AF37)),
+            );
+          }
+
+          return SingleChildScrollView(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1A1A1A),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.amber.shade700, width: 2),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.flight_takeoff,
+                          color: Colors.amber.shade400,
+                          size: 28,
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Travel Mode',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                provider.roam?.isActive ?? false
+                                    ? 'Find locals and travelers'
+                                    : 'Not enabled',
+                                style: TextStyle(
+                                  color: Colors.grey.shade500,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Switch(
+                          value: provider.roam?.isActive ?? false,
+                          onChanged: (_) =>
+                              provider.toggleTravelMode(),
+                          activeColor: Colors.amber.shade700,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                if (provider.roam?.isActive ?? false) ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Text(
+                      'Local Guides',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: Colors.white,
+                          ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  for (var guide in provider.guides)
+                    RoamGuideCard(
+                      guide: guide,
+                      onTap: () => _viewGuideProfile(context, guide),
+                    ),
+                  const SizedBox(height: 24),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Text(
+                      'Local Events',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: Colors.white,
+                          ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  for (var event in provider.events)
+                    Card(
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      color: const Color(0xFF1A1A1A),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.event,
+                              color: Colors.amber.shade400,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    event.name,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  Text(
+                                    event.location,
+                                    style: TextStyle(
+                                      color: Colors.grey.shade500,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            ElevatedButton(
+                              onPressed: () {},
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.amber.shade700,
+                              ),
+                              child: const Text(
+                                'Join',
+                                style: TextStyle(fontSize: 12),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _viewGuideProfile(BuildContext context, dynamic guide) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1A1A1A),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              guide.name,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(Icons.star, color: Colors.yellow.shade600),
+                const SizedBox(width: 4),
+                Text(
+                  '${guide.rating}/5',
+                  style: const TextStyle(color: Colors.white),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.amber.shade700,
+                ),
+                child: const Text('Contact Guide'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

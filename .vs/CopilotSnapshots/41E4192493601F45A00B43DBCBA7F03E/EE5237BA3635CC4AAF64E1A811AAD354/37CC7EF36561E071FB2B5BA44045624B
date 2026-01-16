@@ -1,0 +1,104 @@
+﻿const express = require('express');
+const router = express.Router();
+const auth = require('../middleware/auth');
+const { Circle, CirclePost } = require('../models/featureModels');
+
+// Get discover circles
+router.get('/discover', auth, async (req, res) => {
+  try {
+    const circles = await Circle.find().limit(20);
+    res.json({ success: true, circles });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get circle details
+router.get('/:id', auth, async (req, res) => {
+  try {
+    const circle = await Circle.findOne({ id: req.params.id });
+    if (!circle) {
+      return res.status(404).json({ success: false, error: 'Circle not found' });
+    }
+    res.json({ success: true, circle });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Join a circle
+router.post('/:id/join', auth, async (req, res) => {
+  try {
+    const circle = await Circle.findOne({ id: req.params.id });
+    if (!circle) {
+      return res.status(404).json({ success: false, error: 'Circle not found' });
+    }
+
+    if (!circle.members.includes(req.user.id)) {
+      circle.members.push(req.user.id);
+      circle.memberCount += 1;
+      await circle.save();
+    }
+
+    res.json({ success: true, circle });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Leave a circle
+router.delete('/:id/leave', auth, async (req, res) => {
+  try {
+    const circle = await Circle.findOne({ id: req.params.id });
+    if (!circle) {
+      return res.status(404).json({ success: false, error: 'Circle not found' });
+    }
+
+    const idx = circle.members.indexOf(req.user.id);
+    if (idx >= 0) {
+      circle.members.splice(idx, 1);
+      circle.memberCount -= 1;
+      await circle.save();
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get circle feed
+router.get('/:id/feed', auth, async (req, res) => {
+  try {
+    const posts = await CirclePost.find({ circleId: req.params.id })
+      .sort({ createdAt: -1 });
+    res.json({ success: true, feed: posts });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Post to circle feed
+router.post('/:id/feed', auth, async (req, res) => {
+  try {
+    const { content, mediaUrl } = req.body;
+    if (!content) {
+      return res.status(400).json({ success: false, error: 'Content required' });
+    }
+
+    const post = new CirclePost({
+      id: `post_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      circleId: req.params.id,
+      userId: req.user.id,
+      content,
+      mediaUrl: mediaUrl || null,
+    });
+
+    await post.save();
+    res.status(201).json({ success: true, post });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+module.exports = router;

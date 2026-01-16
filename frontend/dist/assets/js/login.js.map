@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../../assets/js/login.js"],
+  "sourcesContent": ["AOS.init({\r\n    duration: 800,\r\n    easing: 'ease-in-out',\r\n    once: true\r\n});\r\n"],
+  "mappings": "MAAA,IAAI,KAAK,CACL,SAAU,IACV,OAAQ,cACR,KAAM,EACV,CAAC",
+  "names": []
+}

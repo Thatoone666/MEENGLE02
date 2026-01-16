@@ -1,0 +1,236 @@
+﻿import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/stories_provider.dart';
+import '../widgets/cards/story_card.dart';
+
+class StoriesScreen extends StatefulWidget {
+  const StoriesScreen({Key? key}) : super(key: key);
+
+  @override
+  State<StoriesScreen> createState() => _StoriesScreenState();
+}
+
+class _StoriesScreenState extends State<StoriesScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<StoriesProvider>().loadStories();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0F0F0F),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF1A1A1A),
+        title: const Text('Stories'),
+        centerTitle: true,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add_circle_outline),
+            onPressed: () => _showUploadDialog(context),
+          ),
+        ],
+      ),
+      body: Consumer<StoriesProvider>(
+        builder: (context, provider, child) {
+          if (provider.isLoading) {
+            return const Center(
+              child: CircularProgressIndicator(color: Color(0xFFD4AF37)),
+            );
+          }
+
+          if (provider.stories.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.image_outlined,
+                    color: Colors.amber.shade400,
+                    size: 64,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'No stories yet',
+                    style: TextStyle(color: Colors.white, fontSize: 18),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Your Stories Feed',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: 0.7,
+                    ),
+                    itemCount: provider.stories.length,
+                    itemBuilder: (context, index) {
+                      final story = provider.stories[index];
+                      return StoryCard(
+                        story: story,
+                        onTap: () => _viewStory(context, story),
+                        onReact: () => provider.reactToStory(story.id),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showUploadDialog(BuildContext context) {
+    final captionController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A1A),
+        title: const Text(
+          'New Story',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              height: 200,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade900,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.amber.shade700,
+                  width: 2,
+                ),
+              ),
+              child: const Center(
+                child: Icon(
+                  Icons.camera_alt_outlined,
+                  color: Color(0xFFD4AF37),
+                  size: 48,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: captionController,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'Add a caption...',
+                hintStyle: TextStyle(color: Colors.grey.shade600),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.amber.shade700),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade900,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              context.read<StoriesProvider>().uploadStory(
+                    imageUrl: 'https://via.placeholder.com/400x600',
+                    caption: captionController.text,
+                  );
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.amber.shade700,
+            ),
+            child: const Text('Post'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _viewStory(BuildContext context, dynamic story) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.black,
+        child: Stack(
+          children: [
+            Image.network(
+              story.imageUrl,
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+            ),
+            Positioned(
+              top: 40,
+              right: 20,
+              child: GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: const Icon(
+                  Icons.close,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: 40,
+              left: 20,
+              right: 20,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Icon(
+                    Icons.favorite_outline,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                  const Icon(
+                    Icons.comment_outlined,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                  const Icon(
+                    Icons.share_outlined,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

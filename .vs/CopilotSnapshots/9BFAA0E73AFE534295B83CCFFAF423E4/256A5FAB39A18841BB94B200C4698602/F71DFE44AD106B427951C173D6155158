@@ -1,0 +1,171 @@
+﻿const request = require('supertest');
+const { expect } = require('chai');
+
+describe('Meengle E2E Test Suite', () => {
+  const baseUrl = process.env.TEST_URL || 'http://localhost:3000';
+  let authToken;
+  let userId;
+  let storyId;
+
+  // Test Stories Feature
+  describe('Stories Feature', () => {
+    it('Should create a story with image', async () => {
+      const response = await request(baseUrl)
+        .post('/api/stories')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          caption: 'Test story',
+          imageUrl: 'https://via.placeholder.com/400x500'
+        });
+
+      expect(response.status).to.equal(201);
+      expect(response.body).to.have.property('story');
+      storyId = response.body.story.id;
+    });
+
+    it('Should get all stories', async () => {
+      const response = await request(baseUrl)
+        .get('/api/stories')
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(response.status).to.equal(200);
+      expect(response.body).to.be.an('array');
+    });
+
+    it('Should like a story', async () => {
+      const response = await request(baseUrl)
+        .post(`/api/stories/${storyId}/like`)
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(response.status).to.equal(200);
+      expect(response.body).to.have.property('likeCount');
+    });
+
+    it('Should view a story', async () => {
+      const response = await request(baseUrl)
+        .post(`/api/stories/${storyId}/view`)
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(response.status).to.equal(200);
+      expect(response.body).to.have.property('viewCount');
+    });
+  });
+
+  // Test Payment Feature
+  describe('Payment/Spotlight Feature', () => {
+    it('Should create payment intent', async () => {
+      const response = await request(baseUrl)
+        .post('/api/payment/spotlight/create-intent')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ tier: 'gold' });
+
+      expect(response.status).to.equal(200);
+      expect(response.body).to.have.property('clientSecret');
+    });
+
+    it('Should get payment history', async () => {
+      const response = await request(baseUrl)
+        .get('/api/payment/history')
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(response.status).to.equal(200);
+      expect(response.body).to.be.an('array');
+    });
+  });
+
+  // Test Notifications Feature
+  describe('Notifications Feature', () => {
+    it('Should send test notification', async () => {
+      const response = await request(baseUrl)
+        .post('/api/notifications/send-test')
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(response.status).to.equal(200);
+      expect(response.body).to.have.property('success');
+    });
+
+    it('Should subscribe to topic', async () => {
+      const response = await request(baseUrl)
+        .post('/api/notifications/subscribe-topic')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ topic: 'stories' });
+
+      expect(response.status).to.equal(200);
+    });
+  });
+
+  // Test Socket.io Real-Time
+  describe('Socket.io Real-Time Events', () => {
+    it('Should emit story:viewed event', async () => {
+      const response = await request(baseUrl)
+        .post('/api/stories/emit-view')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ storyId: storyId });
+
+      expect(response.status).to.equal(200);
+    });
+
+    it('Should emit story:liked event', async () => {
+      const response = await request(baseUrl)
+        .post('/api/stories/emit-like')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ storyId: storyId });
+
+      expect(response.status).to.equal(200);
+    });
+  });
+
+  // Error Handling Tests
+  describe('Error Handling', () => {
+    it('Should return 404 for non-existent story', async () => {
+      const response = await request(baseUrl)
+        .get('/api/stories/invalid-id')
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(response.status).to.equal(404);
+    });
+
+    it('Should return 401 without auth token', async () => {
+      const response = await request(baseUrl)
+        .get('/api/stories');
+
+      expect(response.status).to.equal(401);
+    });
+
+    it('Should validate payment tier', async () => {
+      const response = await request(baseUrl)
+        .post('/api/payment/spotlight/create-intent')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ tier: 'invalid' });
+
+      expect(response.status).to.equal(400);
+    });
+  });
+
+  // Performance Tests
+  describe('Performance', () => {
+    it('Should load stories in < 500ms', async () => {
+      const start = Date.now();
+      await request(baseUrl)
+        .get('/api/stories')
+        .set('Authorization', `Bearer ${authToken}`);
+      const duration = Date.now() - start;
+
+      expect(duration).to.be.below(500);
+    });
+
+    it('Should create story in < 2000ms', async () => {
+      const start = Date.now();
+      await request(baseUrl)
+        .post('/api/stories')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          caption: 'Perf test',
+          imageUrl: 'https://via.placeholder.com/400x500'
+        });
+      const duration = Date.now() - start;
+
+      expect(duration).to.be.below(2000);
+    });
+  });
+});

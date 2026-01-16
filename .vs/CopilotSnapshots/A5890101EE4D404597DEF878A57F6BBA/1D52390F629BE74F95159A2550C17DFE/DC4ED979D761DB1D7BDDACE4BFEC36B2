@@ -1,0 +1,820 @@
+﻿import 'package:flutter/material.dart';
+import '../models/meengle_tier_system.dart';
+
+/// Premium tier selection screen with beautiful UI and pricing ladder
+class PremiumTierScreen extends StatefulWidget {
+  final Function(MeengleTier, BillingCycle) onTierSelected;
+  final MeengleTier currentTier;
+
+  const PremiumTierScreen({
+    super.key,
+    required this.onTierSelected,
+    required this.currentTier,
+  });
+
+  @override
+  State<PremiumTierScreen> createState() => _PremiumTierScreenState();
+}
+
+class _PremiumTierScreenState extends State<PremiumTierScreen> {
+  late BillingCycle selectedBillingCycle = BillingCycle.monthly;
+
+  @override
+  Widget build(BuildContext context) {
+    final tiers = MeengleTierSystem.getAllTiers();
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF0F0F0F),
+      appBar: AppBar(
+        title: const Text('Upgrade Your Experience'),
+        elevation: 0,
+        backgroundColor: const Color(0xFF1A1A1A),
+        foregroundColor: Colors.white,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            const Text(
+              'Choose Your Meengle Tier',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Unlock features to find love faster',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.white70,
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Billing cycle selector
+            _buildBillingCycleSelector(),
+
+            const SizedBox(height: 32),
+
+            // Tier cards
+            ...tiers.map((tier) => Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: _buildTierCard(context, tier),
+            )),
+
+            const SizedBox(height: 32),
+
+            // Features comparison table
+            _buildFeaturesComparison(tiers),
+
+            const SizedBox(height: 32),
+
+            // FAQ Section
+            _buildFAQSection(),
+
+            const SizedBox(height: 32),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Build billing cycle selector with pricing ladder
+  Widget _buildBillingCycleSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Choose Your Billing Cycle',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.white.withAlpha((255 * 0.1).toInt()),
+            ),
+          ),
+          child: Row(
+            children: [
+              // Weekly option
+              Expanded(
+                child: _buildBillingOption(
+                  cycle: BillingCycle.weekly,
+                  label: 'Weekly',
+                  subtitle: 'Flexibility',
+                  isSelected: selectedBillingCycle == BillingCycle.weekly,
+                ),
+              ),
+              // Monthly option (recommended)
+              Expanded(
+                child: Stack(
+                  children: [
+                    _buildBillingOption(
+                      cycle: BillingCycle.monthly,
+                      label: 'Monthly',
+                      subtitle: 'Best Value',
+                      isSelected: selectedBillingCycle == BillingCycle.monthly,
+                    ),
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade600,
+                          borderRadius: const BorderRadius.only(
+                            topRight: Radius.circular(16),
+                            bottomLeft: Radius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'SAVE 17%',
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Annual option
+              Expanded(
+                child: _buildBillingOption(
+                  cycle: BillingCycle.annual,
+                  label: 'Annual',
+                  subtitle: 'Best Savings',
+                  isSelected: selectedBillingCycle == BillingCycle.annual,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Build individual billing cycle option
+  Widget _buildBillingOption({
+    required BillingCycle cycle,
+    required String label,
+    required String subtitle,
+    required bool isSelected,
+  }) {
+    return GestureDetector(
+      onTap: () => setState(() => selectedBillingCycle = cycle),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isSelected
+              ? Colors.white.withAlpha((255 * 0.05).toInt())
+              : Colors.transparent,
+          border: Border(
+            right: BorderSide(
+              color: Colors.white.withAlpha((255 * 0.05).toInt()),
+            ),
+          ),
+        ),
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.white60,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTierCard(BuildContext context, TierInfo tier) {
+    final isCurrentTier = widget.currentTier == tier.tier;
+    final isUpgrade = tier.tier.index > widget.currentTier.index;
+    final price = tier.getPrice(selectedBillingCycle);
+    final pricePerDay = tier.getPricePerDay(selectedBillingCycle);
+    final billingText = tier.getBillingPeriodText(selectedBillingCycle);
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: tier.isPopular
+              ? tier.primaryColor.withAlpha((255 * 0.7).toInt())
+              : Colors.white.withAlpha((255 * 0.1).toInt()),
+          width: tier.isPopular ? 2 : 1,
+        ),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            tier.primaryColor.withAlpha((255 * 0.1).toInt()),
+            tier.accentColor.withAlpha((255 * 0.05).toInt()),
+          ],
+        ),
+        boxShadow: tier.isPopular
+            ? [
+                BoxShadow(
+                  color: tier.primaryColor.withAlpha((255 * 0.3).toInt()),
+                  blurRadius: 20,
+                  spreadRadius: 2,
+                ),
+              ]
+            : null,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          tier.icon,
+                          style: const TextStyle(fontSize: 32),
+                        ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              tier.displayName,
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            Text(
+                              tier.subtitle,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.white70,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                if (tier.isPopular)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: tier.primaryColor,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Text(
+                      'Most Popular',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            // Price
+            if (tier.tier != MeengleTier.free)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text(
+                        '\$${price.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: tier.primaryColor,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        billingText,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Only \$${pricePerDay.toStringAsFixed(2)}/day',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white60,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  // Savings badge
+                  if (selectedBillingCycle == BillingCycle.monthly)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withAlpha((255 * 0.1).toInt()),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Colors.green.withAlpha((255 * 0.3).toInt()),
+                        ),
+                      ),
+                      child: Text(
+                        '${MeengleTierSystem.getMonthlySavings(tier.tier)} vs weekly',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.green,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    )
+                  else if (selectedBillingCycle == BillingCycle.annual)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withAlpha((255 * 0.15).toInt()),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Colors.amber.withAlpha((255 * 0.4).toInt()),
+                        ),
+                      ),
+                      child: Text(
+                        '${MeengleTierSystem.getAnnualSavings(tier.tier)} vs monthly',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.amber.shade300,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                ],
+              )
+            else
+              Text(
+                'Forever free',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: tier.primaryColor,
+                ),
+              ),
+
+            const SizedBox(height: 20),
+
+            // Features list
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: tier.features.map((feature) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.check_circle,
+                        size: 18,
+                        color: tier.primaryColor,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          feature,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+
+            if (tier.premiumFeatures.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: tier.primaryColor.withAlpha((255 * 0.1).toInt()),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: tier.primaryColor.withAlpha((255 * 0.3).toInt()),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Premium Features',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: tier.primaryColor,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ...tier.premiumFeatures.map((feature) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Text(
+                          feature,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: tier.primaryColor
+                                .withAlpha((255 * 0.8).toInt()),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ],
+                ),
+              ),
+            ],
+
+            const SizedBox(height: 20),
+
+            // Action button
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: _buildActionButton(
+                tier: tier,
+                isCurrentTier: isCurrentTier,
+                isUpgrade: isUpgrade,
+                onPressed: () =>
+                    widget.onTierSelected(tier.tier, selectedBillingCycle),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required TierInfo tier,
+    required bool isCurrentTier,
+    required bool isUpgrade,
+    required VoidCallback onPressed,
+  }) {
+    if (isCurrentTier) {
+      return Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: tier.primaryColor,
+            width: 2,
+          ),
+        ),
+        child: Center(
+          child: Text(
+            'Current Plan',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: tier.primaryColor,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return ElevatedButton(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: tier.primaryColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      child: Text(
+        isUpgrade ? 'Upgrade Now' : 'Downgrade',
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFeaturesComparison(List<TierInfo> tiers) {
+    final allFeatures = <String>{};
+    for (var tier in tiers) {
+      allFeatures.addAll(tier.features);
+      allFeatures.addAll(tier.premiumFeatures);
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Features Comparison',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.white.withAlpha((255 * 0.1).toInt()),
+            ),
+          ),
+          child: Column(
+            children: allFeatures.map((feature) {
+              return Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Colors.white.withAlpha((255 * 0.05).toInt()),
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        feature,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ),
+                    ...tiers.map((tier) {
+                      final hasFeature = tier.features.contains(feature) ||
+                          tier.premiumFeatures.contains(feature);
+                      return SizedBox(
+                        width: 60,
+                        child: Center(
+                          child: Icon(
+                            hasFeature
+                                ? Icons.check_circle
+                                : Icons.cancel,
+                            size: 16,
+                            color: hasFeature
+                                ? Colors.green
+                                : Colors.red.withAlpha((255 * 0.3).toInt()),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFAQSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Frequently Asked Questions',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 16),
+        _buildFAQItem(
+          question: 'Can I cancel anytime?',
+          answer: 'Yes! You can cancel your subscription at any time.',
+        ),
+        const SizedBox(height: 12),
+        _buildFAQItem(
+          question: 'Do you offer a free trial?',
+          answer: 'Yes, Spark+ and Flame offer 7-day free trials.',
+        ),
+        const SizedBox(height: 12),
+        _buildFAQItem(
+          question: 'What payment methods do you accept?',
+          answer: 'We accept all major credit cards and PayPal.',
+        ),
+        const SizedBox(height: 12),
+        _buildFAQItem(
+          question: 'Can I switch between plans?',
+          answer:
+              'Absolutely! Switch anytime. Billing resets with your new plan.',
+        ),
+        const SizedBox(height: 12),
+        _buildFAQItem(
+          question: 'Which billing cycle should I choose?',
+          answer:
+              'Monthly is our best value (17% savings vs weekly). Annual saves 17% more!',
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFAQItem({
+    required String question,
+    required String answer,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withAlpha((255 * 0.05).toInt()),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.white.withAlpha((255 * 0.1).toInt()),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            question,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            answer,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.white70,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Tier card for displaying in other screens
+class TierCardWidget extends StatelessWidget {
+  final TierInfo tier;
+  final VoidCallback onSelect;
+  final bool isSelected;
+  final BillingCycle billingCycle;
+
+  const TierCardWidget({
+    super.key,
+    required this.tier,
+    required this.onSelect,
+    required this.isSelected,
+    required this.billingCycle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final price = tier.getPrice(billingCycle);
+    final pricePerDay = tier.getPricePerDay(billingCycle);
+
+    return GestureDetector(
+      onTap: onSelect,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected
+                ? tier.primaryColor
+                : Colors.white.withAlpha((255 * 0.1).toInt()),
+            width: isSelected ? 2 : 1,
+          ),
+          gradient: LinearGradient(
+            colors: [
+              tier.primaryColor.withAlpha((255 * 0.05).toInt()),
+              tier.accentColor.withAlpha((255 * 0.02).toInt()),
+            ],
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '${tier.icon} ${tier.displayName}',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  if (isSelected)
+                    Icon(
+                      Icons.check_circle,
+                      color: tier.primaryColor,
+                      size: 24,
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                tier.description,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.white70,
+                ),
+              ),
+              const SizedBox(height: 12),
+              if (tier.tier != MeengleTier.free)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '\$${price.toStringAsFixed(2)}${tier.getBillingPeriodText(billingCycle)}',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: tier.primaryColor,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '\$${pricePerDay.toStringAsFixed(2)}/day',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.white60,
+                      ),
+                    ),
+                  ],
+                )
+              else
+                Text(
+                  'Free forever',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: tier.primaryColor,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

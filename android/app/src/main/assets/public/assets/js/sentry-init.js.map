@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../../frontend/assets/js/sentry-init.js"],
+  "sourcesContent": ["// Frontend Sentry initializer - fetches DSN from /config and initializes Sentry\r\n(async function() {\r\n  try {\r\n    const res = await fetch('/config');\r\n    const cfg = await res.json();\r\n    if (!cfg || !cfg.sentryDsn) return;\r\n    // Load Sentry dynamically\r\n    const script = document.createElement('script');\r\n    script.src = 'https://browser.sentry-cdn.com/7.64.0/bundle.min.js';\r\n    script.crossOrigin = 'anonymous';\r\n    script.onload = () => {\r\n      // eslint-disable-next-line no-undef\r\n      Sentry.init({ dsn: cfg.sentryDsn, tracesSampleRate: 0.02 });\r\n    };\r\n    document.head.appendChild(script);\r\n  } catch (e) {\r\n    // fail silently\r\n    console.error('Sentry init error', e);\r\n  }\r\n})();\r\n"],
+  "mappings": "OACC,gBAAiB,CAChB,GAAI,CAEF,IAAMA,EAAM,MADA,MAAM,MAAM,SAAS,GACX,KAAK,EAC3B,GAAI,CAACA,GAAO,CAACA,EAAI,UAAW,OAE5B,IAAMC,EAAS,SAAS,cAAc,QAAQ,EAC9CA,EAAO,IAAM,sDACbA,EAAO,YAAc,YACrBA,EAAO,OAAS,IAAM,CAEpB,OAAO,KAAK,CAAE,IAAKD,EAAI,UAAW,iBAAkB,GAAK,CAAC,CAC5D,EACA,SAAS,KAAK,YAAYC,CAAM,CAClC,OAAS,EAAG,CAEV,QAAQ,MAAM,oBAAqB,CAAC,CACtC,CACF,GAAG",
+  "names": ["cfg", "script"]
+}

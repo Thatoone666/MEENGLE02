@@ -1,0 +1,65 @@
+﻿## Local backend environment (do NOT commit this file with real credentials)
+
+# Node environment and port
+NODE_ENV=development
+PORT=3001
+
+# MongoDB connection (Atlas SRV form). Password contains an '@' so it's URL-encoded as %40.
+MONGO_URI=mongodb+srv://MEENGLE_TEST:HumbulaN@1@cluster0.tsxsv1a.mongodb.net/?appName=Cluster0
+
+# If you prefer to use a local MongoDB, you can set:
+# MONGO_URI=mongodb://localhost:27017/meengle
+
+# Other secrets (replace with your real values)
+JWT_SECRET=x7pK9mN2bQ5jR8vL3cF6gH1zZ4xY2wT5sN9aB3dE7hJ1k0mP2qR3sT4uV5wX6yZ7aB8cD9eF0gH1iJ2kL3mN4oP5qR6sT7uV8wX9yZ0
+
+# STRIPE (https://stripe.com) - REPLACE WITH YOUR LIVE KEYS
+STRIPE_SECRET=sk_test_YOUR_TEST_KEY
+STRIPE_PUBLISHABLE_KEY=pk_test_YOUR_TEST_KEY
+
+# PAYFAST (https://payfast.co.za) - South Africa
+PAYFAST_MERCHANT_ID=
+PAYFAST_MERCHANT_KEY=
+
+# YOCO (https://yoco.com) - South Africa
+YOCO_API_KEY=
+YOCO_PUBLIC_KEY=
+
+# OZOW (https://ozow.com) - South Africa
+OZOW_API_KEY=
+OZOW_API_SECRET=
+
+# SNAPSCAN (https://snapscan.io) - South Africa
+SNAPSCAN_API_KEY=
+SNAPSCAN_API_SECRET=
+
+# LUNO (https://luno.com) - South Africa Crypto
+LUNO_API_KEY=
+LUNO_API_SECRET=
+
+# PAYSHAP (https://payshap.io) - South Africa
+PAYSHAP_API_KEY=
+PAYSHAP_MERCHANT_ID=
+
+# ZAPPER (https://zapper.co.za) - South Africa
+ZAPPER_API_KEY=
+
+# PAYFLEX (https://payflex.co.za) - South Africa
+PAYFLEX_API_KEY=
+PAYFLEX_API_SECRET=
+
+# PAYPAL (https://paypal.com) - Global
+PAYPAL_API_USERNAME=
+PAYPAL_API_PASSWORD=
+PAYPAL_API_SIGNATURE=
+
+# SQUARE (https://squareup.com) - Global
+SQUARE_ACCESS_TOKEN=
+SQUARE_APPLICATION_ID=
+
+# GOOGLE PAY (https://pay.google.com) - Global
+GOOGLE_PAY_MERCHANT_ID=
+GOOGLE_PAY_API_KEY=
+
+# OPTIONAL
+SENTRY_DSN=

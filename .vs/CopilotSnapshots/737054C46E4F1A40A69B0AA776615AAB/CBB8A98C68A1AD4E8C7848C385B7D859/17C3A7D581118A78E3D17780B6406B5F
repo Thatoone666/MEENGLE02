@@ -1,0 +1,253 @@
+﻿const logger = require('../config/logger');
+
+class SearchService {
+  /**
+   * Full-text search in database
+   */
+  async searchUsers(query, filters = {}) {
+    try {
+      const User = require('../models/User');
+      
+      const searchQuery = {
+        $or: [
+          { name: { $regex: query, $options: 'i' } },
+          { bio: { $regex: query, $options: 'i' } },
+          { email: { $regex: query, $options: 'i' } },
+        ],
+      };
+
+      // Apply additional filters
+      if (filters.age) {
+        searchQuery.age = filters.age;
+      }
+      if (filters.gender) {
+        searchQuery.gender = filters.gender;
+      }
+      if (filters.location) {
+        searchQuery.location = filters.location;
+      }
+
+      const results = await User.find(searchQuery)
+        .limit(filters.limit || 20)
+        .skip(filters.skip || 0);
+
+      logger.info('User search completed', { 
+        query, 
+        resultCount: results.length 
+      });
+
+      return results;
+    } catch (error) {
+      logger.error('User search failed', { 
+        query, 
+        error: error.message 
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Search messages
+   */
+  async searchMessages(userId, query) {
+    try {
+      const Message = require('../models/Message');
+      
+      const results = await Message.find({
+        $or: [
+          { senderId: userId, content: { $regex: query, $options: 'i' } },
+          { recipientId: userId, content: { $regex: query, $options: 'i' } },
+        ],
+      })
+        .sort({ createdAt: -1 })
+        .limit(50);
+
+      logger.info('Message search completed', { 
+        userId, 
+        query, 
+        resultCount: results.length 
+      });
+
+      return results;
+    } catch (error) {
+      logger.error('Message search failed', { 
+        userId, 
+        query, 
+        error: error.message 
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Search by location
+   */
+  async searchByLocation(latitude, longitude, radiusKm = 50) {
+    try {
+      const User = require('../models/User');
+      
+      const results = await User.find({
+        location: {
+          $near: {
+            $geometry: {
+              type: 'Point',
+              coordinates: [longitude, latitude],
+            },
+            $maxDistance: radiusKm * 1000, // Convert to meters
+          },
+        },
+      }).limit(100);
+
+      logger.info('Location search completed', { 
+        latitude, 
+        longitude, 
+        radiusKm, 
+        resultCount: results.length 
+      });
+
+      return results;
+    } catch (error) {
+      logger.error('Location search failed', { 
+        latitude, 
+        longitude, 
+        error: error.message 
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Advanced search with multiple filters
+   */
+  async advancedSearch(filters) {
+    try {
+      const User = require('../models/User');
+      const query = {};
+
+      if (filters.name) {
+        query.name = { $regex: filters.name, $options: 'i' };
+      }
+      if (filters.ageMin && filters.ageMax) {
+        query.age = { $gte: filters.ageMin, $lte: filters.ageMax };
+      }
+      if (filters.gender) {
+        query.gender = filters.gender;
+      }
+      if (filters.interests) {
+        query.interests = { $in: filters.interests };
+      }
+      if (filters.verified !== undefined) {
+        query.verified = filters.verified;
+      }
+
+      const results = await User.find(query)
+        .sort(filters.sort || { createdAt: -1 })
+        .limit(filters.limit || 20)
+        .skip(filters.skip || 0);
+
+      logger.info('Advanced search completed', { 
+        filters, 
+        resultCount: results.length 
+      });
+
+      return results;
+    } catch (error) {
+      logger.error('Advanced search failed', { 
+        filters, 
+        error: error.message 
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Get search suggestions
+   */
+  async getSuggestions(query, type = 'users') {
+    try {
+      if (type === 'users') {
+        const User = require('../models/User');
+        
+        const results = await User.find({
+          name: { $regex: query, $options: 'i' },
+        })
+          .select('_id name profileImage')
+          .limit(10);
+
+        return results;
+      }
+      return [];
+    } catch (error) {
+      logger.error('Failed to get suggestions', { 
+        query, 
+        type, 
+        error: error.message 
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Trending searches
+   */
+  async getTrendingSearches(limit = 10) {
+    try {
+      const SearchLog = require('../models/SearchLog');
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const results = await SearchLog.aggregate([
+        {
+          $match: {
+            createdAt: { $gte: today },
+          },
+        },
+        {
+          $group: {
+            _id: '$query',
+            count: { $sum: 1 },
+          },
+        },
+        {
+          $sort: { count: -1 },
+        },
+        {
+          $limit: limit,
+        },
+      ]);
+
+      return results.map(item => ({
+        query: item._id,
+        count: item.count,
+      }));
+    } catch (error) {
+      logger.warn('Failed to get trending searches', { 
+        error: error.message 
+      });
+      return [];
+    }
+  }
+
+  /**
+   * Log search query
+   */
+  async logSearch(userId, query) {
+    try {
+      const SearchLog = require('../models/SearchLog');
+      
+      await SearchLog.create({
+        userId,
+        query,
+      });
+    } catch (error) {
+      logger.debug('Failed to log search', { 
+        userId, 
+        query, 
+        error: error.message 
+      });
+    }
+  }
+}
+
+module.exports = new SearchService();

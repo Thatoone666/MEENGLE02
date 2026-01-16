@@ -1,0 +1,201 @@
+﻿import 'package:flutter/material.dart';
+import 'package:meengle_flutter/models/meengle_verify.dart';
+
+class VerificationStatusScreen extends StatefulWidget {
+  const VerificationStatusScreen({super.key});
+
+  @override
+  State<VerificationStatusScreen> createState() => _VerificationStatusScreenState();
+}
+
+class _VerificationStatusScreenState extends State<VerificationStatusScreen> {
+  int trustScore = 45;
+  late UserVerificationBadge badge;
+
+  @override
+  void initState() {
+    super.initState();
+    badge = UserVerificationBadge(
+      userId: 'user123',
+      trustScore: 45,
+      verifications: [
+        UserVerification(
+          id: '1',
+          userId: 'user123',
+          type: VerificationType.phone,
+          status: VerificationStatus.verified,
+          createdAt: DateTime.now(),
+          verifiedAt: DateTime.now(),
+        ),
+        UserVerification(
+          id: '2',
+          userId: 'user123',
+          type: VerificationType.email,
+          status: VerificationStatus.verified,
+          createdAt: DateTime.now(),
+          verifiedAt: DateTime.now(),
+        ),
+      ],
+      lastUpdated: DateTime.now(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Verification Status'),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Trust score
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                gradient: LinearGradient(
+                  colors: [Colors.amber.shade700, Colors.amber.shade600],
+                ),
+              ),
+              padding: const EdgeInsets.all(24),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Trust Score',
+                        style: TextStyle(color: Colors.white, fontSize: 14),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        '$trustScore/100',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withValues(alpha: 0.2),
+                      border: Border.all(color: Colors.white, width: 3),
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${(trustScore / 100 * 100).toStringAsFixed(0)}%',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 24),
+
+            // Verified badges
+            Text(
+              'Verified With',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _buildBadge('Phone', Icons.phone, Colors.blue, true),
+                _buildBadge('Email', Icons.email, Colors.purple, true),
+                _buildBadge('Face', Icons.face, Colors.green, false),
+                _buildBadge('Video', Icons.videocam, Colors.cyan, false),
+              ],
+            ),
+            SizedBox(height: 24),
+
+            // Next verifications
+            Text(
+              'Boost Your Trust',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 12),
+            _buildVerificationOption('Face Recognition', 'Verify your face for +20 trust', Icons.face, Colors.green),
+            SizedBox(height: 12),
+            _buildVerificationOption('Video Introduction', 'Record a 10s intro for +15 trust', Icons.videocam, Colors.cyan),
+            SizedBox(height: 12),
+            _buildVerificationOption('Government ID', 'Verify your ID for +25 trust (Premium)', Icons.badge, Colors.amber),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBadge(String label, IconData icon, Color color, bool verified) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: verified ? color.withValues(alpha: 0.2) : Colors.grey[800],
+        border: Border.all(color: verified ? color : Colors.grey),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: verified ? color : Colors.grey, size: 16),
+          SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: verified ? color : Colors.grey,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          if (verified)
+            Padding(
+              padding: EdgeInsets.only(left: 4),
+              child: Icon(Icons.check, color: color, size: 12),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVerificationOption(String title, String description, IconData icon, Color color) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color, width: 1),
+        color: color.withValues(alpha: 0.1),
+      ),
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 24),
+          SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                Text(description, style: TextStyle(fontSize: 12, color: Colors.grey[400])),
+              ],
+            ),
+          ),
+          Icon(Icons.arrow_forward, color: color),
+        ],
+      ),
+    );
+  }
+}

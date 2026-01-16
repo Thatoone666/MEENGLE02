@@ -1,0 +1,31 @@
+com.meengle.app-activity-1.8.0-0 C:\Users\thusowaver\.gradle\caches\transforms-3\08772683ed5f7bcf38df901a7244dd6a\transformed\activity-1.8.0\res
+com.meengle.app-profileinstaller-1.3.0-1 C:\Users\thusowaver\.gradle\caches\transforms-3\0dee643c5466acb98f6f69b20e217688\transformed\profileinstaller-1.3.0\res
+com.meengle.app-emoji2-views-helper-1.2.0-2 C:\Users\thusowaver\.gradle\caches\transforms-3\28290af6d937fefc85d5407d3be4e0ae\transformed\emoji2-views-helper-1.2.0\res
+com.meengle.app-core-1.12.0-3 C:\Users\thusowaver\.gradle\caches\transforms-3\332842e5d519be1b98c65919f5227c6f\transformed\core-1.12.0\res
+com.meengle.app-startup-runtime-1.1.1-4 C:\Users\thusowaver\.gradle\caches\transforms-3\5b5314f86428a709063d0706e0755c89\transformed\startup-runtime-1.1.1\res
+com.meengle.app-lifecycle-viewmodel-2.6.1-5 C:\Users\thusowaver\.gradle\caches\transforms-3\6898b9e0356f0e4cceb55c7d7f6d0aff\transformed\lifecycle-viewmodel-2.6.1\res
+com.meengle.app-webkit-1.9.0-6 C:\Users\thusowaver\.gradle\caches\transforms-3\973d123aaba340cf7d15bba296c3fdf2\transformed\webkit-1.9.0\res
+com.meengle.app-lifecycle-livedata-core-2.6.1-7 C:\Users\thusowaver\.gradle\caches\transforms-3\9897992a787977807b475c737e5fc727\transformed\lifecycle-livedata-core-2.6.1\res
+com.meengle.app-emoji2-1.2.0-8 C:\Users\thusowaver\.gradle\caches\transforms-3\ac7918e2cc7b72f5bf079a0130527f05\transformed\emoji2-1.2.0\res
+com.meengle.app-annotation-experimental-1.3.0-9 C:\Users\thusowaver\.gradle\caches\transforms-3\aea5c0c0b69c72644b4e09fe8bb0f552\transformed\annotation-experimental-1.3.0\res
+com.meengle.app-lifecycle-runtime-2.6.1-10 C:\Users\thusowaver\.gradle\caches\transforms-3\b248b59048dc2d69ae35ea800282a479\transformed\lifecycle-runtime-2.6.1\res
+com.meengle.app-core-splashscreen-1.0.1-11 C:\Users\thusowaver\.gradle\caches\transforms-3\b47eeb9e4881584a216397863d29055a\transformed\core-splashscreen-1.0.1\res
+com.meengle.app-savedstate-1.2.1-12 C:\Users\thusowaver\.gradle\caches\transforms-3\b80c9fc45590289736325201b96c83ab\transformed\savedstate-1.2.1\res
+com.meengle.app-lifecycle-livedata-2.6.1-13 C:\Users\thusowaver\.gradle\caches\transforms-3\b9c6d304e24ea148eabca0c5f2bdecdd\transformed\lifecycle-livedata-2.6.1\res
+com.meengle.app-fragment-1.6.2-14 C:\Users\thusowaver\.gradle\caches\transforms-3\baca4db5ab66feb1f676e3f799204f71\transformed\fragment-1.6.2\res
+com.meengle.app-appcompat-resources-1.6.1-15 C:\Users\thusowaver\.gradle\caches\transforms-3\c4e176ab31803b6b0a50db4938e03bda\transformed\appcompat-resources-1.6.1\res
+com.meengle.app-core-ktx-1.12.0-16 C:\Users\thusowaver\.gradle\caches\transforms-3\d0ab390f7405d4bf0b3a5e09f210d234\transformed\core-ktx-1.12.0\res
+com.meengle.app-lifecycle-process-2.6.1-17 C:\Users\thusowaver\.gradle\caches\transforms-3\d7a17173ae7ba84e00635fbc675d3c0a\transformed\lifecycle-process-2.6.1\res
+com.meengle.app-coordinatorlayout-1.2.0-18 C:\Users\thusowaver\.gradle\caches\transforms-3\e8c6e8ddc7fdd5d4a2692faacda469a4\transformed\coordinatorlayout-1.2.0\res
+com.meengle.app-lifecycle-viewmodel-savedstate-2.6.1-19 C:\Users\thusowaver\.gradle\caches\transforms-3\eadb666b695c03213f3c95373ea2bfa7\transformed\lifecycle-viewmodel-savedstate-2.6.1\res
+com.meengle.app-appcompat-1.6.1-20 C:\Users\thusowaver\.gradle\caches\transforms-3\f5727dbf251c8b9b882414ac7c23ac67\transformed\appcompat-1.6.1\res
+com.meengle.app-core-runtime-2.2.0-21 C:\Users\thusowaver\.gradle\caches\transforms-3\fbda84914e122fc2bfb3ff64659bb492\transformed\core-runtime-2.2.0\res
+com.meengle.app-pngs-22 C:\Users\thusowaver\Desktop\Coding Mingle\android\app\build\generated\res\pngs\debug
+com.meengle.app-resValues-23 C:\Users\thusowaver\Desktop\Coding Mingle\android\app\build\generated\res\resValues\debug
+com.meengle.app-packageDebugResources-24 C:\Users\thusowaver\Desktop\Coding Mingle\android\app\build\intermediates\incremental\debug\packageDebugResources\merged.dir
+com.meengle.app-packageDebugResources-25 C:\Users\thusowaver\Desktop\Coding Mingle\android\app\build\intermediates\incremental\debug\packageDebugResources\stripped.dir
+com.meengle.app-merged_res-26 C:\Users\thusowaver\Desktop\Coding Mingle\android\app\build\intermediates\merged_res\debug
+com.meengle.app-debug-27 C:\Users\thusowaver\Desktop\Coding Mingle\android\app\src\debug\res
+com.meengle.app-main-28 C:\Users\thusowaver\Desktop\Coding Mingle\android\app\src\main\res
+com.meengle.app-packaged_res-29 C:\Users\thusowaver\Desktop\Coding Mingle\android\capacitor-cordova-android-plugins\build\intermediates\packaged_res\debug
+com.meengle.app-packaged_res-30 C:\Users\thusowaver\Desktop\Coding Mingle\node_modules\@capacitor\android\capacitor\build\intermediates\packaged_res\debug

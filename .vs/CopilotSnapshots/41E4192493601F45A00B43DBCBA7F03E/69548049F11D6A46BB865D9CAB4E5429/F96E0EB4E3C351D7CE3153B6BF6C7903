@@ -1,0 +1,408 @@
+﻿import 'package:flutter/material.dart';
+
+/// Premium tier system for Meengle
+/// Unique naming: Free ? Spark, Spark+ ? Flame, Flame+ ? Wildfire
+/// Premium tiers with distinct pricing and features
+
+enum MeengleTier {
+  free,      // Free tier
+  spark,     // First paid tier
+  flame,     // Mid tier
+  wildfire,  // Premium tier
+}
+
+enum BillingCycle {
+  weekly,    // 1 week subscription
+  monthly,   // 1 month subscription
+  annual,    // 12 month subscription (best value)
+}
+
+class TierInfo {
+  final MeengleTier tier;
+  final String displayName;
+  final String subtitle;
+  final String description;
+  final double weeklyPrice;   // 1 week
+  final double monthlyPrice;  // 1 month (2x weekly)
+  final double yearlyPrice;   // 1 year (17% discount)
+  final Color primaryColor;
+  final Color accentColor;
+  final String icon;
+  final List<String> features;
+  final List<String> premiumFeatures;
+  final bool isPopular;
+
+  const TierInfo({
+    required this.tier,
+    required this.displayName,
+    required this.subtitle,
+    required this.description,
+    required this.weeklyPrice,
+    required this.monthlyPrice,
+    required this.yearlyPrice,
+    required this.primaryColor,
+    required this.accentColor,
+    required this.icon,
+    required this.features,
+    required this.premiumFeatures,
+    this.isPopular = false,
+  });
+
+  // Calculate savings for monthly vs weekly
+  double get monthlySavingsPercent {
+    final weeklyTotal = weeklyPrice * 4.3; // Average weeks per month
+    final savings = weeklyTotal - monthlyPrice;
+    return (savings / weeklyTotal) * 100;
+  }
+
+  // Calculate yearly savings percentage
+  double get yearlySavingsPercent {
+    final monthlyTotal = monthlyPrice * 12;
+    final savings = monthlyTotal - yearlyPrice;
+    return (savings / monthlyTotal) * 100;
+  }
+
+  // Get price for any billing cycle
+  double getPrice(BillingCycle cycle) {
+    switch (cycle) {
+      case BillingCycle.weekly:
+        return weeklyPrice;
+      case BillingCycle.monthly:
+        return monthlyPrice;
+      case BillingCycle.annual:
+        return yearlyPrice;
+    }
+  }
+
+  // Get display price per day for any cycle
+  double getPricePerDay(BillingCycle cycle) {
+    switch (cycle) {
+      case BillingCycle.weekly:
+        return weeklyPrice / 7;
+      case BillingCycle.monthly:
+        return monthlyPrice / 30;
+      case BillingCycle.annual:
+        return yearlyPrice / 365;
+    }
+  }
+
+  // Get billing period text
+  String getBillingPeriodText(BillingCycle cycle) {
+    switch (cycle) {
+      case BillingCycle.weekly:
+        return '/week';
+      case BillingCycle.monthly:
+        return '/month';
+      case BillingCycle.annual:
+        return '/year';
+    }
+  }
+}
+
+class MeengleTierSystem {
+  static final Map<MeengleTier, TierInfo> tiers = {
+    MeengleTier.free: TierInfo(
+      tier: MeengleTier.free,
+      displayName: 'Spark',
+      subtitle: 'Start Your Journey',
+      description: 'The beginning of your dating adventure',
+      weeklyPrice: 0.00,
+      monthlyPrice: 0.00,
+      yearlyPrice: 0.00,
+      primaryColor: const Color(0xFFFFA500), // Orange
+      accentColor: const Color(0xFFFFD700), // Gold
+      icon: '?',
+      features: [
+        '25 swipes per day',
+        'Basic profile',
+        'See matches',
+        'Send messages',
+        'Basic filters',
+        'Standard chat',
+      ],
+      premiumFeatures: [],
+    ),
+    MeengleTier.spark: TierInfo(
+      tier: MeengleTier.spark,
+      displayName: 'Spark+',
+      subtitle: 'Ignite Connection',
+      description: 'Boost your visibility and get more matches',
+      weeklyPrice: 2.99,    // Weekly (7 days)
+      monthlyPrice: 5.99,   // Monthly (30 days) - 2x weekly roughly
+      yearlyPrice: 59.99,   // Annual (365 days) - 17% discount
+      primaryColor: const Color(0xFFFF6B35), // Red-Orange
+      accentColor: const Color(0xFFFF8C42), // Light Orange
+      icon: '??',
+      features: [
+        '100 swipes per day',
+        'Enhanced profile',
+        'See who likes you',
+        'Priority visibility',
+        'Advanced filters',
+        'Message templates',
+        'Search preferences',
+        'Read receipts',
+      ],
+      premiumFeatures: [
+        '?? 100 swipes per day (vs 25)',
+        '?? See who likes you',
+        '? 3x profile visibility',
+        '?? Message templates',
+      ],
+    ),
+    MeengleTier.flame: TierInfo(
+      tier: MeengleTier.flame,
+      displayName: 'Flame',
+      subtitle: 'Passionate Connections',
+      description: 'Get serious about finding your match',
+      weeklyPrice: 5.99,    // Weekly (7 days)
+      monthlyPrice: 11.99,  // Monthly (30 days) - 2x weekly roughly
+      yearlyPrice: 119.99,  // Annual (365 days) - 17% discount
+      primaryColor: const Color(0xFFEE5A3F), // Flame Red
+      accentColor: const Color(0xFFFF6B6B), // Bright Red
+      icon: '??',
+      features: [
+        'Unlimited swipes',
+        'Verified badge',
+        'Super likes (10/week)',
+        'Rewind feature',
+        'Passport mode',
+        'Video profiles',
+        'Advanced matching',
+        'Spotlight boost',
+        '24/7 priority support',
+      ],
+      premiumFeatures: [
+        '?? Unlimited swipes',
+        '? Verified badge',
+        '?? 10 super likes/week',
+        '?? Passport mode',
+        '?? Video profiles',
+        '? Spotlight (5x visibility)',
+        '?? Smart matching',
+      ],
+      isPopular: true,
+    ),
+    MeengleTier.wildfire: TierInfo(
+      tier: MeengleTier.wildfire,
+      displayName: 'Wildfire',
+      subtitle: 'Legendary Status',
+      description: 'The ultimate dating experience with all features',
+      weeklyPrice: 11.99,   // Weekly (7 days)
+      monthlyPrice: 23.99,  // Monthly (30 days) - 2x weekly roughly
+      yearlyPrice: 239.99,  // Annual (365 days) - 17% discount
+      primaryColor: const Color(0xFFD32F2F), // Deep Red
+      accentColor: const Color(0xFFFF5722), // Deep Orange
+      icon: '????',
+      features: [
+        'All Flame features',
+        'Unlimited super likes',
+        'Concierge service',
+        'Advanced analytics',
+        'Profile ghosting',
+        'Incognito mode',
+        'Premium notifications',
+        'Exclusive events',
+        'VIP support',
+        'Custom profile banner',
+        'Special badge',
+      ],
+      premiumFeatures: [
+        '?? Premium concierge service',
+        '?? Advanced match analytics',
+        '?? Profile ghosting',
+        '?? Incognito browsing',
+        '?? Exclusive events access',
+        '?? VIP support (1hr response)',
+        '?? Unlimited super likes',
+        '? Wildfire special badge',
+        '?? Custom profile banner',
+        '?? Insider matching (top 1%)',
+      ],
+    ),
+  };
+
+  /// Get tier info by tier enum
+  static TierInfo getTierInfo(MeengleTier tier) => tiers[tier]!;
+
+  /// Get all tiers in order
+  static List<TierInfo> getAllTiers() => [
+    tiers[MeengleTier.free]!,
+    tiers[MeengleTier.spark]!,
+    tiers[MeengleTier.flame]!,
+    tiers[MeengleTier.wildfire]!,
+  ];
+
+  /// Get tier by display name
+  static MeengleTier? getTierByName(String name) {
+    for (var tier in tiers.values) {
+      if (tier.displayName == name) {
+        return tier.tier;
+      }
+    }
+    return null;
+  }
+
+  /// Calculate total features count
+  static int getTotalFeatures(MeengleTier tier) {
+    final info = tiers[tier]!;
+    return info.features.length + info.premiumFeatures.length;
+  }
+
+  /// Check if user can access a feature
+  static bool canAccessFeature(
+    MeengleTier userTier,
+    String featureName,
+  ) {
+    final tierInfo = tiers[userTier]!;
+    return tierInfo.features.contains(featureName) ||
+        tierInfo.premiumFeatures.contains(featureName);
+  }
+
+  /// Get tier upgrade recommendations
+  static MeengleTier? getRecommendedUpgrade(MeengleTier currentTier) {
+    switch (currentTier) {
+      case MeengleTier.free:
+        return MeengleTier.spark;
+      case MeengleTier.spark:
+        return MeengleTier.flame;
+      case MeengleTier.flame:
+        return MeengleTier.wildfire;
+      case MeengleTier.wildfire:
+        return null; // Already at max
+    }
+  }
+
+  /// Get annual savings for a tier
+  static String getAnnualSavings(MeengleTier tier) {
+    final info = tiers[tier]!;
+    if (info.monthlyPrice == 0) return 'Free';
+    final saved = info.yearlySavingsPercent.toStringAsFixed(0);
+    return 'Save $saved%';
+  }
+
+  /// Get monthly savings (comparing weekly to monthly)
+  static String getMonthlySavings(MeengleTier tier) {
+    final info = tiers[tier]!;
+    if (info.weeklyPrice == 0) return 'Free';
+    final saved = info.monthlySavingsPercent.toStringAsFixed(0);
+    return 'Save $saved%';
+  }
+
+  /// Compare features between tiers
+  static List<String> getNewFeatures(
+    MeengleTier fromTier,
+    MeengleTier toTier,
+  ) {
+    final fromInfo = tiers[fromTier]!;
+    final toInfo = tiers[toTier]!;
+
+    final fromFeatures = {...fromInfo.features, ...fromInfo.premiumFeatures};
+    final toFeatures = {...toInfo.features, ...toInfo.premiumFeatures};
+
+    return toFeatures.difference(fromFeatures).toList();
+  }
+
+  /// Get price comparison text
+  static String getPriceComparison(MeengleTier tier) {
+    final info = tiers[tier]!;
+    if (info.weeklyPrice == 0) return 'Free forever';
+    
+    final weeklyPerDay = info.weeklyPrice / 7;
+    final monthlyPerDay = info.monthlyPrice / 30;
+    final yearlyPerDay = info.yearlyPrice / 365;
+    
+    return 'From \$${monthlyPerDay.toStringAsFixed(2)}/day';
+  }
+}
+
+/// Pricing constants (USD)
+class PricingConstants {
+  // Spark+ Pricing
+  static const double sparkWeekly = 2.99;
+  static const double sparkMonthly = 5.99;
+  static const double sparkAnnual = 59.99;
+
+  // Flame Pricing
+  static const double flameWeekly = 5.99;
+  static const double flameMonthly = 11.99;
+  static const double flameAnnual = 119.99;
+
+  // Wildfire Pricing
+  static const double wildfireWeekly = 11.99;
+  static const double wildfireMonthly = 23.99;
+  static const double wildfireAnnual = 239.99;
+
+  // Display names
+  static const String sparkDisplay = 'Spark+';
+  static const String flameDisplay = 'Flame';
+  static const String wildfireDisplay = 'Wildfire';
+}
+
+/// Subscription model for backend
+class SubscriptionModel {
+  final String userId;
+  final MeengleTier tier;
+  final BillingCycle billingCycle;
+  final DateTime startDate;
+  final DateTime expiryDate;
+  final bool isActive;
+  final String paymentMethod;
+  final bool autoRenew;
+  final int renewalCount;
+
+  SubscriptionModel({
+    required this.userId,
+    required this.tier,
+    required this.billingCycle,
+    required this.startDate,
+    required this.expiryDate,
+    required this.isActive,
+    required this.paymentMethod,
+    required this.autoRenew,
+    this.renewalCount = 0,
+  });
+
+  bool get isExpired => DateTime.now().isAfter(expiryDate);
+  bool get expiresIn7Days =>
+      expiryDate.difference(DateTime.now()).inDays <= 7 &&
+      expiryDate.difference(DateTime.now()).inDays > 0;
+
+  // Calculate days remaining
+  int get daysRemaining {
+    final diff = expiryDate.difference(DateTime.now()).inDays;
+    return diff > 0 ? diff : 0;
+  }
+
+  Map<String, dynamic> toJson() => {
+    'userId': userId,
+    'tier': tier.toString(),
+    'billingCycle': billingCycle.toString(),
+    'startDate': startDate.toIso8601String(),
+    'expiryDate': expiryDate.toIso8601String(),
+    'isActive': isActive,
+    'paymentMethod': paymentMethod,
+    'autoRenew': autoRenew,
+    'renewalCount': renewalCount,
+  };
+
+  factory SubscriptionModel.fromJson(Map<String, dynamic> json) {
+    return SubscriptionModel(
+      userId: json['userId'],
+      tier: MeengleTier.values.firstWhere(
+        (t) => t.toString() == json['tier'],
+        orElse: () => MeengleTier.free,
+      ),
+      billingCycle: BillingCycle.values.firstWhere(
+        (c) => c.toString() == json['billingCycle'],
+        orElse: () => BillingCycle.monthly,
+      ),
+      startDate: DateTime.parse(json['startDate']),
+      expiryDate: DateTime.parse(json['expiryDate']),
+      isActive: json['isActive'],
+      paymentMethod: json['paymentMethod'],
+      autoRenew: json['autoRenew'],
+      renewalCount: json['renewalCount'] ?? 0,
+    );
+  }
+}

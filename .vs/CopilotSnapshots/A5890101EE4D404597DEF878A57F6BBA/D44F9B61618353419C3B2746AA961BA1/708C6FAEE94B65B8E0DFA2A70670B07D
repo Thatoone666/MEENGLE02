@@ -1,0 +1,77 @@
+﻿import 'package:flutter/material.dart';
+
+class AppColors {
+  // Primary brand colors
+  static const primary = Color(0xFFF50057);
+  static const primaryLight = Color(0xFFFF4081);
+  static const primaryDark = Color(0xFFC51162);
+
+  // Secondary accent colors
+  static const secondary = Color(0xFF00E5FF);
+  static const secondaryLight = Color(0xFF6EFFFF);
+  static const secondaryDark = Color(0xFF00B2CC);
+
+  // Background colors
+  static const background = Color(0xFF121212);
+  static const surface = Color(0xFF1E1E1E);
+  static const surfaceLight = Color(0xFF2C2C2C);
+  static const overlay = Color(0x80000000);
+
+  // Status colors
+  static const success = Color(0xFF4CAF50);
+  static const warning = Color(0xFFFFC107);
+  static const error = Color(0xFFE74C3C);
+  static const info = Color(0xFF2196F3);
+
+  // Text colors
+  static const textPrimary = Color(0xFFFFFFFF);
+  static const textSecondary = Color(0xB3FFFFFF);
+  static const textHint = Color(0x80FFFFFF);
+  static const textDisabled = Color(0x61FFFFFF);
+
+  // Interaction states
+  static const stateHover = Color(0x0AFFFFFF);
+  static const stateFocused = Color(0x1FFFFFFF);
+  static const statePressed = Color(0x14FFFFFF);
+  static const stateDisabled = Color(0x61000000);
+
+  // Gradients
+  static const gradientStart = Color(0xFFFF6B9A);
+  static const gradientEnd = Color(0xFF7C4DFF);
+
+  // Message colors
+  static const messageBubbleMine = Color(0x4DF50057);
+  static const messageBubbleOther = Color(0x33FFFFFF);
+  static const messageReplyBg = Color(0x1AFFFFFF);
+
+  // Online status
+  static const onlineIndicator = Color(0xFF4CAF50);
+  static const offlineIndicator = Color(0xFFE0E0E0);
+
+  // Blur effects
+  static const blurOverlay = Color(0x33000000);
+  static const glassEffect = Color(0x0DFFFFFF);
+
+  // Premium features
+  static const premium = Color(0xFFFFD700);
+  static const verified = Color(0xFF00BCD4);
+
+  // Social features
+  static const like = Color(0xFFF50057);
+  static const superLike = Color(0xFF00E5FF);
+  static const match = Color(0xFFFFD700);
+
+  static const ColorScheme darkColorScheme = ColorScheme(
+    primary: primary,
+    primaryContainer: primaryDark,
+    secondary: secondary,
+    secondaryContainer: secondaryDark,
+    surface: surface,
+    error: error,
+    onPrimary: textPrimary,
+    onSecondary: textPrimary,
+    onSurface: textPrimary,
+    onError: textPrimary,
+    brightness: Brightness.dark,
+  );
+}

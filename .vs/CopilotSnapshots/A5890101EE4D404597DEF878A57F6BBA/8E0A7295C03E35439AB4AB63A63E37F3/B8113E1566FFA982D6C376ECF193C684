@@ -1,0 +1,459 @@
+﻿import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/stories_provider.dart';
+import '../widgets/cards/story_card.dart';
+import '../animations/premium_animations.dart';
+
+class StoriesScreen extends StatefulWidget {
+  const StoriesScreen({Key? key}) : super(key: key);
+
+  @override
+  State<StoriesScreen> createState() => _StoriesScreenState();
+}
+
+class _StoriesScreenState extends State<StoriesScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _listController;
+
+  @override
+  void initState() {
+    super.initState();
+    _listController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<StoriesProvider>().loadStories();
+      _listController.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _listController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0F0F0F),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF1A1A1A),
+        title: const Text('Stories'),
+        centerTitle: true,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add_circle_outline),
+            onPressed: () => _showUploadDialog(context),
+          ),
+        ],
+      ),
+      body: Consumer<StoriesProvider>(
+        builder: (context, provider, child) {
+          if (provider.isLoading) {
+            return const Center(
+              child: PremiumLoadingIndicator(
+                color: Color(0xFFD4AF37),
+              ),
+            );
+          }
+
+          if (provider.stories.isEmpty) {
+            return FadeTransition(
+              opacity: _listController,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: PremiumAnimations.premiumGlow(
+                          color: Colors.amber.shade400,
+                          intensity: 0.5,
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.image_outlined,
+                        color: Colors.amber.shade400,
+                        size: 64,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'No stories yet',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Share your moments with the community',
+                      style: TextStyle(
+                        color: Colors.grey.shade400,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          return FadeTransition(
+            opacity: _listController,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, 0.1),
+                end: Offset.zero,
+              ).animate(
+                CurvedAnimation(parent: _listController, curve: Curves.easeOut),
+              ),
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Your Stories Feed',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: 0.7,
+                        ),
+                        itemCount: provider.stories.length,
+                        itemBuilder: (context, index) {
+                          final story = provider.stories[index];
+                          return FadeTransition(
+                            opacity: Tween<double>(begin: 0, end: 1)
+                                .animate(
+                              CurvedAnimation(
+                                parent: _listController,
+                                curve: Interval(
+                                  (index * 0.1).clamp(0.0, 0.8),
+                                  ((index * 0.1) + 0.3).clamp(0.0, 1.0),
+                                  curve: Curves.easeOut,
+                                ),
+                              ),
+                            ),
+                            child: ScaleTransition(
+                              scale: Tween<double>(begin: 0.8, end: 1)
+                                  .animate(
+                                CurvedAnimation(
+                                  parent: _listController,
+                                  curve: Interval(
+                                    (index * 0.1).clamp(0.0, 0.8),
+                                    ((index * 0.1) + 0.3).clamp(0.0, 1.0),
+                                    curve: Curves.elasticOut,
+                                  ),
+                                ),
+                              ),
+                              child: StoryCard(
+                                story: story,
+                                onTap: () => _viewStory(context, story),
+                                onReact: () =>
+                                    provider.reactToStory(story.id),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showUploadDialog(BuildContext context) {
+    final captionController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => ScaleTransition(
+        scale: Tween<double>(begin: 0.8, end: 1).animate(
+          CurvedAnimation(
+            parent: ModalRoute.of(context)?.animation ??
+                AlwaysStoppedAnimation(1),
+            curve: Curves.easeOut,
+          ),
+        ),
+        child: AlertDialog(
+          backgroundColor: const Color(0xFF1A1A1A),
+          title: const Text(
+            'New Story',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                height: 200,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade900,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.amber.shade700,
+                    width: 2,
+                  ),
+                  boxShadow: PremiumAnimations.premiumGlow(
+                    color: Colors.amber.shade700,
+                    intensity: 0.3,
+                  ),
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.camera_alt_outlined,
+                    color: Color(0xFFD4AF37),
+                    size: 48,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: captionController,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Add a caption...',
+                  hintStyle: TextStyle(color: Colors.grey.shade600),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide:
+                        BorderSide(color: Colors.amber.shade700, width: 2),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey.shade900,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                context.read<StoriesProvider>().uploadStory(
+                      imageUrl: 'https://via.placeholder.com/400x600',
+                      caption: captionController.text,
+                    );
+                Navigator.pop(context);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.amber.shade700,
+                elevation: 8,
+                shadowColor: Colors.amber.shade700,
+              ),
+              child: const Text(
+                'Post',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _viewStory(BuildContext context, dynamic story) {
+    showDialog(
+      context: context,
+      builder: (context) => ScaleTransition(
+        scale: Tween<double>(begin: 0.5, end: 1).animate(
+          CurvedAnimation(
+            parent: ModalRoute.of(context)?.animation ??
+                AlwaysStoppedAnimation(1),
+            curve: Curves.easeOut,
+          ),
+        ),
+        child: Dialog(
+          backgroundColor: Colors.black,
+          insetPadding: const EdgeInsets.all(0),
+          child: Stack(
+            children: [
+              Image.network(
+                story.imageUrl ?? '',
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: double.infinity,
+              ),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withAlpha(0),
+                      Colors.black.withAlpha(204),
+                    ],
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 40,
+                right: 20,
+                child: GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withAlpha(51),
+                    ),
+                    padding: const EdgeInsets.all(8),
+                    child: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: 40,
+                left: 20,
+                right: 20,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildStoryActionButton(Icons.favorite_outline),
+                    _buildStoryActionButton(Icons.comment_outlined),
+                    _buildStoryActionButton(Icons.share_outlined),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStoryActionButton(IconData icon) {
+    return Container(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white.withAlpha(51),
+      ),
+      padding: const EdgeInsets.all(12),
+      child: Icon(
+        icon,
+        color: Colors.white,
+        size: 24,
+      ),
+    );
+  }
+}
+
+class PremiumLoadingIndicator extends StatefulWidget {
+  final Color color;
+  final double size;
+
+  const PremiumLoadingIndicator({
+    this.color = const Color(0xFFFF6B9A),
+    this.size = 50,
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  State<PremiumLoadingIndicator> createState() =>
+      _PremiumLoadingIndicatorState();
+}
+
+class _PremiumLoadingIndicatorState extends State<PremiumLoadingIndicator>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _rotationController;
+  late AnimationController _pulseController;
+
+  @override
+  void initState() {
+    super.initState();
+    _rotationController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    )..repeat();
+
+    _pulseController = AnimationController(
+      duration: const Duration(seconds: 1),
+      vsync: this,
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _rotationController.dispose();
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: Tween<double>(begin: 0.8, end: 1.0).animate(
+        CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+      ),
+      child: RotationTransition(
+        turns: _rotationController,
+        child: Container(
+          width: widget.size,
+          height: widget.size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: PremiumAnimations.premiumGlow(
+              color: widget.color,
+              intensity: 0.7 + (_pulseController.value * 0.3),
+            ),
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: widget.size,
+                height: widget.size,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: widget.color.withAlpha(100),
+                    width: 2,
+                  ),
+                ),
+              ),
+              Container(
+                width: widget.size * 0.6,
+                height: widget.size * 0.6,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: widget.color.withAlpha(51),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

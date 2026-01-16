@@ -1,0 +1,84 @@
+﻿import express from 'express';
+import { verifyToken } from './auth.js';
+import mongoose from 'mongoose';
+
+const router = express.Router();
+
+// Payment schema
+const paymentSchema = new mongoose.Schema({
+  userId: String,
+  tier: String,
+  amount: Number,
+  currency: String,
+  method: String,
+  status: { type: String, default: 'pending' },
+  stripePaymentIntentId: String,
+  timestamp: { type: Date, default: Date.now },
+  metadata: mongoose.Schema.Types.Mixed
+});
+
+let Payment;
+try {
+  Payment = mongoose.model('Payment', paymentSchema);
+} catch {
+  Payment = mongoose.model('Payment');
+}
+
+// Create payment intent
+router.post('/create-intent', verifyToken, async (req, res) => {
+  try {
+    const { amount, currency = 'USD', tier } = req.body;
+
+    const payment = new Payment({
+      userId: req.userId,
+      amount,
+      currency,
+      tier,
+      status: 'pending'
+    });
+
+    await payment.save();
+
+    res.json({
+      success: true,
+      clientSecret: 'sk_test_' + payment._id,
+      paymentId: payment._id
+    });
+  } catch (error) {
+    console.error('Payment intent error:', error);
+    res.status(500).json({ error: 'Failed to create payment intent' });
+  }
+});
+
+// Confirm payment
+router.post('/confirm', verifyToken, async (req, res) => {
+  try {
+    const { paymentId, tier } = req.body;
+
+    const payment = await Payment.findByIdAndUpdate(
+      paymentId,
+      { status: 'completed' },
+      { new: true }
+    );
+
+    res.json({
+      success: true,
+      payment
+    });
+  } catch (error) {
+    console.error('Payment confirm error:', error);
+    res.status(500).json({ error: 'Failed to confirm payment' });
+  }
+});
+
+// Get payment history
+router.get('/history', verifyToken, async (req, res) => {
+  try {
+    const payments = await Payment.find({ userId: req.userId }).sort({ timestamp: -1 });
+    res.json(payments);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch payment history' });
+  }
+});
+
+export default router;

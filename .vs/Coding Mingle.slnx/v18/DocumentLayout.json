@@ -1,0 +1,125 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\thusowaver\\Desktop\\Coding Mingle\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\thusowaver\\Desktop\\Coding Mingle\\SESSION_COMPLETION_SUMMARY.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:SESSION_COMPLETION_SUMMARY.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\thusowaver\\Desktop\\Coding Mingle\\QUALITY_ASSURANCE_VALIDATION.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:QUALITY_ASSURANCE_VALIDATION.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\thusowaver\\Desktop\\Coding Mingle\\60FPS_VALIDATION_COMPLETE.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:60FPS_VALIDATION_COMPLETE.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\thusowaver\\Desktop\\Coding Mingle\\frontend\\src\\config\\firebase.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:frontend\\src\\config\\firebase.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\thusowaver\\Desktop\\Coding Mingle\\frontend\\src\\services\\firebaseAuthService.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:frontend\\src\\services\\firebaseAuthService.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 325,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 10,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{d78612c7-9962-4b83-95d9-268046dad23a}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:1:0:{d212f56b-c48a-434c-a121-1c5d80b59b9f}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:4:0:{d212f56b-c48a-434c-a121-1c5d80b59b9f}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:3:0:{d212f56b-c48a-434c-a121-1c5d80b59b9f}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:2:0:{d212f56b-c48a-434c-a121-1c5d80b59b9f}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{34e76e81-ee4a-11d0-ae2e-00a0c90fffc3}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "firebaseAuthService.js",
+              "DocumentMoniker": "C:\\Users\\thusowaver\\Desktop\\Coding Mingle\\frontend\\src\\services\\firebaseAuthService.js",
+              "RelativeDocumentMoniker": "frontend\\src\\services\\firebaseAuthService.js",
+              "ToolTip": "C:\\Users\\thusowaver\\Desktop\\Coding Mingle\\frontend\\src\\services\\firebaseAuthService.js",
+              "RelativeToolTip": "frontend\\src\\services\\firebaseAuthService.js",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAOUAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
+              "WhenOpened": "2026-01-09T00:32:18.879Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "firebase.js",
+              "DocumentMoniker": "C:\\Users\\thusowaver\\Desktop\\Coding Mingle\\frontend\\src\\config\\firebase.js",
+              "RelativeDocumentMoniker": "frontend\\src\\config\\firebase.js",
+              "ToolTip": "C:\\Users\\thusowaver\\Desktop\\Coding Mingle\\frontend\\src\\config\\firebase.js",
+              "RelativeToolTip": "frontend\\src\\config\\firebase.js",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAACUAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
+              "WhenOpened": "2026-01-09T00:31:55.96Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "60FPS_VALIDATION_COMPLETE.md",
+              "DocumentMoniker": "C:\\Users\\thusowaver\\Desktop\\Coding Mingle\\60FPS_VALIDATION_COMPLETE.md",
+              "RelativeDocumentMoniker": "60FPS_VALIDATION_COMPLETE.md",
+              "ToolTip": "C:\\Users\\thusowaver\\Desktop\\Coding Mingle\\60FPS_VALIDATION_COMPLETE.md",
+              "RelativeToolTip": "60FPS_VALIDATION_COMPLETE.md",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAEUBAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-01-09T00:26:18.563Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "QUALITY_ASSURANCE_VALIDATION.js",
+              "DocumentMoniker": "C:\\Users\\thusowaver\\Desktop\\Coding Mingle\\QUALITY_ASSURANCE_VALIDATION.js",
+              "RelativeDocumentMoniker": "QUALITY_ASSURANCE_VALIDATION.js",
+              "ToolTip": "C:\\Users\\thusowaver\\Desktop\\Coding Mingle\\QUALITY_ASSURANCE_VALIDATION.js",
+              "RelativeToolTip": "QUALITY_ASSURANCE_VALIDATION.js",
+              "ViewState": "AgIAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
+              "WhenOpened": "2026-01-09T00:23:35.045Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "SESSION_COMPLETION_SUMMARY.md",
+              "DocumentMoniker": "C:\\Users\\thusowaver\\Desktop\\Coding Mingle\\SESSION_COMPLETION_SUMMARY.md",
+              "RelativeDocumentMoniker": "SESSION_COMPLETION_SUMMARY.md",
+              "ToolTip": "C:\\Users\\thusowaver\\Desktop\\Coding Mingle\\SESSION_COMPLETION_SUMMARY.md",
+              "RelativeToolTip": "SESSION_COMPLETION_SUMMARY.md",
+              "ViewState": "AgIAAIUCAAAAAAAAAAAIwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-01-09T00:21:41.455Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

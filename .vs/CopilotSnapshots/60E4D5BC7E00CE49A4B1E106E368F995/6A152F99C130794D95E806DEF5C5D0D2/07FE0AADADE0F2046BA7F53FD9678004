@@ -1,0 +1,189 @@
+﻿<!-- MEENGLE FOOTER COMPONENT - SOUTH AFRICAN VERSION -->
+<!-- Include this in your HTML pages -->
+
+<footer class="meengle-footer">
+  <div class="footer-container">
+    <!-- Logo & Description -->
+    <div class="footer-section">
+      <div class="footer-logo">💌 MEENGLE</div>
+      <p class="footer-tagline">Meet Your Match in South Africa</p>
+      <p class="footer-description">A modern dating platform connecting South Africans for meaningful relationships.</p>
+      <p style="font-size: 12px; margin-top: 10px; opacity: 0.8;">MEENGLE (PTY) LTD | Registered in South Africa</p>
+    </div>
+
+    <!-- Quick Links -->
+    <div class="footer-section">
+      <h4>Quick Links</h4>
+      <ul>
+        <li><a href="/index.html">Home</a></li>
+        <li><a href="/pages/dashboard.html">Dashboard</a></li>
+        <li><a href="/pages/settings.html">Settings</a></li>
+        <li><a href="/pages/moments.html">Moments</a></li>
+      </ul>
+    </div>
+
+    <!-- Legal -->
+    <div class="footer-section">
+      <h4>Legal</h4>
+      <ul>
+        <li><a href="/pages/terms.html" target="_blank">Terms of Service</a></li>
+        <li><a href="/pages/privacy.html" target="_blank">Privacy Policy (POPIA)</a></li>
+        <li><a href="/pages/community-guidelines.html" target="_blank">Community Guidelines</a></li>
+        <li><a href="/pages/cookies.html" target="_blank">Cookie Policy</a></li>
+      </ul>
+    </div>
+
+    <!-- Support (South African) -->
+    <div class="footer-section">
+      <h4>Support (SA)</h4>
+      <ul>
+        <li><a href="mailto:support@meengle.co.za">Email Support</a></li>
+        <li><a href="/pages/faq.html">FAQ</a></li>
+        <li><a href="mailto:safety@meengle.co.za">Safety Report</a></li>
+        <li><a href="mailto:legal@meengle.co.za">Legal Inquiries</a></li>
+        <li><a href="mailto:info@meengle.co.za">Information Officer (POPIA)</a></li>
+      </ul>
+    </div>
+
+    <!-- Social -->
+    <div class="footer-section">
+      <h4>Follow Us</h4>
+      <div class="social-links">
+        <a href="https://twitter.com/meenglesa" target="_blank" title="Twitter">𝕏</a>
+        <a href="https://instagram.com/meenglesa" target="_blank" title="Instagram">📷</a>
+        <a href="https://facebook.com/meenglesa" target="_blank" title="Facebook">f</a>
+        <a href="https://tiktok.com/@meenglesa" target="_blank" title="TikTok">♪</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Bar -->
+  <div class="footer-bottom">
+    <p>&copy; 2024 MEENGLE (PTY) LTD. All rights reserved.</p>
+    <p>Made with ❤️ in South Africa to help you find your perfect match</p>
+    <p style="font-size: 12px;">POPIA Compliant | South African Law | +27 Emergency: 10177</p>
+  </div>
+</footer>
+
+<style>
+  .meengle-footer {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 60px 20px 20px;
+    margin-top: 80px;
+    border-top: 2px solid #e0e0e0;
+  }
+
+  .footer-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 40px;
+    margin-bottom: 40px;
+  }
+
+  .footer-section h4 {
+    margin-bottom: 15px;
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .footer-section ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  .footer-section li {
+    margin-bottom: 10px;
+  }
+
+  .footer-section a {
+    color: rgba(255, 255, 255, 0.9);
+    text-decoration: none;
+    transition: color 0.3s;
+    font-size: 14px;
+  }
+
+  .footer-section a:hover {
+    color: white;
+    text-decoration: underline;
+  }
+
+  .footer-logo {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+
+  .footer-tagline {
+    font-size: 18px;
+    font-weight: 500;
+    margin: 5px 0 15px;
+  }
+
+  .footer-description {
+    font-size: 14px;
+    line-height: 1.6;
+    opacity: 0.9;
+  }
+
+  .social-links {
+    display: flex;
+    gap: 15px;
+    margin-top: 10px;
+  }
+
+  .social-links a {
+    display: inline-flex;
+    width: 40px;
+    height: 40px;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    font-size: 18px;
+    transition: all 0.3s;
+  }
+
+  .social-links a:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-3px);
+  }
+
+  .footer-bottom {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-top: 30px;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    text-align: center;
+    font-size: 13px;
+    opacity: 0.9;
+  }
+
+  .footer-bottom p {
+    margin: 5px 0;
+  }
+
+  @media (max-width: 768px) {
+    .footer-container {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 30px;
+    }
+
+    .meengle-footer {
+      padding: 40px 20px 20px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .footer-container {
+      grid-template-columns: 1fr;
+      gap: 30px;
+    }
+
+    .social-links {
+      justify-content: flex-start;
+    }
+  }
+</style>

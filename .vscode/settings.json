@@ -1,0 +1,16 @@
+{
+  // Sample settings for the MongoDB VS Code extension. Replace <user> and <password> and host/cluster as needed.
+  "mongodb.connections": [
+    {
+      "name": "Meengle - Local",
+      "connectionString": "mongodb://localhost:27017/meengle",
+      "hideExtraCommands": false
+    },
+    {
+      "name": "Meengle - Atlas (sample)",
+      "connectionString": "mongodb+srv://<user>:<password>@cluster0.mongodb.net/meengle?retryWrites=true&w=majority",
+      "hideExtraCommands": false
+    }
+  ],
+  "livePreview.defaultPreviewPath": "/matches.html"
+}

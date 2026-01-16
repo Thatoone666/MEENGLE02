@@ -1,0 +1,118 @@
+﻿const express = require('express');
+const router = express.Router();
+const { body, validationResult } = require('express-validator');
+const auth = require('../middleware/auth');
+
+let verifications = [];
+let verificationBadges = [];
+
+// GET /api/verify/status
+router.get('/status', auth, (req, res) => {
+  try {
+    const userId = req.user.id;
+    const badge = verificationBadges.find(b => b.userId === userId) || {
+      userId,
+      phoneVerified: false,
+      emailVerified: false,
+      faceVerified: false,
+      videoVerified: false,
+      socialVerified: false,
+    };
+    
+    const trustScore = Object.values(badge).filter(v => v === true).length * 20;
+    
+    res.json({
+      success: true,
+      badge,
+      trustScore: Math.min(trustScore, 100),
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// POST /api/verify/start/:type
+router.post('/start/:type', auth, (req, res) => {
+  try {
+    const { type } = req.params;
+    const userId = req.user.id;
+    
+    const verification = {
+      id: `${userId}-${type}-${Date.now()}`,
+      userId,
+      type,
+      status: 'pending',
+      startedAt: new Date(),
+    };
+    
+    verifications.push(verification);
+    res.json({ success: true, verification });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// POST /api/verify/complete
+router.post('/complete', auth, [
+  body('verificationId').notEmpty(),
+  body('proof').notEmpty(),
+], (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  try {
+    const { verificationId, proof } = req.body;
+    const verification = verifications.find(v => v.id === verificationId);
+    
+    if (!verification) {
+      return res.status(404).json({ success: false, error: 'Not found' });
+    }
+
+    verification.status = 'verified';
+    verification.completedAt = new Date();
+
+    const badge = verificationBadges.find(b => b.userId === req.user.id);
+    if (badge) {
+      badge[`${verification.type}Verified`] = true;
+    } else {
+      verificationBadges.push({
+        userId: req.user.id,
+        [`${verification.type}Verified`]: true,
+      });
+    }
+
+    res.json({ success: true, verification });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// GET /api/verify/badge
+router.get('/badge', auth, (req, res) => {
+  try {
+    const userId = req.user.id;
+    const badge = verificationBadges.find(b => b.userId === userId);
+    res.json({ success: true, badge: badge || {} });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// GET /api/verify/recommendations
+router.get('/recommendations', auth, (req, res) => {
+  try {
+    const userId = req.user.id;
+    const badge = verificationBadges.find(b => b.userId === userId) || {};
+    
+    const allTypes = ['phone', 'email', 'face', 'video', 'id'];
+    const recommended = allTypes.filter(t => !badge[`${t}Verified`]);
+    
+    res.json({ success: true, recommendations: recommended });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+module.exports = router;

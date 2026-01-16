@@ -1,0 +1,51 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Start Backend Server",
+			"type": "shell",
+			"command": "node backend/server.js",
+			"isBackground": true,
+			"problemMatcher": [],
+			"group": "build"
+		}
+		,
+		{
+			"label": "Flutter: Pub Get",
+			"type": "shell",
+			"command": "flutter pub get",
+			"options": { "cwd": "${workspaceFolder}/flutter_app" },
+			"problemMatcher": []
+		},
+		{
+			"label": "Flutter: Run (default device)",
+			"type": "shell",
+			"command": "flutter run",
+			"options": { "cwd": "${workspaceFolder}/flutter_app" },
+			"isBackground": false,
+			"presentation": { "reveal": "always", "panel": "shared" },
+			"problemMatcher": []
+		},
+		{
+			"label": "Flutter: Run (pick device)",
+			"type": "shell",
+			"command": "flutter devices; $id = Read-Host 'Enter device id'; if ($id) { flutter run -d $id }",
+			"options": { "cwd": "${workspaceFolder}/flutter_app" },
+			"presentation": { "reveal": "always", "panel": "shared" },
+			"problemMatcher": []
+		},
+		{
+			"label": "Flutter: Run on Folder Open",
+			"type": "shell",
+			"command": "flutter run",
+			"options": {
+				"cwd": "${workspaceFolder}/flutter_app"
+			},
+			"isBackground": true,
+			"runOptions": {
+				"runOn": "folderOpen"
+			},
+			"problemMatcher": []
+		}
+	]
+}

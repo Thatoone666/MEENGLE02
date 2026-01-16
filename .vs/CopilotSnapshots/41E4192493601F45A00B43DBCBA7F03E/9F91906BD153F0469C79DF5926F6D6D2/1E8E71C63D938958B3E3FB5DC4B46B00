@@ -1,0 +1,156 @@
+﻿const express = require('express');
+const router = express.Router();
+const auth = require('../middleware/auth');
+const FraudPattern = require('../models/FraudPattern');
+const FraudReport = require('../models/FraudReport');
+const { body, validationResult } = require('express-validator');
+const logger = require('../config/logger');
+
+// Rate limiting for fraud checks
+const rateLimit = require('express-rate-limit');
+const fraudCheckLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: 'Too many fraud checks from this IP, please try again later'
+});
+
+const assessRisk = async (data) => {
+  try {
+    const { userId, transactionId, amount, paymentMethod, ipAddress, metadata = {} } = data;
+    const patterns = await FraudPattern.find({ isActive: true });
+    const flags = [];
+    let riskLevel = 'low';
+
+    // Check for known patterns
+    for (const pattern of patterns) {
+      let matches = 0;
+      for (const indicator of pattern.indicators) {
+        switch (indicator) {
+          case 'large_amount':
+            if (amount > 5000) matches++;
+            break;
+          case 'unusual_time':
+            const hour = new Date().getHours();
+            if (hour >= 0 && hour <= 4) matches++;
+            break;
+          case 'multiple_cards':
+            if (metadata.cardAttempts && metadata.cardAttempts > 3) matches++;
+            break;
+          case 'ip_mismatch':
+            if (metadata.lastIp && metadata.lastIp !== ipAddress) matches++;
+            break;
+          case 'rapid_transactions':
+            if (metadata.transactionCount && metadata.transactionCount > 5) matches++;
+            break;
+        }
+      }
+
+      if (matches >= pattern.indicators.length / 2) {
+        flags.push(pattern.pattern);
+        if (pattern.riskLevel === 'high') {
+          riskLevel = 'high';
+        } else if (pattern.riskLevel === 'medium' && riskLevel === 'low') {
+          riskLevel = 'medium';
+        }
+      }
+    }
+
+    return {
+      riskLevel,
+      flags,
+      details: {
+        patterns: flags.length,
+        amount,
+        ipAddress,
+        ...metadata
+      },
+      shouldBlock: riskLevel === 'high'
+    };
+  } catch (error) {
+    logger.error('Error in risk assessment:', error);
+    throw error;
+  }
+};
+
+// POST /fraud/assess - Assess transaction risk
+router.post('/assess',
+  fraudCheckLimiter,
+  auth,
+  [
+    body('userId').notEmpty(),
+    body('transactionId').notEmpty(),
+    body('amount').isFloat({ min: 0 }),
+    body('paymentMethod').notEmpty(),
+    body('ipAddress').notEmpty(),
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+
+      const assessment = await assessRisk(req.body);
+      res.json(assessment);
+
+    } catch (error) {
+      logger.error('Error assessing fraud:', error);
+      res.status(500).json({ error: 'Failed to assess transaction' });
+    }
+  }
+);
+
+// POST /fraud/report - Report fraudulent transaction
+router.post('/report',
+  auth,
+  [
+    body('transactionId').notEmpty(),
+    body('reason').notEmpty(),
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+
+      const report = new FraudReport({
+        ...req.body,
+        userId: req.user.id,
+      });
+      await report.save();
+
+      // Notify relevant parties
+      logger.warn('Fraud report submitted:', {
+        transactionId: report.transactionId,
+        reason: report.reason
+      });
+
+      res.status(200).json({ success: true });
+
+    } catch (error) {
+      logger.error('Error reporting fraud:', error);
+      res.status(500).json({ error: 'Failed to submit fraud report' });
+    }
+  }
+);
+
+// GET /fraud/patterns - Get active fraud patterns
+router.get('/patterns',
+  auth,
+  async (req, res) => {
+    try {
+      const patterns = await FraudPattern.find(
+        { isActive: true },
+        'pattern description riskLevel indicators'
+      );
+      res.json(patterns);
+
+    } catch (error) {
+      logger.error('Error fetching patterns:', error);
+      res.status(500).json({ error: 'Failed to fetch fraud patterns' });
+    }
+  }
+);
+
+module.exports = router;

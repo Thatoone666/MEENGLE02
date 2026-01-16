@@ -1,0 +1,164 @@
+﻿# 🔥 Meengle Subscription Tiers
+
+## Tier Structure
+
+Meengle uses a **5-tier subscription model**:
+
+### 1. **FREE** 🆓
+- **Price**: $0/month
+- **Features**:
+  - Basic profile
+  - View matches
+  - Send messages (limited)
+  - Basic profile browsing
+  - Limited filtering
+
+---
+
+### 2. **SPARK** ✨
+- **Price**: $4.99/month
+- **Features**:
+  - ✨ Spark profile badge
+  - Extended match suggestions
+  - More messages per day
+  - Basic advanced filters
+  - Standard support
+  - **Entry-level premium experience**
+
+---
+
+### 3. **SPARK+** ⭐
+- **Price**: $9.99/month
+- **Features**:
+  - ⭐ Spark+ profile badge (premium)
+  - Unlimited matches
+  - Unlimited messaging
+  - Advanced filtering options
+  - Rewind feature (undo last action)
+  - Priority customer support
+  - **Most popular tier**
+
+---
+
+### 4. **FLAME** 🔥
+- **Price**: $14.99/month
+- **Features**:
+  - 🔥 Flame profile badge (elite)
+  - All Spark+ features
+  - Video calling capabilities
+  - Exclusive match recommendations
+  - Premium advanced filters
+  - Dedicated support team
+  - Profile boost weekly
+  - **Premium experience**
+
+---
+
+### 5. **WILDFIRE** 🌪️
+- **Price**: $24.99/month
+- **Features**:
+  - 🌪️ Wildfire VIP badge (legendary)
+  - All Flame features
+  - Unlimited video calls
+  - VIP-only events access
+  - Priority matching algorithm
+  - Concierge support (24/7)
+  - Exclusive perks & bonuses
+  - Monthly profile highlighting
+  - **Top-tier luxury experience**
+
+---
+
+## Comparison Table
+
+| Feature | Free | Spark | Spark+ | Flame | Wildfire |
+|---------|------|-------|--------|-------|----------|
+| **Price** | $0 | $4.99 | $9.99 | $14.99 | $24.99 |
+| Profile Badge | None | ✨ | ⭐ | 🔥 | 🌪️ |
+| Messages | Limited | Extended | Unlimited | Unlimited | Unlimited |
+| Matches | Limited | Extended | Unlimited | Unlimited | Unlimited |
+| Video Calls | ❌ | ❌ | ❌ | ✅ | ✅ |
+| Advanced Filters | Basic | ✅ | ✅ | Premium | Premium |
+| Rewind Feature | ❌ | ❌ | ✅ | ✅ | ✅ |
+| Support | Basic | Standard | Priority | Dedicated | 24/7 Concierge |
+| VIP Events | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Priority Matching | ❌ | ❌ | ❌ | ❌ | ✅ |
+
+---
+
+## Database Implementation
+
+### In `backend/models/User.js`:
+```javascript
+subscriptionTier: { 
+  type: String, 
+  enum: ['free', 'spark', 'sparkplus', 'flame', 'wildfire'], 
+  default: 'free' 
+},
+subscriptionExpires: { type: Date },
+```
+
+### In `backend/config/payment.js`:
+```javascript
+plans: {
+  free: { name: 'Free', price: 0 },
+  spark: { name: 'Spark', price: 4.99 },
+  sparkplus: { name: 'Spark+', price: 9.99 },
+  flame: { name: 'Flame', price: 14.99 },
+  wildfire: { name: 'Wildfire', price: 24.99 },
+}
+```
+
+---
+
+## User Upgrades
+
+### Upgrade Path
+```
+Free → Spark → Spark+ → Flame → Wildfire
+```
+
+### Downgrade Policy
+Users can downgrade at any time (loses features immediately)
+
+### Refund Policy
+- 30-day money-back guarantee on first purchase
+- Pro-rated refunds for cancellations mid-month
+
+---
+
+## Revenue Model
+
+**Monthly Recurring Revenue (MRR) Example** (1000 users):
+- 500 Free users: $0
+- 200 Spark users: $998
+- 200 Spark+ users: $1,998
+- 70 Flame users: $1,049
+- 30 Wildfire users: $749
+- **Total MRR: ~$4,794**
+
+---
+
+## Marketing Messaging
+
+- **Spark**: "Start your spark"
+- **Spark+**: "Premium sparks" 
+- **Flame**: "Turn up the heat"
+- **Wildfire**: "Ignite the passion" / "VIP experience"
+
+---
+
+## Environment Variables
+
+Add to `.env`:
+```env
+STRIPE_SPARK_PRICE_ID=price_xxxx
+STRIPE_SPARKPLUS_PRICE_ID=price_yyyy
+STRIPE_FLAME_PRICE_ID=price_zzzz
+STRIPE_WILDFIRE_PRICE_ID=price_wwww
+```
+
+---
+
+## Last Updated
+**2026-01-08** - Corrected tier names to actual Meengle branding

@@ -1,0 +1,168 @@
+﻿import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../services/api.dart';
+
+class MatchesListScreen extends StatefulWidget {
+  const MatchesListScreen({super.key});
+
+  @override
+  State<MatchesListScreen> createState() => _MatchesListScreenState();
+}
+
+class _MatchesListScreenState extends State<MatchesListScreen> {
+  bool _loading = true;
+  String? _error;
+  List<Map<String, dynamic>> _matches = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    if (!mounted) return;
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final matches = await ApiService.getPotentialMatches();
+      if (mounted) {
+        setState(() => _matches = matches);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _error = e.toString());
+      }
+    }
+    
+    if (mounted) {
+      setState(() => _loading = false);
+    }
+  }
+
+  void _openDetail(Map<String, dynamic> user) {
+    Navigator.of(context)
+        .pushNamed('/match', arguments: user)
+        .then((v) => _load());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
+                'Your Matches',
+                key: const Key('matchesTitle'),
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+              ),
+            ),
+            Expanded(
+              child: _loading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                          key: Key('matchesLoadingIndicator')))
+                  : _error != null
+                      ? _buildErrorWidget()
+                      : _matches.isEmpty
+                          ? _buildEmptyState()
+                          : _buildMatchesList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorWidget() {
+    return Center(
+      key: const Key('matchesErrorWidget'),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline,
+                key: Key('matchesErrorIcon'),
+                color: Colors.redAccent,
+                size: 50),
+            const SizedBox(height: 16),
+            Text('Error: $_error', textAlign: TextAlign.center),
+            const SizedBox(height: 8),
+            ElevatedButton(
+              key: const Key('matchesRetryButton'),
+              onPressed: _load,
+              child: const Text('Retry'),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return const Center(
+      key: Key('emptyMatchesState'),
+      child: Text(
+        'No matches yet. Keep swiping!',
+        style: TextStyle(fontSize: 18, color: Colors.white54),
+      ),
+    );
+  }
+
+  Widget _buildMatchesList() {
+    return ListView.builder(
+      key: const Key('matchesList'),
+      itemCount: _matches.length,
+      itemBuilder: (context, i) {
+        final user = _matches[i];
+        final imageUrl =
+            (user['images'] != null && (user['images'] as List).isNotEmpty)
+                ? ApiService.resolveAssetUrl(user['images'][0])
+                : null;
+
+        return Card(
+          key: Key('matchCard${user['id'] ?? i}'),
+          color: Colors.white.withAlpha(26),
+          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          child: ListTile(
+            contentPadding: EdgeInsets.all(12),
+            leading: CircleAvatar(
+              key: Key('matchAvatar${user['id'] ?? i}'),
+              radius: 30,
+              backgroundImage: imageUrl != null
+                  ? CachedNetworkImageProvider(imageUrl)
+                  : null,
+              child: imageUrl == null ? Icon(Icons.person, size: 30) : null,
+            ),
+            title: Text(
+              user['name'] ?? 'Unknown',
+              key: Key('matchName${user['id'] ?? i}'),
+              style:
+                  TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+            subtitle: Text(
+              'Age: ${user['age'] ?? 'N/A'}',
+              key: Key('matchAge${user['id'] ?? i}'),
+              style: TextStyle(color: Colors.white70),
+            ),
+            trailing: Icon(Icons.chevron_right, color: Colors.white54),
+            onTap: () => _openDetail(user),
+          ),
+        );
+      },
+    );
+  }
+}

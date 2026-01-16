@@ -1,0 +1,125 @@
+﻿# Authentication Tests Documentation
+
+## Overview
+The authentication test suite validates user signup and login functionality with comprehensive test coverage.
+
+## Setup Instructions
+
+### 1. Install Dependencies
+```bash
+npm install
+```
+
+This will install:
+- `mocha`: Test runner
+- `chai`: Assertion library
+- `supertest`: HTTP assertion library
+- `mongodb-memory-server`: In-memory MongoDB for testing
+
+### 2. Run Tests
+
+**Run all tests:**
+```bash
+npm test
+```
+
+**Run tests in watch mode (useful during development):**
+```bash
+npm run test:watch
+```
+
+**Run specific test file:**
+```bash
+npx mocha tests/auth.test.js
+```
+
+## Test Suite Details
+
+### Test File: `backend/tests/auth.test.js`
+
+#### Test Cases:
+
+1. **Signup - Success Case**
+   - Creates a new user with email, password, and name
+   - Validates token is returned in response
+   - Verifies user is stored in database
+   - Expected: HTTP 201 Created
+
+2. **Signup - Missing Fields**
+   - Attempts signup without name field
+   - Validates error response
+   - Expected: HTTP 400 Bad Request
+
+3. **Signup - Short Password**
+   - Attempts signup with password < 8 characters
+   - Validates specific error message
+   - Expected: HTTP 400 Bad Request
+
+4. **Login - Success Case**
+   - Creates user with hashed password
+   - Authenticates with correct credentials
+   - Validates token is returned
+   - Expected: HTTP 200 OK
+
+5. **Login - User Not Found**
+   - Attempts login with non-existent email
+   - Expected: HTTP 401 Unauthorized
+
+6. **Login - Wrong Password**
+   - Attempts login with correct email but wrong password
+   - Expected: HTTP 401 Unauthorized
+
+## Key Features
+
+### Database Isolation
+- Uses MongoDB Memory Server for in-memory testing
+- Automatic cleanup between tests with `afterEach` hook
+- No external database dependencies
+
+### Timeouts
+- Global timeout: 30 seconds (configured in `.mocharc.json`)
+- Initial setup: 15 seconds
+- Individual tests: 5 seconds each
+- Teardown: 10 seconds
+
+### Error Handling
+- Automatic retry logic (up to 5 attempts) for MongoDB Memory Server startup
+- Exponential backoff between retries
+- Clear error messages for debugging
+
+## Configuration Files
+
+### `.mocharc.json`
+Mocha configuration for ES module support and test discovery.
+
+### `jest.config.js`
+Alternative Jest configuration (kept for reference, not currently used).
+
+## Troubleshooting
+
+### Tests Timeout
+- Check if port 3000 is available
+- Verify Node.js version >= 18.0.0
+- Check system resources (RAM, disk space)
+
+### MongoDB Memory Server Issues
+- Ensure sufficient disk space for binary download
+- On first run, may take longer to download MongoDB binary
+- Check internet connection
+
+### Module Import Errors
+- Ensure all dependencies are installed: `npm install`
+- Verify `"type": "module"` is set in `package.json`
+- Check file extensions (.js) in import statements
+
+## Development Workflow
+
+```bash
+# Terminal 1: Start development server
+npm run dev
+
+# Terminal 2: Run tests in watch mode
+npm run test:watch
+```
+
+This allows real-time testing as you make changes to authentication endpoints.

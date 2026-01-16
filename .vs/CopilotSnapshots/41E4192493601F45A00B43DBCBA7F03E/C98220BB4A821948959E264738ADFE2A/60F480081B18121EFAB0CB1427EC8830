@@ -1,0 +1,187 @@
+﻿import express from 'express';
+import mongoose from 'mongoose';
+
+const router = express.Router();
+
+// User schema for matching
+const userSchema = new mongoose.Schema({
+  id: String,
+  email: String,
+  name: String,
+  age: Number,
+  bio: String,
+  photos: [String],
+  gender: String,
+  interests: [String],
+  location: { latitude: Number, longitude: Number },
+  tier: { type: String, default: 'free' },
+  createdAt: { type: Date, default: Date.now }
+});
+
+// Match schema - track who liked whom
+const matchSchema = new mongoose.Schema({
+  userId: String,
+  targetUserId: String,
+  action: { type: String, enum: ['like', 'pass'], default: 'like' },
+  timestamp: { type: Date, default: Date.now }
+});
+
+// Mutual match schema - when both like each other
+const mutualMatchSchema = new mongoose.Schema({
+  userId1: String,
+  userId2: String,
+  matchedAt: { type: Date, default: Date.now },
+  chatEnabled: { type: Boolean, default: true }
+});
+
+let User, UserMatch, MutualMatch;
+
+try {
+  User = mongoose.model('User', userSchema);
+} catch {
+  User = mongoose.model('User');
+}
+
+try {
+  UserMatch = mongoose.model('UserMatch', matchSchema);
+} catch {
+  UserMatch = mongoose.model('UserMatch');
+}
+
+try {
+  MutualMatch = mongoose.model('MutualMatch', mutualMatchSchema);
+} catch {
+  MutualMatch = mongoose.model('MutualMatch');
+}
+
+// Get potential matches for swiping
+router.get('/potential', async (req, res) => {
+  try {
+    const { userId } = req.query;
+
+    if (!userId) {
+      return res.status(400).json({ error: 'userId required' });
+    }
+
+    // Get current user
+    const currentUser = await User.findOne({ id: userId });
+    if (!currentUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Get users already liked/passed by current user
+    const alreadyActedOn = await UserMatch.find({ userId }).select('targetUserId');
+    const alreadyActedOnIds = alreadyActedOn.map(m => m.targetUserId);
+
+    // Get mutual matches
+    const mutualMatches = await MutualMatch.find({
+      $or: [{ userId1: userId }, { userId2: userId }]
+    });
+    const mutualIds = mutualMatches.map(m => m.userId1 === userId ? m.userId2 : m.userId1);
+
+    // Find potential matches: different gender, not already acted on, not mutual matches
+    const potentialMatches = await User.find({
+      id: { $nin: [userId, ...alreadyActedOnIds, ...mutualIds] },
+      gender: currentUser.gender === 'male' ? 'female' : 'male'
+    })
+      .limit(10)
+      .lean();
+
+    res.json(potentialMatches);
+  } catch (error) {
+    console.error('Potential matches error:', error);
+    res.status(500).json({ error: 'Failed to fetch matches' });
+  }
+});
+
+// Like a user
+router.post('/like', async (req, res) => {
+  try {
+    const { userId, targetUserId } = req.body;
+
+    if (!userId || !targetUserId) {
+      return res.status(400).json({ error: 'userId and targetUserId required' });
+    }
+
+    // Save the like
+    await UserMatch.create({
+      userId,
+      targetUserId,
+      action: 'like'
+    });
+
+    // Check if target also liked current user (mutual match)
+    const targetLike = await UserMatch.findOne({
+      userId: targetUserId,
+      targetUserId: userId,
+      action: 'like'
+    });
+
+    if (targetLike) {
+      // Create mutual match
+      await MutualMatch.create({
+        userId1: userId,
+        userId2: targetUserId
+      });
+
+      return res.json({
+        success: true,
+        mutualMatch: true,
+        message: 'It\'s a match!'
+      });
+    }
+
+    res.json({
+      success: true,
+      mutualMatch: false,
+      message: 'Like recorded'
+    });
+  } catch (error) {
+    console.error('Like error:', error);
+    res.status(500).json({ error: 'Failed to record like' });
+  }
+});
+
+// Pass on a user
+router.post('/pass', async (req, res) => {
+  try {
+    const { userId, targetUserId } = req.body;
+
+    if (!userId || !targetUserId) {
+      return res.status(400).json({ error: 'userId and targetUserId required' });
+    }
+
+    await UserMatch.create({
+      userId,
+      targetUserId,
+      action: 'pass'
+    });
+
+    res.json({ success: true, message: 'Pass recorded' });
+  } catch (error) {
+    console.error('Pass error:', error);
+    res.status(500).json({ error: 'Failed to record pass' });
+  }
+});
+
+// Get matches (users who matched with current user)
+router.get('/matches/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const matches = await MutualMatch.find({
+      $or: [{ userId1: userId }, { userId2: userId }]
+    });
+
+    const matchIds = matches.map(m => m.userId1 === userId ? m.userId2 : m.userId1);
+
+    const matchedUsers = await User.find({ id: { $in: matchIds } }).lean();
+
+    res.json(matchedUsers);
+  } catch (error) {
+    console.error('Get matches error:', error);
+    res.status(500).json({ error: 'Failed to fetch matches' });
+  }
+});
+
+export default router;

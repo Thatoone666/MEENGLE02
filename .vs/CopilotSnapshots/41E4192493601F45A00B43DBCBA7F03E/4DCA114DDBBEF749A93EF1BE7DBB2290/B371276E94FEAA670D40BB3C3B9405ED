@@ -1,0 +1,141 @@
+﻿const express = require('express');
+const router = express.Router();
+const auth = require('../middleware/auth');
+const { Roam } = require('../models/featureModels');
+
+router.post('/plan', auth, async (req, res) => {
+  try {
+    const { destination, startDate, endDate, interests, latitude, longitude, lookingFor } = req.body;
+    
+    if (!destination || !startDate || !endDate) {
+      return res.status(400).json({ success: false, error: 'Missing required fields' });
+    }
+    
+    const trip = new Roam({
+      userId: req.user.id,
+      destination,
+      startDate: new Date(startDate),
+      endDate: new Date(endDate),
+      interests: interests || [],
+      buddies: [req.user.id],
+      lookingFor: lookingFor || [],
+      currentCity: destination,
+      latitude: latitude || null,
+      longitude: longitude || null,
+      status: 'planned',
+      createdAt: new Date()
+    });
+    
+    await trip.save();
+    res.json({ success: true, trip });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.get('/discover', async (req, res) => {
+  try {
+    const { destination, latitude, longitude, maxDistance = 50 } = req.query;
+    let query = {};
+    
+    // Search by destination name
+    if (destination) {
+      query.destination = { $regex: destination, $options: 'i' };
+    }
+    
+    // Geo-spatial search if coordinates provided
+    if (latitude && longitude) {
+      query.location = {
+        $near: {
+          $geometry: {
+            type: 'Point',
+            coordinates: [parseFloat(longitude), parseFloat(latitude)]
+          },
+          $maxDistance: maxDistance * 1000 // Convert km to meters
+        }
+      };
+    }
+    
+    // Find active trips
+    query.status = 'planned';
+    query.endDate = { $gt: new Date() };
+    
+    const trips = await Roam.find(query).limit(20);
+    res.json({ success: true, trips });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.get('/:id', async (req, res) => {
+  try {
+    const trip = await Roam.findById(req.params.id);
+    
+    if (!trip) {
+      return res.status(404).json({ success: false, error: 'Trip not found' });
+    }
+    
+    res.json({ success: true, trip });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/:id/join', auth, async (req, res) => {
+  try {
+    const trip = await Roam.findById(req.params.id);
+    
+    if (!trip) {
+      return res.status(404).json({ success: false, error: 'Trip not found' });
+    }
+    
+    // Check if already joined
+    if (!trip.buddies.includes(req.user.id)) {
+      trip.buddies.push(req.user.id);
+      await trip.save();
+    }
+    
+    res.json({ success: true, trip });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/:id/leave', auth, async (req, res) => {
+  try {
+    const trip = await Roam.findByIdAndUpdate(
+      req.params.id,
+      { $pull: { buddies: req.user.id } },
+      { new: true }
+    );
+    
+    if (!trip) {
+      return res.status(404).json({ success: false, error: 'Trip not found' });
+    }
+    
+    res.json({ success: true, trip });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.delete('/:id', auth, async (req, res) => {
+  try {
+    const trip = await Roam.findById(req.params.id);
+    
+    if (!trip) {
+      return res.status(404).json({ success: false, error: 'Trip not found' });
+    }
+    
+    if (trip.userId !== req.user.id) {
+      return res.status(403).json({ success: false, error: 'Not authorized' });
+    }
+    
+    await Roam.deleteOne({ _id: req.params.id });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+module.exports = router;

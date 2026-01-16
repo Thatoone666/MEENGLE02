@@ -1,0 +1,145 @@
+﻿import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/spotlight_provider.dart';
+import '../widgets/cards/spotlight_tier_card.dart';
+
+class SpotlightScreen extends StatefulWidget {
+  const SpotlightScreen({Key? key}) : super(key: key);
+
+  @override
+  State<SpotlightScreen> createState() => _SpotlightScreenState();
+}
+
+class _SpotlightScreenState extends State<SpotlightScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<SpotlightProvider>().loadTiers();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0F0F0F),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF1A1A1A),
+        title: const Text('Spotlight'),
+        centerTitle: true,
+        elevation: 0,
+      ),
+      body: Consumer<SpotlightProvider>(
+        builder: (context, provider, child) {
+          if (provider.isLoading) {
+            return const Center(
+              child: CircularProgressIndicator(color: Color(0xFFD4AF37)),
+            );
+          }
+
+          return SingleChildScrollView(
+            child: Column(
+              children: [
+                if (provider.activeSpotlight != null)
+                  Container(
+                    margin: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade900,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.green.shade700),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.star,
+                              color: Colors.yellow.shade600,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 12),
+                            const Text(
+                              'Active Spotlight',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Your profile is getting extra visibility',
+                          style: TextStyle(color: Colors.grey.shade300),
+                        ),
+                        const SizedBox(height: 12),
+                        LinearProgressIndicator(
+                          value: 0.6,
+                          backgroundColor: Colors.grey.shade800,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.amber.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Text(
+                    'Available Boosts',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: Colors.white,
+                        ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                for (var tier in provider.tiers)
+                  SpotlightTierCard(
+                    tier: tier,
+                    isActive: provider.activeSpotlight?.tier == tier.name,
+                    onPurchase: () => _purchaseSpotlight(context, tier),
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _purchaseSpotlight(BuildContext context, dynamic tier) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A1A),
+        title: const Text(
+          'Confirm Purchase',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          'Purchase ${tier.name} boost for \$${tier.price}?',
+          style: const TextStyle(color: Colors.white),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              context.read<SpotlightProvider>().purchaseSpotlight(tier.name);
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.amber.shade700,
+            ),
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
+  }
+}

@@ -1,0 +1,104 @@
+﻿import request from 'supertest';
+import { expect } from 'chai';
+import helpers from './test-helpers.js';
+import { User } from '../routes/auth.js';
+import bcryptjs from 'bcryptjs';
+
+describe('Auth API', function() {
+  let app;
+  
+  before(async function() {
+    this.timeout(15000);
+    const h = await helpers.start();
+    app = h.app;
+  });
+  
+  after(async function() {
+    this.timeout(10000);
+    await helpers.stop();
+  });
+  
+  afterEach(async function() {
+    // Clear users between tests to avoid conflicts
+    await User.deleteMany({});
+  });
+
+  it('should signup a new user and return token', async function() {
+    this.timeout(5000);
+    const res = await request(app)
+      .post('/api/auth/signup')
+      .send({ email: 'test@example.com', password: 'password123', name: 'Test User' })
+      .expect(201);
+    
+    expect(res.body).to.have.property('token');
+    expect(res.body.user).to.have.property('email', 'test@example.com');
+    expect(res.body.user).to.have.property('name', 'Test User');
+    
+    const dbUser = await User.findOne({ email: 'test@example.com' });
+    expect(dbUser).to.exist;
+    expect(dbUser.email).to.equal('test@example.com');
+  });
+
+  it('should reject signup with missing required fields', async function() {
+    this.timeout(5000);
+    const res = await request(app)
+      .post('/api/auth/signup')
+      .send({ email: 'test@example.com', password: 'password123' })
+      .expect(400);
+    
+    expect(res.body).to.have.property('error');
+  });
+
+  it('should reject signup with password less than 8 characters', async function() {
+    this.timeout(5000);
+    const res = await request(app)
+      .post('/api/auth/signup')
+      .send({ email: 'test@example.com', password: 'short', name: 'Test User' })
+      .expect(400);
+    
+    expect(res.body).to.have.property('error', 'Password must be at least 8 characters');
+  });
+
+  it('should login an existing user', async function() {
+    this.timeout(5000);
+    // create user directly
+    const user = new User({ email: 'login@example.com', password: 'x', name: 'Login User' });
+    const salt = await bcryptjs.genSalt(10);
+    user.password = await bcryptjs.hash('secret1', salt);
+    await user.save();
+
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'login@example.com', password: 'secret1' })
+      .expect(200);
+    
+    expect(res.body).to.have.property('token');
+    expect(res.body.user).to.have.property('email', 'login@example.com');
+  });
+
+  it('should reject login with invalid credentials', async function() {
+    this.timeout(5000);
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'nonexistent@example.com', password: 'password123' })
+      .expect(401);
+    
+    expect(res.body).to.have.property('error');
+  });
+
+  it('should reject login with wrong password', async function() {
+    this.timeout(5000);
+    // create user directly
+    const user = new User({ email: 'wrongpass@example.com', password: 'x', name: 'Test User' });
+    const salt = await bcryptjs.genSalt(10);
+    user.password = await bcryptjs.hash('correctpassword', salt);
+    await user.save();
+
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'wrongpass@example.com', password: 'wrongpassword' })
+      .expect(401);
+    
+    expect(res.body).to.have.property('error');
+  });
+});

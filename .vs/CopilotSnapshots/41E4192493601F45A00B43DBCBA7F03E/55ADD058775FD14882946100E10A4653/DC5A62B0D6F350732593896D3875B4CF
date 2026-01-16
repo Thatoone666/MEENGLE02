@@ -1,0 +1,426 @@
+﻿const express = require('express');
+const router = express.Router();
+const auth = require('../middleware/auth');
+const { Match } = require('../models/featureModels');
+
+// Enhanced matching algorithm with filter support
+async function calculateMatchScore(user1, user2, filterPrefs) {
+  let score = 50; // Base score
+  
+  // HARD FILTERS - if user fails, score = 0 (hard filter)
+  if (filterPrefs?.religions?.length > 0 && !filterPrefs.religions.includes(user2.religion)) {
+    return 0;
+  }
+  if (filterPrefs?.bodyTypes?.length > 0 && !filterPrefs.bodyTypes.includes(user2.bodyType)) {
+    return 0;
+  }
+  if (filterPrefs?.relationshipGoals?.length > 0 && !filterPrefs.relationshipGoals.includes(user2.relationshipGoal)) {
+    return 0;
+  }
+  if (filterPrefs?.educationLevels?.length > 0 && !filterPrefs.educationLevels.includes(user2.educationLevel)) {
+    return 0;
+  }
+  if (filterPrefs?.smoking?.length > 0 && !filterPrefs.smoking.includes(user2.smoking)) {
+    return 0;
+  }
+  if (filterPrefs?.drinking?.length > 0 && !filterPrefs.drinking.includes(user2.drinking)) {
+    return 0;
+  }
+  
+  // HEIGHT MATCH (±15cm = 10 points, soft filter)
+  if (user2.height && filterPrefs?.heightRange) {
+    if (user2.height < filterPrefs.heightRange.min || user2.height > filterPrefs.heightRange.max) {
+      return 0; // Height is outside acceptable range
+    }
+    if (user1.height && Math.abs(user1.height - user2.height) <= 15) {
+      score += 10;
+    }
+  }
+  
+  // AGE MATCH (15 points - existing)
+  if (Math.abs(user1.age - user2.age) <= 5) score += 15;
+  else if (Math.abs(user1.age - user2.age) <= 10) score += 10;
+  
+  // LOCATION MATCH (15 points - existing)
+  if (user1.city === user2.city) score += 15;
+  else if (user1.state === user2.state) score += 5;
+  
+  // DISTANCE CHECK (5 points if within max distance)
+  if (filterPrefs?.maxDistance && user1.location && user2.location) {
+    const distance = calculateDistance(user1.location.coordinates, user2.location.coordinates);
+    if (distance <= filterPrefs.maxDistance) {
+      score += 5;
+    } else {
+      return 0; // Outside distance range
+    }
+  }
+  
+  // RELIGION MATCH (8 points - soft bonus)
+  if (user1.religion && user1.religion === user2.religion && user1.religion !== 'Prefer not to say') {
+    score += 8;
+  }
+  
+  // RELATIONSHIP GOAL MATCH (10 points)
+  if (user1.relationshipGoal && user1.relationshipGoal === user2.relationshipGoal) {
+    score += 10;
+  }
+  
+  // EDUCATION LEVEL MATCH (5 points)
+  if (user1.educationLevel && user1.educationLevel === user2.educationLevel && user1.educationLevel !== 'Prefer not to say') {
+    score += 5;
+  }
+  
+  // BODY TYPE MATCH (3 points - soft bonus)
+  if (user1.bodyType && user1.bodyType === user2.bodyType && user1.bodyType !== 'Prefer not to say') {
+    score += 3;
+  }
+  
+  // INTEREST OVERLAP (15 points max)
+  const interests1 = user1.interests || [];
+  const interests2 = user2.interests || [];
+  const overlap = interests1.filter(i => interests2.includes(i)).length;
+  score += Math.min(overlap * 5, 15);
+  
+  // VERIFICATION BONUS (10 points)
+  if (user1.isVerified && user2.isVerified) score += 10;
+  
+  return Math.min(score, 100);
+}
+
+// Helper: Calculate distance between two coordinates (km)
+function calculateDistance(coord1, coord2) {
+  if (!coord1 || !coord2) return Infinity;
+  
+  const [lon1, lat1] = coord1;
+  const [lon2, lat2] = coord2;
+  
+  const R = 6371; // Earth's radius in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
+// GET /discovery/algorithm - Enhanced with filters
+router.get('/algorithm', auth, async (req, res) => {
+  try {
+    const { page = 1, limit = 20 } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    
+    const User = require('../models/User');
+    const currentUser = await User.findById(req.user.id);
+    
+    if (!currentUser) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+    
+    // Get filter preferences
+    const filterPrefs = currentUser.filterPreferences || {};
+    
+    // Find existing matches
+    const existingMatches = await Match.find({
+      $or: [
+        { user1Id: req.user.id },
+        { user2Id: req.user.id }
+      ]
+    }).select('user1Id user2Id');
+    
+    const matchedUserIds = existingMatches.flatMap(m => [m.user1Id, m.user2Id]);
+    
+    // Build query with HARD FILTERS
+    const query = {
+      _id: { 
+        $nin: [req.user.id, ...matchedUserIds],
+        $exists: true
+      },
+      gender: currentUser.genderPreference || undefined
+    };
+    
+    // Add hard filter queries
+    if (filterPrefs.religions?.length > 0) {
+      query.religion = { $in: filterPrefs.religions };
+    }
+    if (filterPrefs.bodyTypes?.length > 0) {
+      query.bodyType = { $in: filterPrefs.bodyTypes };
+    }
+    if (filterPrefs.relationshipGoals?.length > 0) {
+      query.relationshipGoal = { $in: filterPrefs.relationshipGoals };
+    }
+    if (filterPrefs.educationLevels?.length > 0) {
+      query.educationLevel = { $in: filterPrefs.educationLevels };
+    }
+    if (filterPrefs.smoking?.length > 0) {
+      query.smoking = { $in: filterPrefs.smoking };
+    }
+    if (filterPrefs.drinking?.length > 0) {
+      query.drinking = { $in: filterPrefs.drinking };
+    }
+    if (filterPrefs.heightRange) {
+      query.height = {
+        $gte: filterPrefs.heightRange.min,
+        $lte: filterPrefs.heightRange.max
+      };
+    }
+    if (filterPrefs.ageRange) {
+      query.age = {
+        $gte: filterPrefs.ageRange.min,
+        $lte: filterPrefs.ageRange.max
+      };
+    }
+    
+    const candidates = await User.find(query)
+      .limit(parseInt(limit) * 2)
+      .select('name age city state interests isVerified profilePhoto height religion zodiacSign bodyType educationLevel relationshipGoal smoking drinking');
+    
+    // Score candidates
+    const scoredCandidates = [];
+    for (const candidate of candidates) {
+      const score = await calculateMatchScore(currentUser, candidate, filterPrefs);
+      
+      if (score > 0) {
+        const matchReasons = [];
+        
+        if (currentUser.city === candidate.city) matchReasons.push('Same city');
+        if (Math.abs(currentUser.age - candidate.age) <= 3) matchReasons.push('Close age');
+        if (currentUser.religion === candidate.religion && candidate.religion !== 'Prefer not to say') {
+          matchReasons.push('Same religion');
+        }
+        if (currentUser.relationshipGoal === candidate.relationshipGoal) matchReasons.push('Same goals');
+        if (candidate.isVerified) matchReasons.push('Verified');
+        
+        scoredCandidates.push({
+          id: candidate._id,
+          name: candidate.name,
+          age: candidate.age,
+          city: candidate.city,
+          photo: candidate.profilePhoto,
+          height: candidate.height,
+          religion: candidate.religion,
+          bodyType: candidate.bodyType,
+          educationLevel: candidate.educationLevel,
+          relationshipGoal: candidate.relationshipGoal,
+          smoking: candidate.smoking,
+          drinking: candidate.drinking,
+          score: Math.round(score),
+          matchReasons: matchReasons.slice(0, 3)
+        });
+      }
+    }
+    
+    // Sort by score
+    scoredCandidates.sort((a, b) => b.score - a.score);
+    const paginatedCandidates = scoredCandidates.slice(skip, skip + parseInt(limit));
+    
+    res.json({ 
+      success: true, 
+      candidates: paginatedCandidates,
+      page: parseInt(page),
+      total: scoredCandidates.length
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// GET /discovery/filter-options - New endpoint to get available filter options
+router.get('/filter-options', auth, async (req, res) => {
+  try {
+    res.json({
+      success: true,
+      filters: {
+        religions: ['Christian', 'Muslim', 'Jewish', 'Hindu', 'Buddhist', 'Atheist', 'Agnostic', 'Spiritual', 'Other', 'Prefer not to say'],
+        bodyTypes: ['Slim', 'Athletic', 'Average', 'Curvy', 'Muscular', 'Prefer not to say'],
+        educationLevels: ['High School', 'Some College', 'Bachelor', 'Master', 'PhD', 'Trade School', 'Other', 'Prefer not to say'],
+        relationshipGoals: ['Casual Dating', 'Serious Relationship', 'Just Dates', 'Friends First', 'Open to Anything', 'Prefer not to say'],
+        smoking: ['Never', 'Socially', 'Regularly', 'Prefer not to say'],
+        drinking: ['Never', 'Rarely', 'Sometimes', 'Often', 'Prefer not to say'],
+        heightRange: { min: 140, max: 220 },
+        ageRange: { min: 18, max: 99 },
+        distanceRange: { min: 1, max: 200 }
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// GET /discovery/preferences - Get user's current filter preferences
+router.get('/preferences', auth, async (req, res) => {
+  try {
+    const User = require('../models/User');
+    const user = await User.findById(req.user.id).select('filterPreferences height religion bodyType educationLevel relationshipGoal smoking drinking');
+    
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+    
+    res.json({
+      success: true,
+      preferences: user.filterPreferences || {},
+      profile: {
+        height: user.height,
+        religion: user.religion,
+        bodyType: user.bodyType,
+        educationLevel: user.educationLevel,
+        relationshipGoal: user.relationshipGoal,
+        smoking: user.smoking,
+        drinking: user.drinking
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// PUT /discovery/preferences - Update user's filter preferences
+router.put('/preferences', auth, async (req, res) => {
+  try {
+    const { filterPreferences } = req.body;
+    
+    const User = require('../models/User');
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { filterPreferences },
+      { new: true }
+    ).select('filterPreferences');
+    
+    res.json({
+      success: true,
+      preferences: user.filterPreferences
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// PUT /discovery/profile - Update user's profile attributes
+router.put('/profile', auth, async (req, res) => {
+  try {
+    const { height, religion, bodyType, educationLevel, relationshipGoal, smoking, drinking } = req.body;
+    
+    const User = require('../models/User');
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { 
+        height,
+        religion,
+        bodyType,
+        educationLevel,
+        relationshipGoal,
+        smoking,
+        drinking
+      },
+      { new: true, runValidators: true }
+    ).select('height religion bodyType educationLevel relationshipGoal smoking drinking');
+    
+    res.json({
+      success: true,
+      profile: user
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/match', auth, async (req, res) => {
+  try {
+    const { toUserId, action } = req.body;
+    
+    if (!toUserId || !['like', 'pass'].includes(action)) {
+      return res.status(400).json({ success: false, error: 'Invalid input' });
+    }
+    
+    // Check if match already exists
+    const existingMatch = await Match.findOne({
+      $or: [
+        { user1Id: req.user.id, user2Id: toUserId },
+        { user1Id: toUserId, user2Id: req.user.id }
+      ]
+    });
+    
+    if (existingMatch) {
+      return res.status(400).json({ success: false, error: 'Already matched with this user' });
+    }
+    
+    const match = new Match({
+      user1Id: req.user.id,
+      user2Id: toUserId,
+      action,
+      isVerified: action === 'like',
+      matchedAt: action === 'like' ? new Date() : null,
+      createdAt: new Date()
+    });
+    
+    await match.save();
+    res.json({ success: true, match });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.get('/conversations', auth, async (req, res) => {
+  try {
+    // Find mutual matches (both users liked each other)
+    const mutualMatches = await Match.find({
+      $or: [
+        { user1Id: req.user.id, action: 'like' },
+        { user2Id: req.user.id, action: 'like' }
+      ]
+    }).populate('user1Id user2Id', 'name profilePhoto');
+    
+    // Filter for mutual likes
+    const conversations = [];
+    const userMatches = new Set();
+    
+    for (const m of mutualMatches) {
+      const otherId = m.user1Id === req.user.id ? m.user2Id : m.user1Id;
+      if (userMatches.has(otherId)) {
+        conversations.push(m);
+      } else {
+        userMatches.add(otherId);
+      }
+    }
+    
+    res.json({ success: true, conversations });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.get('/likes', auth, async (req, res) => {
+  try {
+    const likes = await Match.countDocuments({
+      user2Id: req.user.id,
+      action: 'like'
+    });
+    
+    res.json({ success: true, likeCount: likes });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/unmatch/:userId', auth, async (req, res) => {
+  try {
+    const result = await Match.deleteOne({
+      $or: [
+        { user1Id: req.user.id, user2Id: req.params.userId },
+        { user1Id: req.params.userId, user2Id: req.user.id }
+      ]
+    });
+    
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ success: false, error: 'Match not found' });
+    }
+    
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+module.exports = router;

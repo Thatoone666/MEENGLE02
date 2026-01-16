@@ -1,0 +1,50 @@
+﻿import express from 'express';
+import { verifyToken } from './auth.js';
+import mongoose from 'mongoose';
+
+const router = express.Router();
+
+const roamSchema = new mongoose.Schema({
+  userId: String,
+  targetLocation: { latitude: Number, longitude: Number },
+  status: { type: String, default: 'active' },
+  expiresAt: Date,
+  createdAt: { type: Date, default: Date.now }
+});
+
+let Roam;
+try {
+  Roam = mongoose.model('Roam', roamSchema);
+} catch {
+  Roam = mongoose.model('Roam');
+}
+
+router.get('/active', verifyToken, async (req, res) => {
+  try {
+    const roam = await Roam.findOne({
+      userId: req.userId,
+      status: 'active'
+    });
+    res.json(roam || { status: 'inactive' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch roam status' });
+  }
+});
+
+router.post('/activate', verifyToken, async (req, res) => {
+  try {
+    const { latitude, longitude } = req.body;
+    const roam = new Roam({
+      userId: req.userId,
+      targetLocation: { latitude, longitude },
+      status: 'active',
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    });
+    await roam.save();
+    res.json({ success: true, roam });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to activate roam' });
+  }
+});
+
+export default router;

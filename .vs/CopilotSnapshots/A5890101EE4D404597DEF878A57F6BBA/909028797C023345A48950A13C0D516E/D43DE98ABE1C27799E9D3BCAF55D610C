@@ -1,0 +1,349 @@
+﻿import 'package:flutter/material.dart';
+import '../../../models/meengle_spotlight.dart';
+import '../../animations/premium_animations.dart';
+
+class SpotlightTierCard extends StatefulWidget {
+  final SpotlightTier tier;
+  final bool isActive;
+  final VoidCallback onPurchase;
+
+  const SpotlightTierCard({
+    required this.tier,
+    required this.isActive,
+    required this.onPurchase,
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  State<SpotlightTierCard> createState() => _SpotlightTierCardState();
+}
+
+class _SpotlightTierCardState extends State<SpotlightTierCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _glowController;
+
+  @override
+  void initState() {
+    super.initState();
+    _glowController = AnimationController(
+      duration: const Duration(seconds: 3),
+      vsync: this,
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _glowController.dispose();
+    super.dispose();
+  }
+
+  Color _getTierColor() {
+    switch (widget.tier) {
+      case SpotlightTier.bronze:
+        return Colors.orange.shade700;
+      case SpotlightTier.silver:
+        return Colors.grey.shade400;
+      case SpotlightTier.gold:
+        return Colors.amber.shade600;
+      case SpotlightTier.platinum:
+        return Colors.cyan.shade400;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _glowController,
+      builder: (context, _) {
+        return Card(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(
+              color: widget.isActive ? Colors.green.shade700 : _getTierColor(),
+              width: 2,
+            ),
+          ),
+          color: const Color(0xFF1A1A1A),
+          elevation: 15 + (_glowController.value * 5),
+          shadowColor: _getTierColor(),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: PremiumAnimations.premiumGlow(
+                color: widget.isActive ? Colors.green.shade700 : _getTierColor(),
+                intensity: 0.5 + (_glowController.value * 0.4),
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Tier Header
+                  Row(
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: PremiumAnimations.premiumGlow(
+                            color: _getTierColor(),
+                            intensity: 0.6,
+                          ),
+                        ),
+                        child: Text(
+                          widget.tier.emoji,
+                          style: const TextStyle(fontSize: 32),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.tier.label,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 22,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -0.3,
+                              ),
+                            ),
+                            if (widget.isActive)
+                              GlowingBadge(
+                                label: 'Active',
+                                color: Colors.green.shade400,
+                              ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        '${widget.tier.visibilityMultiplier}x',
+                        style: TextStyle(
+                          color: _getTierColor(),
+                          fontSize: 24,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Tier Details
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: _getTierColor().withAlpha(25),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: _getTierColor().withAlpha(51),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.access_time,
+                                color: _getTierColor(), size: 16),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                '${widget.tier.durationHours} hours visibility boost',
+                                style: TextStyle(
+                                  color: _getTierColor(),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Icon(Icons.speed,
+                                color: _getTierColor(), size: 16),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                '${widget.tier.visibilityMultiplier}x more visibility',
+                                style: TextStyle(
+                                  color: _getTierColor(),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Action Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: GlowingButton(
+                      glowColor: widget.isActive
+                          ? Colors.green.shade700
+                          : _getTierColor(),
+                      onPressed: widget.isActive ? () {} : widget.onPurchase,
+                      child: Text(
+                        widget.isActive ? 'Active Tier' : 'Unlock Tier',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class GlowingBadge extends StatefulWidget {
+  final String label;
+  final Color color;
+  final IconData? icon;
+
+  const GlowingBadge({
+    required this.label,
+    required this.color,
+    this.icon,
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  State<GlowingBadge> createState() => _GlowingBadgeState();
+}
+
+class _GlowingBadgeState extends State<GlowingBadge>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _glowController;
+
+  @override
+  void initState() {
+    super.initState();
+    _glowController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _glowController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _glowController,
+      builder: (context, _) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          margin: const EdgeInsets.only(top: 4),
+          decoration: BoxDecoration(
+            color: widget.color.withAlpha(25),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: widget.color.withAlpha(77),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: widget.color
+                    .withAlpha((40 * _glowController.value).toInt()),
+                blurRadius: 6 + (_glowController.value * 3),
+                spreadRadius: 0,
+              ),
+            ],
+          ),
+          child: Text(
+            widget.label,
+            style: TextStyle(
+              color: widget.color,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class GlowingButton extends StatefulWidget {
+  final VoidCallback onPressed;
+  final Widget child;
+  final Color glowColor;
+
+  const GlowingButton({
+    required this.onPressed,
+    required this.child,
+    this.glowColor = const Color(0xFFFF6B9A),
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  State<GlowingButton> createState() => _GlowingButtonState();
+}
+
+class _GlowingButtonState extends State<GlowingButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _glowController;
+
+  @override
+  void initState() {
+    super.initState();
+    _glowController = AnimationController(
+      duration: PremiumAnimations.macroDuration,
+      vsync: this,
+    );
+  }
+
+  @override
+  void dispose() {
+    _glowController.dispose();
+    super.dispose();
+  }
+
+  void _onPressed() {
+    _glowController.forward().then((_) {
+      _glowController.reverse();
+    });
+    widget.onPressed();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: Tween<double>(begin: 1, end: 0.95).animate(
+        CurvedAnimation(parent: _glowController, curve: Curves.easeIn),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: PremiumAnimations.premiumGlow(
+            color: widget.glowColor,
+            intensity: 0.5 + (_glowController.value * 0.5),
+          ),
+        ),
+        child: ElevatedButton(
+          onPressed: _onPressed,
+          child: widget.child,
+        ),
+      ),
+    );
+  }
+}

@@ -1,0 +1,340 @@
+﻿import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../services/api.dart';
+import '../services/feature_access_service.dart';
+import '../models/meengle_tier_system.dart';
+import 'premium_tier_screen.dart';
+
+class MatchesListScreen extends StatefulWidget {
+  const MatchesListScreen({super.key});
+
+  @override
+  State<MatchesListScreenState> createState() => _MatchesListScreenState();
+}
+
+class _MatchesListScreenState extends State<MatchesListScreen>
+    with SingleTickerProviderStateMixin {
+  bool _loading = true;
+  String? _error;
+  List<Map<String, dynamic>> _matches = [];
+  List<Map<String, dynamic>> _likes = [];
+  MeengleTier _userTier = MeengleTier.free;
+  late TabController _tabController;
+  int _selectedTabIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      setState(() {
+        _selectedTabIndex = _tabController.index;
+      });
+    });
+    _load();
+    _loadUserTier();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadUserTier() async {
+    try {
+      final profile = await ApiService.getProfile();
+      final tierString = profile['tier'] as String?;
+      if (tierString != null && mounted) {
+        setState(() {
+          _userTier = MeengleTier.values.firstWhere(
+            (tier) => tier.displayName == tierString,
+            orElse: () => MeengleTier.free,
+          );
+        });
+      }
+    } catch (e) {
+      print('Error loading user tier: $e');
+    }
+  }
+
+  Future<void> _load() async {
+    if (!mounted) return;
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final matches = await ApiService.getPotentialMatches();
+      if (mounted) {
+        setState(() => _matches = matches);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _error = e.toString());
+      }
+    }
+
+    if (mounted) {
+      setState(() => _loading = false);
+    }
+  }
+
+  void _openDetail(Map<String, dynamic> user) {
+    Navigator.of(context)
+        .pushNamed('/match', arguments: user)
+        .then((v) => _load());
+  }
+
+  void _navigateToUpgrade() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PremiumTierScreen(
+          currentTier: _userTier,
+          onTierSelected: (tier, cycle) {
+            // Handle purchase
+          },
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
+                'Your Matches',
+                key: const Key('matchesTitle'),
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+              ),
+            ),
+            // Tab bar
+            TabBar(
+              controller: _tabController,
+              tabs: const [
+                Tab(text: 'Your Matches'),
+                Tab(text: 'Who Likes You'),
+              ],
+            ),
+            Expanded(
+              child: _loading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                          key: Key('matchesLoadingIndicator')))
+                  : TabBarView(
+                      controller: _tabController,
+                      children: [
+                        // Matches tab
+                        _error != null
+                            ? _buildErrorWidget()
+                            : _matches.isEmpty
+                                ? _buildEmptyState()
+                                : _buildMatchesList(),
+                        // Likes tab
+                        _buildLikesTab(),
+                      ],
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLikesTab() {
+    // Check if user can access "see who likes"
+    if (!FeatureAccessService.canAccess('see_who_likes', _userTier)) {
+      return Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.lock, size: 64, color: Colors.grey[600]),
+              SizedBox(height: 24),
+              Text(
+                'See Who Likes You',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Available in Spark+ Premium',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[400],
+                ),
+              ),
+              SizedBox(height: 32),
+              ElevatedButton(
+                onPressed: _navigateToUpgrade,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: MeengleTier.spark.primaryColor,
+                  padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                ),
+                child: Text(
+                  'Unlock for \$4.99/month',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // User has access, show the likes list
+    return _buildLikesListWidget();
+  }
+
+  Widget _buildLikesListWidget() {
+    return ListView(
+      children: [
+        Padding(
+          padding: EdgeInsets.all(16),
+          child: Text(
+            '${_likes.length} people like you',
+            style: TextStyle(color: Colors.white70),
+          ),
+        ),
+        ..._likes.map((user) {
+          final imageUrl =
+              (user['images'] != null && (user['images'] as List).isNotEmpty)
+                  ? ApiService.resolveAssetUrl(user['images'][0])
+                  : null;
+
+          return Card(
+            key: Key('likeCard${user['id'] ?? user['_id']}'),
+            color: Colors.white.withAlpha(26),
+            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            child: ListTile(
+              contentPadding: EdgeInsets.all(12),
+              leading: CircleAvatar(
+                key: Key('likeAvatar${user['id'] ?? user['_id']}'),
+                radius: 30,
+                backgroundImage: imageUrl != null
+                    ? CachedNetworkImageProvider(imageUrl)
+                    : null,
+                child: imageUrl == null ? Icon(Icons.person, size: 30) : null,
+              ),
+              title: Text(
+                user['name'] ?? 'Unknown',
+                key: Key('likeName${user['id'] ?? user['_id']}'),
+                style:
+                    TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+              subtitle: Text(
+                'Age: ${user['age'] ?? 'N/A'} • Liked you',
+                key: Key('likeAge${user['id'] ?? user['_id']}'),
+                style: TextStyle(color: Colors.white70),
+              ),
+              trailing: Icon(Icons.chevron_right, color: Colors.white54),
+              onTap: () => _openDetail(user),
+            ),
+          );
+        }).toList(),
+      ],
+    );
+  }
+
+  Widget _buildErrorWidget() {
+    return Center(
+      key: const Key('matchesErrorWidget'),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline,
+                key: Key('matchesErrorIcon'),
+                color: Colors.redAccent,
+                size: 50),
+            const SizedBox(height: 16),
+            Text('Error: $_error', textAlign: TextAlign.center),
+            const SizedBox(height: 8),
+            ElevatedButton(
+              key: const Key('matchesRetryButton'),
+              onPressed: _load,
+              child: const Text('Retry'),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return const Center(
+      key: Key('emptyMatchesState'),
+      child: Text(
+        'No matches yet. Keep swiping!',
+        style: TextStyle(fontSize: 18, color: Colors.white54),
+      ),
+    );
+  }
+
+  Widget _buildMatchesList() {
+    return ListView.builder(
+      key: const Key('matchesList'),
+      itemCount: _matches.length,
+      itemBuilder: (context, i) {
+        final user = _matches[i];
+        final imageUrl =
+            (user['images'] != null && (user['images'] as List).isNotEmpty)
+                ? ApiService.resolveAssetUrl(user['images'][0])
+                : null;
+
+        return Card(
+          key: Key('matchCard${user['id'] ?? i}'),
+          color: Colors.white.withAlpha(26),
+          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          child: ListTile(
+            contentPadding: EdgeInsets.all(12),
+            leading: CircleAvatar(
+              key: Key('matchAvatar${user['id'] ?? i}'),
+              radius: 30,
+              backgroundImage: imageUrl != null
+                  ? CachedNetworkImageProvider(imageUrl)
+                  : null,
+              child: imageUrl == null ? Icon(Icons.person, size: 30) : null,
+            ),
+            title: Text(
+              user['name'] ?? 'Unknown',
+              key: Key('matchName${user['id'] ?? i}'),
+              style:
+                  TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+            subtitle: Text(
+              'Age: ${user['age'] ?? 'N/A'}',
+              key: Key('matchAge${user['id'] ?? i}'),
+              style: TextStyle(color: Colors.white70),
+            ),
+            trailing: Icon(Icons.chevron_right, color: Colors.white54),
+            onTap: () => _openDetail(user),
+          ),
+        );
+      },
+    );
+  }
+}

@@ -1,0 +1,538 @@
+﻿import 'dart:ui';
+import 'package:flutter/material.dart';
+import 'package:flutter_card_swiper/flutter_card_swiper.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:meengle_flutter/services/api.dart';
+import 'package:meengle_flutter/animations/premium_animations.dart';
+import 'package:provider/provider.dart';
+import '../services/feature_access_service.dart';
+import '../models/meengle_tier_system.dart';
+import 'match_animation_screen.dart';
+import '../widgets/out_of_likes_dialog.dart';
+
+class SwipeScreen extends StatefulWidget {
+  const SwipeScreen({super.key});
+
+  @override
+  State<SwipeScreen> createState() => _SwipeScreenState();
+}
+
+class _SwipeScreenState extends State<SwipeScreen> {
+  final CardSwiperController _controller = CardSwiperController();
+  List<Map<String, dynamic>> _potentialMatches = [];
+  bool _loading = true;
+  bool _isProcessingSwipe = false;
+  Map<String, dynamic>? _currentUser;
+  String? _error;
+  double _parallaxValue = 0;
+  MeengleTier _userTier = MeengleTier.free;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPotentialMatches();
+    _loadUserTier();
+  }
+
+  Future<void> _loadUserTier() async {
+    try {
+      final profile = await ApiService.getProfile();
+      final tierString = profile['tier'] as String?;
+      if (tierString != null && mounted) {
+        setState(() {
+          _userTier = MeengleTier.values.firstWhere(
+            (tier) => tier.displayName == tierString,
+            orElse: () => MeengleTier.free,
+          );
+        });
+      }
+    } catch (e) {
+      print('Error loading user tier: $e');
+    }
+  }
+
+  Future<void> _loadPotentialMatches() async {
+    if (!mounted) return;
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final matches = await ApiService.getPotentialMatches();
+      final currentUser = await ApiService.getProfile();
+      if (mounted) {
+        setState(() {
+          _potentialMatches = matches;
+          _currentUser = currentUser;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _error = e.toString());
+      }
+    }
+
+    if (mounted) {
+      setState(() => _loading = false);
+    }
+  }
+
+  Future<bool> _handleSwipe(int previousIndex, int? currentIndex,
+      CardSwiperDirection direction) async {
+    if (_isProcessingSwipe) return false;
+    if (!mounted) return false;
+
+    setState(() => _isProcessingSwipe = true);
+
+    final user = _potentialMatches[previousIndex];
+    final liked = direction == CardSwiperDirection.right;
+    final superLiked = direction == CardSwiperDirection.top;
+
+    // Check if user can super like
+    if (superLiked && !FeatureAccessService.canAccess('super_likes', _userTier)) {
+      // Show paywall dialog
+      final shouldUpgrade = await FeatureAccessService.showPaywall(
+        context,
+        'super_likes',
+        'Super Likes',
+      );
+      if (mounted) {
+        setState(() => _isProcessingSwipe = false);
+      }
+      return false;
+    }
+
+    try {
+      final result = await ApiService.recordSwipe(user['_id'], liked, superLiked);
+      if (result['match']) {
+        if (mounted) {
+          Navigator.of(context).push(
+            PageRouteBuilder(
+              pageBuilder: (context, animation, secondaryAnimation) =>
+                  MatchAnimationScreen(
+                    currentUserImageUrl: _currentUser?['images']?[0] != null
+                        ? ApiService.resolveAssetUrl(_currentUser!['images'][0])
+                        : 'assets/default_avatar.png',
+                    currentUserId: _currentUser?['_id']?.toString() ?? '',
+                    user2ImageUrl: user['images']?[0] != null
+                        ? ApiService.resolveAssetUrl(user['images'][0])
+                        : 'assets/default_avatar.png',
+                    matchedUser: user,
+                  ),
+              transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                return FadeTransition(opacity: animation, child: child);
+              },
+            ),
+          );
+        }
+      }
+      if (result['limitReached'] == true) {
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (context) => const OutOfLikesDialog(),
+          );
+        }
+        return false;
+      }
+      if (mounted) setState(() => _isProcessingSwipe = false);
+      return true;
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error recording swipe: $e')),
+        );
+      }
+      if (mounted) setState(() => _isProcessingSwipe = false);
+      return false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: RefreshIndicator(
+        onRefresh: _loadPotentialMatches,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        color: Theme.of(context).primaryColor,
+        child: SafeArea(
+          child: _loading
+              ? _buildLoadingState()
+              : _error != null
+                  ? _buildErrorState()
+                  : _potentialMatches.isEmpty
+                      ? _buildEmptyState()
+                      : _buildSwiper(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return const Center(
+      key: Key('swipeLoadingIndicator'),
+      child: PremiumLoadingIndicator(
+        key: Key('swipeLoadingProgress'),
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      key: const Key('swipeErrorState'),
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline,
+                key: Key('swipeErrorIcon'),
+                color: Colors.redAccent,
+                size: 60),
+            const SizedBox(height: 16),
+            Text(
+              'Error: $_error',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 16, color: Colors.white70),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              key: const Key('swipeRetryButton'),
+              onPressed: _loadPotentialMatches,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Try Again'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).primaryColor,
+              ),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      key: const Key('swipeEmptyState'),
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.hourglass_empty,
+                key: Key('swipeEmptyIcon'),
+                size: 60,
+                color: Colors.white54),
+            const SizedBox(height: 16),
+            const Text(
+              'No new matches right now.',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Check back later!',
+              style: TextStyle(fontSize: 16, color: Colors.white70),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSwiper({Key? key}) {
+    return Column(
+      key: key,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            'Discover',
+            key: const Key('discoverTitle'),
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+          ),
+        ),
+        Expanded(
+          child: CardSwiper(
+            key: const Key('profileCardSwiper'),
+            controller: _controller,
+            cardsCount: _potentialMatches.length,
+            onSwipe: _handleSwipe,
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
+            allowedSwipeDirection: _userTier.index >= MeengleTier.flame.index
+                ? AllowedSwipeDirection.symmetric(horizontal: true, vertical: true)
+                : AllowedSwipeDirection.symmetric(horizontal: true, vertical: false),
+            cardBuilder: (context, index, horizontalThresholdPercentage,
+                verticalThresholdPercentage) {
+              final user = _potentialMatches[index];
+              final images = user['images'] as List?;
+              final hasImage = images != null && images.isNotEmpty;
+              final hasVideoProfile = user['videoProfile'] != null && user['videoProfile'].toString().isNotEmpty;
+
+              return ClipRRect(
+                key: Key('profileCard$index'),
+                borderRadius: BorderRadius.circular(20),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // Profile Image with Parallax
+                    Transform.translate(
+                      offset: Offset(0, horizontalThresholdPercentage * 10),
+                      child: hasImage
+                          ? CachedNetworkImage(
+                              imageUrl:
+                                  ApiService.resolveAssetUrl(images[0]),
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) =>
+                                  Container(color: Colors.grey[900]),
+                              errorWidget: (context, url, error) => Container(
+                                color: Colors.grey[900],
+                                child: Icon(Icons.person,
+                                    size: 100, color: Colors.grey[700]),
+                              ),
+                            )
+                          : Container(
+                              color: Colors.grey[900],
+                              child: Icon(Icons.person,
+                                  size: 100, color: Colors.grey[700]),
+                            ),
+                    ),
+
+                    // Gradient Overlay with Blur
+                    ClipRRect(
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(
+                          sigmaX: horizontalThresholdPercentage * 5,
+                          sigmaY: horizontalThresholdPercentage * 5,
+                        ),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.bottomCenter,
+                              end: Alignment.topCenter,
+                              colors: [
+                                Colors.black
+                                    .withAlpha((220 * (1 - horizontalThresholdPercentage * 0.5)).toInt()),
+                                Colors.black.withAlpha((51 * (1 - horizontalThresholdPercentage * 0.5)).toInt()),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Info with Premium Shadow
+                    _buildGlassmorphicInfo(user, hasVideoProfile),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+        _buildActionButtons(),
+      ],
+    );
+  }
+
+  Widget _buildGlassmorphicInfo(Map<String, dynamic> user, bool hasVideoProfile) {
+    return Positioned(
+      bottom: 0,
+      left: 0,
+      right: 0,
+      child: ClipRRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0),
+          child: Container(
+            padding: const EdgeInsets.all(20.0),
+            decoration: BoxDecoration(
+              boxShadow: PremiumAnimations.premiumGlow(
+                color: Colors.black,
+                intensity: 0.8,
+              ),
+              gradient: LinearGradient(
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+                colors: [
+                  Colors.black.withAlpha(179),
+                  Colors.black.withAlpha(51),
+                ],
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Name, Age, Height
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '${user['name'] ?? 'N/A'}, ${user['age'] ?? 'N/A'}',
+                      key: const Key('profileNameAge'),
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        shadows: [Shadow(blurRadius: 4, color: Colors.black87)],
+                      ),
+                    ),
+                    if (user['height'] != null && user['height'] > 0)
+                      Text(
+                        _formatHeight(user['height'] as int),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.white70,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                
+                // Bio
+                Text(
+                  user['bio'] ?? 'No bio available.',
+                  key: const Key('profileBio'),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.white.withAlpha(230),
+                    height: 1.4,
+                    shadows: const [
+                      Shadow(blurRadius: 2, color: Colors.black54)
+                    ],
+                  ),
+                ),
+                
+                // Attributes badges
+                if (user['religion'] != null || user['bodyType'] != null || user['relationshipGoal'] != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 6,
+                      children: [
+                        if (user['religion'] != null && user['religion'] != 'Prefer not to say')
+                          _buildAttributeBadge('🙏 ${user['religion']}'),
+                        if (user['bodyType'] != null && user['bodyType'] != 'Prefer not to say')
+                          _buildAttributeBadge('💪 ${user['bodyType']}'),
+                        if (user['relationshipGoal'] != null)
+                          _buildAttributeBadge('💕 ${user['relationshipGoal']}'),
+                        if (user['educationLevel'] != null && user['educationLevel'] != 'Prefer not to say')
+                          _buildAttributeBadge('📚 ${user['educationLevel']}'),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAttributeBadge(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.white.withAlpha(26),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withAlpha(51)),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 11,
+          color: Colors.white,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
+  String _formatHeight(int cm) {
+    int feet = cm ~/ 30;
+    int inches = ((cm % 30) / 2.54).toInt();
+    return '$feet\'${inches.toString().padLeft(2, '0')}"';
+  }
+
+  Widget _buildActionButtons() {
+    return Padding(
+      key: const Key('actionButtons'),
+      padding: const EdgeInsets.symmetric(vertical: 20.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _buildActionButton(
+            key: const Key('nopeButton'),
+            icon: Icons.close,
+            color: Colors.redAccent,
+            onTap: () => _controller.swipeLeft(),
+          ),
+          _buildActionButton(
+            key: const Key('superLikeButton'),
+            icon: Icons.star,
+            color: _userTier.index >= MeengleTier.flame.index
+                ? Colors.blueAccent
+                : Colors.grey,
+            size: 32,
+            onTap: _handleSuperLikeTap,
+          ),
+          _buildActionButton(
+            key: const Key('likeButton'),
+            icon: Icons.favorite,
+            color: Colors.greenAccent,
+            onTap: () => _controller.swipeRight(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleSuperLikeTap() async {
+    if (!FeatureAccessService.canAccess('super_likes', _userTier)) {
+      // Show paywall dialog
+      await FeatureAccessService.showPaywall(
+        context,
+        'super_likes',
+        'Super Likes',
+      );
+      return;
+    }
+    
+    // User has access, trigger super like swipe
+    _controller.swipeTop();
+  }
+
+  Widget _buildActionButton({
+    Key? key,
+    required IconData icon,
+    required Color color,
+    VoidCallback? onTap,
+    double size = 40,
+  }) {
+    return GestureDetector(
+      key: key,
+      onTap: onTap,
+      child: ScaleTransition(
+        scale: AlwaysStoppedAnimation(1.0),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Theme.of(context).colorScheme.surface.withAlpha(204),
+            boxShadow: PremiumAnimations.premiumGlow(
+              color: color,
+              intensity: 0.6,
+            ),
+          ),
+          child: Icon(icon, color: color, size: size),
+        ),
+      ),
+    );
+  }
+}

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Legal Center - MEENGLE</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #f5f5f5 0%, #f9f9f9 100%);
+      padding: 40px 20px;
+      color: #333;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 60px;
+    }
+    .header h1 {
+      font-size: 48px;
+      color: #667eea;
+      margin: 0;
+    }
+    .header p {
+      font-size: 18px;
+      color: #666;
+      margin: 10px 0 0;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 30px;
+      margin-bottom: 60px;
+    }
+    .card {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      transition: all 0.3s;
+      display: flex;
+      flex-direction: column;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.15);
+    }
+    .card-icon {
+      font-size: 40px;
+      margin-bottom: 15px;
+    }
+    .card h3 {
+      color: #667eea;
+      margin: 0 0 15px;
+      font-size: 20px;
+    }
+    .card p {
+      color: #666;
+      font-size: 14px;
+      line-height: 1.6;
+      margin: 0 0 20px;
+      flex-grow: 1;
+    }
+    .card a {
+      display: inline-block;
+      background: #667eea;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 50px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.3s;
+      align-self: flex-start;
+    }
+    .card a:hover {
+      background: #5568d3;
+      transform: translateX(5px);
+    }
+    .faq-section {
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin-bottom: 40px;
+    }
+    .faq-section h2 {
+      color: #667eea;
+      margin-top: 0;
+    }
+    .faq-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+    }
+    .faq-list a {
+      color: #667eea;
+      text-decoration: none;
+      padding: 15px;
+      border: 2px solid #eee;
+      border-radius: 8px;
+      transition: all 0.3s;
+      font-weight: 500;
+    }
+    .faq-list a:hover {
+      border-color: #667eea;
+      background: #f0f7ff;
+    }
+    .contact-section {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 40px;
+      border-radius: 12px;
+      text-align: center;
+    }
+    .contact-section h2 {
+      color: white;
+      margin-top: 0;
+    }
+    .contact-info {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 30px;
+      margin-top: 30px;
+    }
+    .contact-item {
+      background: rgba(255,255,255,0.1);
+      padding: 20px;
+      border-radius: 8px;
+    }
+    .contact-item h4 {
+      margin: 0 0 10px;
+    }
+    .contact-item a,
+    .contact-item p {
+      margin: 5px 0;
+    }
+    .contact-item a {
+      color: white;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .contact-item a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1>?? Legal Center</h1>
+      <p>MEENGLE Terms, Policies & Guidelines</p>
+    </div>
+
+    <!-- Policy Cards -->
+    <div class="grid">
+      <div class="card">
+        <div class="card-icon">??</div>
+        <h3>Terms of Service</h3>
+        <p>Review the complete terms and conditions for using MEENGLE. Understand your rights and responsibilities when using our platform.</p>
+        <a href="/pages/terms.html" target="_blank">Read Terms ?</a>
+      </div>
+
+      <div class="card">
+        <div class="card-icon">??</div>
+        <h3>Privacy Policy</h3>
+        <p>Learn how we collect, use, and protect your personal data. We're committed to your privacy and transparent about our practices.</p>
+        <a href="/pages/privacy.html" target="_blank">Read Policy ?</a>
+      </div>
+
+      <div class="card">
+        <div class="card-icon">??</div>
+        <h3>Community Guidelines</h3>
+        <p>Keep MEENGLE safe and respectful for everyone. Understand our expectations for user behavior and what we don't tolerate.</p>
+        <a href="/pages/community-guidelines.html" target="_blank">Read Guidelines ?</a>
+      </div>
+
+      <div class="card">
+        <div class="card-icon">??</div>
+        <h3>Cookie Policy</h3>
+        <p>Understand how MEENGLE uses cookies to enhance your experience, improve our services, and analyze usage patterns.</p>
+        <a href="/pages/cookies.html" target="_blank">Read Policy ?</a>
+      </div>
+
+      <div class="card">
+        <div class="card-icon">?</div>
+        <h3>FAQ</h3>
+        <p>Get answers to common questions about accounts, matching, messaging, payments, privacy, and technical issues.</p>
+        <a href="/pages/faq.html" target="_blank">View FAQ ?</a>
+      </div>
+
+      <div class="card">
+        <div class="card-icon">???</div>
+        <h3>Safety Tips</h3>
+        <p>Learn how to stay safe on MEENGLE. Tips for protecting your information, meeting safely, and avoiding scams.</p>
+        <a href="/pages/safety.html" target="_blank">Read Safety ?</a>
+      </div>
+    </div>
+
+    <!-- Summary Section -->
+    <div class="faq-section">
+      <h2>Quick Access</h2>
+      <div class="faq-list">
+        <a href="/pages/terms.html#user-conduct">Code of Conduct</a>
+        <a href="/pages/privacy.html#data-retention">Data Retention</a>
+        <a href="/pages/community-guidelines.html#prohibited-behavior">Prohibited Behavior</a>
+        <a href="/pages/terms.html#account-suspension">Account Suspension</a>
+        <a href="/pages/privacy.html#your-privacy-rights">Your Rights</a>
+        <a href="/pages/community-guidelines.html#report--block">How to Report</a>
+        <a href="/pages/terms.html#payments--subscriptions">Subscription Info</a>
+        <a href="/pages/privacy.html#international-data-transfers">GDPR & CCPA</a>
+      </div>
+    </div>
+
+    <!-- Contact Section -->
+    <div class="contact-section">
+      <h2>Need Help?</h2>
+      <p>Our legal and support teams are here to assist you</p>
+      
+      <div class="contact-info">
+        <div class="contact-item">
+          <h4>?? Legal Questions</h4>
+          <a href="mailto:legal@meengle.com">legal@meengle.com</a>
+        </div>
+        
+        <div class="contact-item">
+          <h4>?? Privacy Inquiries</h4>
+          <a href="mailto:privacy@meengle.com">privacy@meengle.com</a>
+        </div>
+        
+        <div class="contact-item">
+          <h4>?? Safety Concerns</h4>
+          <a href="mailto:safety@meengle.com">safety@meengle.com</a>
+        </div>
+        
+        <div class="contact-item">
+          <h4>?? General Support</h4>
+          <a href="mailto:support@meengle.com">support@meengle.com</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="text-align: center; padding: 40px 0; color: #999; font-size: 14px;">
+      <p>Last updated: January 2024</p>
+      <p>© 2024 MEENGLE, Inc. All rights reserved.</p>
+      <p>MEENGLE is a platform that helps people find meaningful connections.</p>
+    </div>
+  </div>
+</body>
+</html>

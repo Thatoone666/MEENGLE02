@@ -1,0 +1,339 @@
+﻿const express = require('express');
+const router = express.Router();
+const User = require('../models/User');
+const { authenticateToken } = require('../middleware/auth');
+
+// Boost products catalog
+const BOOSTS = {
+  boost_profile: {
+    id: 'boost_profile',
+    name: 'Boost Profile',
+    price: 2.99,
+    duration: 24, // hours
+    type: 'visibility',
+    multiplier: 3, // 3x visibility
+  },
+  super_likes_5: {
+    id: 'super_likes_5',
+    name: '5 Super Likes',
+    price: 4.99,
+    quantity: 5,
+    type: 'super_likes',
+  },
+  super_likes_10: {
+    id: 'super_likes_10',
+    name: '10 Super Likes',
+    price: 9.99,
+    quantity: 10,
+    type: 'super_likes',
+    isPopular: true,
+  },
+  spotlight_24h: {
+    id: 'spotlight_24h',
+    name: 'Spotlight 24h',
+    price: 4.99,
+    duration: 24,
+    type: 'spotlight',
+    multiplier: 5, // 5x visibility
+  },
+  incognito_week: {
+    id: 'incognito_week',
+    name: 'Incognito Week',
+    price: 1.99,
+    duration: 168, // 7 days in hours
+    type: 'incognito',
+  },
+};
+
+// GET /api/boosts - Get available boosts
+router.get('/boosts', (req, res) => {
+  try {
+    res.json({
+      success: true,
+      boosts: Object.values(BOOSTS),
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// GET /api/boosts/:boostId - Get specific boost details
+router.get('/boosts/:boostId', (req, res) => {
+  try {
+    const boost = BOOSTS[req.params.boostId];
+
+    if (!boost) {
+      return res.status(404).json({
+        success: false,
+        error: 'Boost not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      boost,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// POST /api/boosts/purchase - Purchase a boost
+router.post('/boosts/purchase', authenticateToken, async (req, res) => {
+  try {
+    const { boostId } = req.body;
+    const boost = BOOSTS[boostId];
+
+    if (!boost) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid boost ID',
+      });
+    }
+
+    // Get user
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found',
+      });
+    }
+
+    // In a real app, would process payment here (Stripe, etc)
+    // For now, simulate successful purchase
+
+    // Apply boost based on type
+    switch (boost.type) {
+      case 'visibility':
+        // Apply visibility boost
+        user.boosts = user.boosts || [];
+        user.boosts.push({
+          type: 'visibility',
+          multiplier: boost.multiplier,
+          expiresAt: new Date(Date.now() + boost.duration * 60 * 60 * 1000),
+          appliedAt: new Date(),
+        });
+        break;
+
+      case 'super_likes':
+        // Add super likes
+        user.superLikes = (user.superLikes || 0) + boost.quantity;
+        break;
+
+      case 'spotlight':
+        // Apply spotlight
+        user.boosts = user.boosts || [];
+        user.boosts.push({
+          type: 'spotlight',
+          multiplier: boost.multiplier,
+          expiresAt: new Date(Date.now() + boost.duration * 60 * 60 * 1000),
+          appliedAt: new Date(),
+        });
+        break;
+
+      case 'incognito':
+        // Apply incognito mode
+        user.incognitoUntil = new Date(
+          Date.now() + boost.duration * 60 * 60 * 1000
+        );
+        break;
+    }
+
+    // Record transaction
+    user.transactions = user.transactions || [];
+    user.transactions.push({
+      type: 'boost_purchase',
+      boostId: boostId,
+      boostName: boost.name,
+      amount: boost.price,
+      currency: 'USD',
+      transactionDate: new Date(),
+      status: 'completed',
+    });
+
+    // Track in analytics
+    user.analytics = user.analytics || {};
+    user.analytics.totalSpent = (user.analytics.totalSpent || 0) + boost.price;
+    user.analytics.boostsPurchased = (user.analytics.boostsPurchased || 0) + 1;
+
+    await user.save();
+
+    res.status(201).json({
+      success: true,
+      message: `${boost.name} purchased successfully`,
+      boost: boostId,
+      transactionId: `txn_${Date.now()}`,
+      user: {
+        superLikes: user.superLikes,
+        boosts: user.boosts,
+        totalSpent: user.analytics?.totalSpent,
+      },
+    });
+  } catch (error) {
+    console.error('Boost purchase error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// POST /api/boosts/validate-purchase - Validate boost purchase attempt
+router.post('/boosts/validate-purchase', authenticateToken, async (req, res) => {
+  try {
+    const { boostId } = req.body;
+    const boost = BOOSTS[boostId];
+
+    if (!boost) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid boost',
+      });
+    }
+
+    // Check if user qualifies (e.g., not a bot, account age, etc)
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found',
+      });
+    }
+
+    const accountAgeDays = Math.floor(
+      (Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24)
+    );
+
+    if (accountAgeDays < 1) {
+      return res.status(403).json({
+        success: false,
+        error: 'Account must be at least 1 day old',
+      });
+    }
+
+    res.json({
+      success: true,
+      boost,
+      canPurchase: true,
+      price: boost.price,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// GET /api/boosts/user/active - Get user's active boosts
+router.get('/user/active', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found',
+      });
+    }
+
+    // Filter out expired boosts
+    const now = new Date();
+    const activeBoosts = (user.boosts || []).filter(
+      (b) => new Date(b.expiresAt) > now
+    );
+
+    res.json({
+      success: true,
+      activeBoosts,
+      superLikes: user.superLikes || 0,
+      incognitoUntil: user.incognitoUntil,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// POST /api/boosts/redeem-super-like - Use a super like
+router.post('/boosts/redeem-super-like', authenticateToken, async (req, res) => {
+  try {
+    const { targetUserId } = req.body;
+
+    const user = await User.findById(req.user.id);
+    if (!user || (user.superLikes || 0) <= 0) {
+      return res.status(403).json({
+        success: false,
+        error: 'No super likes available',
+      });
+    }
+
+    // Deduct super like
+    user.superLikes = (user.superLikes || 0) - 1;
+
+    // Record the super like
+    user.interactions = user.interactions || [];
+    user.interactions.push({
+      type: 'super_like',
+      targetUserId,
+      timestamp: new Date(),
+    });
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Super like sent',
+      remainingSuperLikes: user.superLikes,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// POST /api/boosts/check-visibility-boost - Check if user has active visibility boost
+router.get('/user/visibility-boost', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found',
+      });
+    }
+
+    const now = new Date();
+    const activeVisibilityBoost = (user.boosts || []).find(
+      (b) =>
+        (b.type === 'visibility' || b.type === 'spotlight') &&
+        new Date(b.expiresAt) > now
+    );
+
+    res.json({
+      success: true,
+      hasBoost: !!activeVisibilityBoost,
+      boost: activeVisibilityBoost,
+      multiplier: activeVisibilityBoost?.multiplier || 1,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+module.exports = router;

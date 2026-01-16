@@ -1,0 +1,145 @@
+﻿const express = require('express');
+const router = express.Router();
+const auth = require('../middleware/auth');
+const { Spotlight } = require('../models/featureModels');
+
+// Tier pricing and boost levels
+const TIERS = {
+  bronze: { price: 4.99, boostHours: 1, dailyLimit: 50 },
+  silver: { price: 9.99, boostHours: 6, dailyLimit: 150 },
+  gold: { price: 19.99, boostHours: 24, dailyLimit: 500 },
+  platinum: { price: 49.99, boostHours: 72, dailyLimit: 1000 }
+};
+
+router.get('/active', auth, async (req, res) => {
+  try {
+    const now = new Date();
+    const activeSpotlight = await Spotlight.findOne({
+      userId: req.user.id,
+      active: true,
+      expiresAt: { $gt: now }
+    });
+    
+    res.json({ 
+      success: true, 
+      active: !!activeSpotlight,
+      tier: activeSpotlight?.tier,
+      expiresAt: activeSpotlight?.expiresAt,
+      viewCount: activeSpotlight?.viewCount || 0,
+      passCount: activeSpotlight?.passCount || 0
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/purchase', auth, async (req, res) => {
+  try {
+    const { tier } = req.body;
+    
+    if (!TIERS[tier]) {
+      return res.status(400).json({ success: false, error: 'Invalid tier' });
+    }
+    
+    const tierInfo = TIERS[tier];
+    const expiresAt = new Date(Date.now() + tierInfo.boostHours * 60 * 60 * 1000);
+    
+    const spotlight = new Spotlight({
+      userId: req.user.id,
+      tier,
+      active: true,
+      viewCount: 0,
+      passCount: 0,
+      dailyViewLimit: tierInfo.dailyLimit,
+      purchasedAt: new Date(),
+      expiresAt
+    });
+    
+    await spotlight.save();
+    
+    res.json({ 
+      success: true, 
+      spotlight,
+      cost: tierInfo.price,
+      boostDuration: `${tierInfo.boostHours}h`
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.get('/stats', auth, async (req, res) => {
+  try {
+    const now = new Date();
+    const userSpotlights = await Spotlight.find({ userId: req.user.id });
+    const activeSpotlight = await Spotlight.findOne({
+      userId: req.user.id,
+      active: true,
+      expiresAt: { $gt: now }
+    });
+    
+    const totalViews = userSpotlights.reduce((sum, s) => sum + (s.viewCount || 0), 0);
+    const totalPasses = userSpotlights.reduce((sum, s) => sum + (s.passCount || 0), 0);
+    
+    res.json({ 
+      success: true, 
+      totalPasses: userSpotlights.length,
+      activeSpotlight: activeSpotlight ? activeSpotlight.tier : null,
+      totalViews,
+      totalPasses,
+      avgViewsPerDay: userSpotlights.length > 0 ? (totalViews / (userSpotlights.length * 3)).toFixed(0) : 0,
+      conversionRate: totalViews > 0 ? ((totalPasses / totalViews) * 100).toFixed(1) : 0
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/:spotlightId/view', auth, async (req, res) => {
+  try {
+    const spotlight = await Spotlight.findOne({
+      _id: req.params.spotlightId,
+      active: true,
+      expiresAt: { $gt: new Date() }
+    });
+    
+    if (!spotlight) {
+      return res.status(404).json({ success: false, error: 'Spotlight not found or expired' });
+    }
+    
+    // Check daily limit
+    if (spotlight.viewCount >= spotlight.dailyViewLimit) {
+      return res.status(429).json({ success: false, error: 'Daily view limit reached' });
+    }
+    
+    spotlight.viewCount += 1;
+    await spotlight.save();
+    
+    res.json({ success: true, viewCount: spotlight.viewCount });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/:spotlightId/pass', auth, async (req, res) => {
+  try {
+    const spotlight = await Spotlight.findOne({
+      _id: req.params.spotlightId,
+      active: true,
+      expiresAt: { $gt: new Date() }
+    });
+    
+    if (!spotlight) {
+      return res.status(404).json({ success: false, error: 'Spotlight not found' });
+    }
+    
+    spotlight.passCount += 1;
+    await spotlight.save();
+    
+    res.json({ success: true, passCount: spotlight.passCount });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+module.exports = router;

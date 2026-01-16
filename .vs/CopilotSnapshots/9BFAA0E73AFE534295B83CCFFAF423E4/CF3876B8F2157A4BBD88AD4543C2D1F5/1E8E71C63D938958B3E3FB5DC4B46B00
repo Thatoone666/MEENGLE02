@@ -1,0 +1,49 @@
+﻿import express from 'express';
+import { verifyToken } from './auth.js';
+import mongoose from 'mongoose';
+
+const router = express.Router();
+
+const fraudSchema = new mongoose.Schema({
+  reportedBy: String,
+  reportedUser: String,
+  reason: String,
+  details: String,
+  status: { type: String, default: 'open' },
+  createdAt: { type: Date, default: Date.now }
+});
+
+let FraudReport;
+try {
+  FraudReport = mongoose.model('FraudReport', fraudSchema);
+} catch {
+  FraudReport = mongoose.model('FraudReport');
+}
+
+router.post('/report', verifyToken, async (req, res) => {
+  try {
+    const { reportedUser, reason, details } = req.body;
+    const report = new FraudReport({
+      reportedBy: req.userId,
+      reportedUser,
+      reason,
+      details,
+      status: 'open'
+    });
+    await report.save();
+    res.json({ success: true, report });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to submit report' });
+  }
+});
+
+router.get('/status/:reportId', async (req, res) => {
+  try {
+    const report = await FraudReport.findById(req.params.reportId);
+    res.json(report || { status: 'not found' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch report' });
+  }
+});
+
+export default router;

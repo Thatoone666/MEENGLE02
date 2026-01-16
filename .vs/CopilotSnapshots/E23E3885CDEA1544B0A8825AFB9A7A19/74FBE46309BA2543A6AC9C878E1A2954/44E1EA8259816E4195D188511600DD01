@@ -1,0 +1,19 @@
+﻿{
+  "name": "meengle-frontend",
+  "version": "5.2.0",
+  "private": true,
+  "scripts": {
+    "build": "npm run build:js && npm run build:copy",
+    "build:js": "esbuild assets/js/*.js --outdir=dist/assets/js --bundle --minify --sourcemap 2>/dev/null || true",
+    "build:copy": "npm run copy:html && npm run copy:assets",
+    "copy:html": "mkdir -p dist && cp -r pages/* dist/ 2>/dev/null || true && cp index.html dist/ 2>/dev/null || true",
+    "copy:assets": "mkdir -p dist/assets && cp -r assets/* dist/assets/ 2>/dev/null || true && cp -r src dist/ 2>/dev/null || true",
+    "start": "npm run dev",
+    "dev": "python -m http.server 3000 --directory . 2>/dev/null || python3 -m http.server 3000 --directory . 2>/dev/null || echo 'Install Python for local server'",
+    "watch": "esbuild assets/js/*.js --outdir=dist/assets/js --bundle --sourcemap --watch",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "esbuild": "^0.19.0"
+  }
+}

@@ -1,0 +1,59 @@
+﻿import express from 'express';
+import { verifyToken } from './auth.js';
+import mongoose from 'mongoose';
+
+const router = express.Router();
+
+const locationChatSchema = new mongoose.Schema({
+  latitude: Number,
+  longitude: Number,
+  messages: [{
+    userId: String,
+    message: String,
+    timestamp: Date
+  }],
+  createdAt: { type: Date, default: Date.now }
+});
+
+let LocationChat;
+try {
+  LocationChat = mongoose.model('LocationChat', locationChatSchema);
+} catch {
+  LocationChat = mongoose.model('LocationChat');
+}
+
+router.post('/message', verifyToken, async (req, res) => {
+  try {
+    const { latitude, longitude, message } = req.body;
+    const chat = await LocationChat.findOneAndUpdate(
+      { latitude, longitude },
+      {
+        $push: {
+          messages: {
+            userId: req.userId,
+            message,
+            timestamp: new Date()
+          }
+        }
+      },
+      { upsert: true, new: true }
+    );
+    res.json({ success: true, chat });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to send message' });
+  }
+});
+
+router.get('/:latitude/:longitude', async (req, res) => {
+  try {
+    const chat = await LocationChat.findOne({
+      latitude: parseFloat(req.params.latitude),
+      longitude: parseFloat(req.params.longitude)
+    });
+    res.json(chat || { messages: [] });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch chat' });
+  }
+});
+
+export default router;

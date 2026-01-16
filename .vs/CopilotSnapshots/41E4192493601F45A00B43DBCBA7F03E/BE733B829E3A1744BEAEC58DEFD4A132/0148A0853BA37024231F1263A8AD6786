@@ -1,0 +1,62 @@
+﻿import 'package:flutter/foundation.dart';
+import '../models/meengle_moment.dart';
+import '../services/moments_service.dart';
+
+class MomentsProvider extends ChangeNotifier {
+  final MomentsService _service = MomentsService();
+  
+  List<MeengleMoment> _moments = [];
+  bool _isLoading = false;
+  String? _error;
+
+  List<MeengleMoment> get moments => _moments;
+  bool get isLoading => _isLoading;
+  String? get error => _error;
+
+  Future<void> loadMoments() async {
+    _isLoading = true;
+    notifyListeners();
+    
+    try {
+      _moments = await _service.getActiveMoments();
+      _error = null;
+    } catch (e) {
+      _error = e.toString();
+    }
+    
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  Future<void> acceptMoment(String momentId) async {
+    try {
+      final result = await _service.acceptMoment(momentId);
+      if (result != null) {
+        final idx = _moments.indexWhere((m) => m.id == momentId);
+        if (idx >= 0) {
+          _moments[idx] = result;
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+    }
+  }
+
+  Future<void> extendMoment(String momentId) async {
+    try {
+      final result = await _service.extendMoment(momentId);
+      if (result != null) {
+        final idx = _moments.indexWhere((m) => m.id == momentId);
+        if (idx >= 0) {
+          _moments[idx] = result;
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+    }
+  }
+}

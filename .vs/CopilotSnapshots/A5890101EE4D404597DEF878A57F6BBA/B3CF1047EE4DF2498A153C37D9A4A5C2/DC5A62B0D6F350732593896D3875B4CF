@@ -1,0 +1,201 @@
+﻿const express = require('express');
+const router = express.Router();
+const auth = require('../middleware/auth');
+const { Match } = require('../models/featureModels');
+
+// Simple matching algorithm
+async function calculateMatchScore(user1, user2) {
+  let score = 50; // Base score
+  
+  // Age preference match
+  if (Math.abs(user1.age - user2.age) <= 5) score += 15;
+  else if (Math.abs(user1.age - user2.age) <= 10) score += 10;
+  
+  // Location match
+  if (user1.city === user2.city) score += 15;
+  else if (user1.state === user2.state) score += 5;
+  
+  // Interest overlap
+  const interests1 = user1.interests || [];
+  const interests2 = user2.interests || [];
+  const overlap = interests1.filter(i => interests2.includes(i)).length;
+  score += Math.min(overlap * 5, 15); // Max 15 points for interests
+  
+  // Verification bonus
+  if (user1.isVerified && user2.isVerified) score += 10;
+  
+  return Math.min(score, 100);
+}
+
+router.get('/algorithm', auth, async (req, res) => {
+  try {
+    const { page = 1, limit = 20 } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    
+    // Get current user profile
+    const User = require('../models/User');
+    const currentUser = await User.findById(req.user.id);
+    
+    if (!currentUser) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+    
+    // Get users already matched with
+    const existingMatches = await Match.find({
+      $or: [
+        { user1Id: req.user.id },
+        { user2Id: req.user.id }
+      ]
+    }).select('user1Id user2Id');
+    
+    const matchedUserIds = existingMatches.flatMap(m => [m.user1Id, m.user2Id]);
+    
+    // Find candidates (exclude current user and existing matches)
+    const candidates = await User.find({
+      _id: { 
+        $nin: [req.user.id, ...matchedUserIds],
+        $exists: true
+      },
+      gender: currentUser.preferredGender || undefined
+    })
+    .limit(parseInt(limit) * 2)
+    .select('name age city state interests isVerified profilePhoto');
+    
+    // Score and sort candidates
+    const scoredCandidates = [];
+    for (const candidate of candidates) {
+      const score = await calculateMatchScore(currentUser, candidate);
+      const matchReasons = [];
+      
+      if (currentUser.city === candidate.city) matchReasons.push('Same city');
+      if (Math.abs(currentUser.age - candidate.age) <= 3) matchReasons.push('Close age match');
+      if (candidate.isVerified) matchReasons.push('Verified user');
+      if (currentUser.interests?.length > 0 && candidate.interests?.length > 0) {
+        const overlap = currentUser.interests.filter(i => candidate.interests.includes(i)).length;
+        if (overlap > 0) matchReasons.push(`${overlap} shared interests`);
+      }
+      
+      scoredCandidates.push({
+        id: candidate._id,
+        name: candidate.name,
+        age: candidate.age,
+        city: candidate.city,
+        photo: candidate.profilePhoto,
+        score: Math.round(score),
+        matchReasons: matchReasons.slice(0, 3) // Top 3 reasons
+      });
+    }
+    
+    // Sort by score descending
+    scoredCandidates.sort((a, b) => b.score - a.score);
+    const paginatedCandidates = scoredCandidates.slice(skip, skip + parseInt(limit));
+    
+    res.json({ 
+      success: true, 
+      candidates: paginatedCandidates,
+      page: parseInt(page),
+      total: scoredCandidates.length
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/match', auth, async (req, res) => {
+  try {
+    const { toUserId, action } = req.body;
+    
+    if (!toUserId || !['like', 'pass'].includes(action)) {
+      return res.status(400).json({ success: false, error: 'Invalid input' });
+    }
+    
+    // Check if match already exists
+    const existingMatch = await Match.findOne({
+      $or: [
+        { user1Id: req.user.id, user2Id: toUserId },
+        { user1Id: toUserId, user2Id: req.user.id }
+      ]
+    });
+    
+    if (existingMatch) {
+      return res.status(400).json({ success: false, error: 'Already matched with this user' });
+    }
+    
+    const match = new Match({
+      user1Id: req.user.id,
+      user2Id: toUserId,
+      action,
+      isVerified: action === 'like',
+      matchedAt: action === 'like' ? new Date() : null,
+      createdAt: new Date()
+    });
+    
+    await match.save();
+    res.json({ success: true, match });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.get('/conversations', auth, async (req, res) => {
+  try {
+    // Find mutual matches (both users liked each other)
+    const mutualMatches = await Match.find({
+      $or: [
+        { user1Id: req.user.id, action: 'like' },
+        { user2Id: req.user.id, action: 'like' }
+      ]
+    }).populate('user1Id user2Id', 'name profilePhoto');
+    
+    // Filter for mutual likes
+    const conversations = [];
+    const userMatches = new Set();
+    
+    for (const m of mutualMatches) {
+      const otherId = m.user1Id === req.user.id ? m.user2Id : m.user1Id;
+      if (userMatches.has(otherId)) {
+        conversations.push(m);
+      } else {
+        userMatches.add(otherId);
+      }
+    }
+    
+    res.json({ success: true, conversations });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.get('/likes', auth, async (req, res) => {
+  try {
+    const likes = await Match.countDocuments({
+      user2Id: req.user.id,
+      action: 'like'
+    });
+    
+    res.json({ success: true, likeCount: likes });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/unmatch/:userId', auth, async (req, res) => {
+  try {
+    const result = await Match.deleteOne({
+      $or: [
+        { user1Id: req.user.id, user2Id: req.params.userId },
+        { user1Id: req.params.userId, user2Id: req.user.id }
+      ]
+    });
+    
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ success: false, error: 'Match not found' });
+    }
+    
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+module.exports = router;

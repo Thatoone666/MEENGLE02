@@ -1,0 +1,282 @@
+﻿import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+class APIService {
+  static const String baseURL = 'http://localhost:3001/api';
+  static String? _token;
+  static String? _userId;
+
+  static void setAuth(String token, String userId) {
+    _token = token;
+    _userId = userId;
+  }
+
+  static Map<String, String> get _headers => {
+    'Content-Type': 'application/json',
+    if (_token != null) 'Authorization': 'Bearer $_token',
+  };
+
+  // Auth - Signup
+  static Future<Map<String, dynamic>> signup(String email, String password, String name) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseURL/auth/signup'),
+        headers: _headers,
+        body: jsonEncode({
+          'email': email,
+          'password': password,
+          'name': name,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setAuth(data['token'], data['user']['id']);
+        return data;
+      }
+      throw Exception(jsonDecode(response.body)['error'] ?? 'Signup failed');
+    } catch (e) {
+      throw Exception('Signup: $e');
+    }
+  }
+
+  // Auth - Login
+  static Future<Map<String, dynamic>> login(String email, String password) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseURL/auth/login'),
+        headers: _headers,
+        body: jsonEncode({
+          'email': email,
+          'password': password,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setAuth(data['token'], data['user']['id']);
+        return data;
+      }
+      throw Exception(jsonDecode(response.body)['error'] ?? 'Login failed');
+    } catch (e) {
+      throw Exception('Login: $e');
+    }
+  }
+
+  // Auth - Get current user
+  static Future<Map<String, dynamic>> getMe() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseURL/auth/me'),
+        headers: _headers,
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      throw Exception('Failed to get user');
+    } catch (e) {
+      throw Exception('GetMe: $e');
+    }
+  }
+
+  // Auth - Update profile
+  static Future<Map<String, dynamic>> updateProfile({
+    required int age,
+    required String bio,
+    required String gender,
+    List<String>? photos,
+    List<String>? interests,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseURL/auth/profile'),
+        headers: _headers,
+        body: jsonEncode({
+          'age': age,
+          'bio': bio,
+          'gender': gender,
+          'photos': photos ?? [],
+          'interests': interests ?? [],
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      throw Exception('Profile update failed');
+    } catch (e) {
+      throw Exception('Profile: $e');
+    }
+  }
+
+  // Auth - Delete account
+  static Future<bool> deleteAccount({
+    required String password,
+    required String reason,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseURL/auth/delete-account'),
+        headers: _headers,
+        body: jsonEncode({
+          'password': password,
+          'reason': reason,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        _token = null;
+        _userId = null;
+        return true;
+      }
+      final errorData = jsonDecode(response.body);
+      throw Exception(errorData['error'] ?? 'Failed to delete account');
+    } catch (e) {
+      throw Exception('Delete Account: $e');
+    }
+  }
+
+  // Auth - Change password
+  static Future<bool> changePassword({
+    required String oldPassword,
+    required String newPassword,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseURL/auth/change-password'),
+        headers: _headers,
+        body: jsonEncode({
+          'oldPassword': oldPassword,
+          'newPassword': newPassword,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return true;
+      }
+      final errorData = jsonDecode(response.body);
+      throw Exception(errorData['error'] ?? 'Failed to change password');
+    } catch (e) {
+      throw Exception('Change Password: $e');
+    }
+  }
+
+  // Matching - Get potential matches
+  static Future<List<Map<String, dynamic>>> getPotentialMatches() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseURL/matches/potential'),
+        headers: _headers,
+      );
+
+      if (response.statusCode == 200) {
+        final List data = jsonDecode(response.body);
+        return data.cast<Map<String, dynamic>>();
+      }
+      return [];
+    } catch (e) {
+      print('getPotentialMatches: $e');
+      return [];
+    }
+  }
+
+  // Matching - Like user
+  static Future<bool> likeUser(String targetUserId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseURL/matches/like'),
+        headers: _headers,
+        body: jsonEncode({
+          'targetUserId': targetUserId,
+        }),
+      );
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print('likeUser: $e');
+      return false;
+    }
+  }
+
+  // Matching - Pass user
+  static Future<bool> passUser(String targetUserId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseURL/matches/pass'),
+        headers: _headers,
+        body: jsonEncode({
+          'targetUserId': targetUserId,
+        }),
+      );
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print('passUser: $e');
+      return false;
+    }
+  }
+
+  // Matching - Get matches
+  static Future<List<Map<String, dynamic>>> getMatches() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseURL/matches/matches'),
+        headers: _headers,
+      );
+
+      if (response.statusCode == 200) {
+        final List data = jsonDecode(response.body);
+        return data.cast<Map<String, dynamic>>();
+      }
+      return [];
+    } catch (e) {
+      print('getMatches: $e');
+      return [];
+    }
+  }
+
+  // Chat - Get chat history
+  static Future<List<Map<String, dynamic>>> getChatHistory(String otherUserId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseURL/chat/history/$otherUserId'),
+        headers: _headers,
+      );
+
+      if (response.statusCode == 200) {
+        final List data = jsonDecode(response.body);
+        return data.cast<Map<String, dynamic>>();
+      }
+      return [];
+    } catch (e) {
+      print('getChatHistory: $e');
+      return [];
+    }
+  }
+
+  // Chat - Get conversations
+  static Future<List<Map<String, dynamic>>> getConversations() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseURL/chat/conversations'),
+        headers: _headers,
+      );
+
+      if (response.statusCode == 200) {
+        final List data = jsonDecode(response.body);
+        return data.cast<Map<String, dynamic>>();
+      }
+      return [];
+    } catch (e) {
+      print('getConversations: $e');
+      return [];
+    }
+  }
+
+  // Utility
+  static String? resolveAssetUrl(String url) {
+    if (url.startsWith('http')) return url;
+    return url;
+  }
+}

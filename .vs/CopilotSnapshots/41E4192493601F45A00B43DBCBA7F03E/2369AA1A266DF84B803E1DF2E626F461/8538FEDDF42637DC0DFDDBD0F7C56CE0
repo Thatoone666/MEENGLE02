@@ -1,0 +1,129 @@
+﻿// flutter_app/lib/services/feature_access_service.dart
+
+import 'package:flutter/material.dart';
+import '../models/meengle_tier_system.dart';
+import '../screens/premium_tier_screen.dart';
+
+/// Service to manage feature access and show paywalls
+class FeatureAccessService {
+  /// Map of features to required tier
+  static const Map<String, MeengleTier> FEATURE_REQUIREMENTS = {
+    // Free tier features
+    'basic_swipe': MeengleTier.free,
+    'basic_messaging': MeengleTier.free,
+    'basic_profile': MeengleTier.free,
+    'match_notifications': MeengleTier.free,
+
+    // Spark+ features ($4.99)
+    'see_who_likes': MeengleTier.spark,
+    'message_templates': MeengleTier.spark,
+    'advanced_filters': MeengleTier.spark,
+
+    // Flame features ($9.99) - MOST IMPORTANT
+    'video_showcase': MeengleTier.flame, // Renamed from video_profiles
+    'super_likes': MeengleTier.flame,
+    'rewind': MeengleTier.flame,
+    'meengle_verified': MeengleTier.flame, // Renamed from verified_badge
+    'travel_mode': MeengleTier.flame, // Renamed from passport_mode
+    'spotlight_visibility': MeengleTier.flame,
+    'read_receipts': MeengleTier.flame,
+
+    // Wildfire features ($19.99)
+    'concierge_service': MeengleTier.wildfire,
+    'exclusive_events': MeengleTier.wildfire,
+    'incognito_mode': MeengleTier.wildfire,
+    'advanced_analytics': MeengleTier.wildfire,
+  };
+
+  /// Check if user can access a feature
+  static bool canAccess(String featureId, MeengleTier userTier) {
+    final requiredTier = FEATURE_REQUIREMENTS[featureId];
+    if (requiredTier == null) {
+      // Unknown feature = allow (don't break app)
+      return true;
+    }
+    // User tier must be >= required tier
+    return userTier.index >= requiredTier.index;
+  }
+
+  /// Get required tier for a feature
+  static MeengleTier? getRequiredTier(String featureId) {
+    return FEATURE_REQUIREMENTS[featureId];
+  }
+
+  /// Show paywall dialog for locked feature
+  static Future<bool?> showPaywall(
+    BuildContext context,
+    String featureId,
+    String featureDisplayName,
+  ) async {
+    final requiredTier = getRequiredTier(featureId);
+    if (requiredTier == null) return true;
+
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A1A),
+        title: Text(
+          '?? Unlock $featureDisplayName',
+          style: const TextStyle(color: Colors.white),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'This feature is available in ${requiredTier.displayName}',
+              style: const TextStyle(color: Colors.white70),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Starting at \$${_getTierPrice(requiredTier)}/month',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Not Now'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context, true);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => PremiumTierScreen(
+                    currentTier: MeengleTier.free,
+                    onTierSelected: (tier, cycle) {},
+                  ),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: requiredTier.primaryColor,
+            ),
+            child: const Text('Upgrade Now'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static double _getTierPrice(MeengleTier tier) {
+    switch (tier) {
+      case MeengleTier.spark:
+        return 4.99;
+      case MeengleTier.flame:
+        return 9.99;
+      case MeengleTier.wildfire:
+        return 19.99;
+      default:
+        return 0.0;
+    }
+  }
+}

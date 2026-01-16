@@ -1,0 +1,192 @@
+﻿import express from 'express';
+import auth from '../middleware/auth.js';
+import fcmService from '../lib/fcm_service.js';
+import User from '../models/User.js';
+
+const router = express.Router();
+
+// Send test notification
+router.post('/send-test', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user || !user.fcmToken) {
+      return res.status(400).json({ success: false, error: 'No FCM token found' });
+    }
+
+    const result = await fcmService.sendToUser(user.fcmToken, {
+      title: 'Test Notification',
+      body: 'This is a test notification from Meengle',
+      data: {
+        type: 'test',
+      }
+    });
+
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Send story view notification
+router.post('/story-view/:storyId', auth, async (req, res) => {
+  try {
+    const { viewerName } = req.body;
+    const storyId = req.params.storyId;
+
+    // Get story to find owner
+    const { Story } = require('../models/featureModels');
+    const story = await Story.findById(storyId);
+    if (!story) {
+      return res.status(404).json({ success: false, error: 'Story not found' });
+    }
+
+    const owner = await User.findById(story.userId);
+    if (!owner || !owner.fcmToken) {
+      return res.status(400).json({ success: false, error: 'Owner FCM token not found' });
+    }
+
+    const result = await fcmService.notifyStoryView(owner._id, owner.fcmToken, {
+      storyId: storyId,
+      viewedBy: req.user.id,
+      viewerName: viewerName || 'Someone'
+    });
+
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Send story like notification
+router.post('/story-like/:storyId', auth, async (req, res) => {
+  try {
+    const { likerName } = req.body;
+    const storyId = req.params.storyId;
+
+    const { Story } = require('../models/featureModels');
+    const story = await Story.findById(storyId);
+    if (!story) {
+      return res.status(404).json({ success: false, error: 'Story not found' });
+    }
+
+    const owner = await User.findById(story.userId);
+    if (!owner || !owner.fcmToken) {
+      return res.status(400).json({ success: false, error: 'Owner FCM token not found' });
+    }
+
+    const result = await fcmService.notifyStoryLike(owner._id, owner.fcmToken, {
+      storyId: storyId,
+      likedBy: req.user.id,
+      likerName: likerName || 'Someone'
+    });
+
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Send message notification
+router.post('/message/:matchId', auth, async (req, res) => {
+  try {
+    const { recipientId, messageText } = req.body;
+    const matchId = req.params.matchId;
+
+    const recipient = await User.findById(recipientId);
+    if (!recipient || !recipient.fcmToken) {
+      return res.status(400).json({ success: false, error: 'Recipient FCM token not found' });
+    }
+
+    const result = await fcmService.notifyNewMessage(recipientId, recipient.fcmToken, {
+      senderId: req.user.id,
+      senderName: 'Someone',
+      messageText: messageText,
+      matchId: matchId,
+    });
+
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Send match notification
+router.post('/match/:userId', auth, async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const { matchName } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user || !user.fcmToken) {
+      return res.status(400).json({ success: false, error: 'User FCM token not found' });
+    }
+
+    const result = await fcmService.notifyNewMatch(userId, user.fcmToken, {
+      matchId: [req.user.id, userId].sort().join('-'),
+      matchUserId: req.user.id,
+      matchName: matchName || 'Someone'
+    });
+
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Send payment notification
+router.post('/payment-confirmed/:userId', auth, async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const { tier, expiresAt } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user || !user.fcmToken) {
+      return res.status(400).json({ success: false, error: 'User FCM token not found' });
+    }
+
+    const result = await fcmService.notifyPaymentConfirmed(userId, user.fcmToken, {
+      tier: tier,
+      expiresAt: expiresAt
+    });
+
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Subscribe to topic
+router.post('/subscribe-topic', auth, async (req, res) => {
+  try {
+    const { topic } = req.body;
+    const user = await User.findById(req.user.id);
+    
+    if (!user || !user.fcmToken) {
+      return res.status(400).json({ success: false, error: 'No FCM token found' });
+    }
+
+    const result = await fcmService.subscribeToTopic([user.fcmToken], topic);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Unsubscribe from topic
+router.post('/unsubscribe-topic', auth, async (req, res) => {
+  try {
+    const { topic } = req.body;
+    const user = await User.findById(req.user.id);
+    
+    if (!user || !user.fcmToken) {
+      return res.status(400).json({ success: false, error: 'No FCM token found' });
+    }
+
+    const result = await fcmService.unsubscribeFromTopic([user.fcmToken], topic);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+export default router;

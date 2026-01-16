@@ -1,0 +1,263 @@
+﻿# MEENGLE - DEPLOYMENT GUIDE
+
+## Production Build & Deployment
+
+### Quick Start (Development)
+
+```bash
+# Install dependencies
+cd backend && npm install
+cd ../frontend && npm install
+
+# Start backend
+cd backend && npm run dev
+
+# Start frontend (in another terminal)
+cd frontend && npm run dev
+```
+
+### Docker Deployment (Production)
+
+#### Prerequisites
+- Docker & Docker Compose installed
+- Environment variables configured
+
+#### Build & Run
+
+```bash
+# 1. Create .env file
+cat > .env << EOF
+JWT_SECRET=your-secret-key-here
+STRIPE_KEY=sk_live_your_stripe_key
+SENDGRID_API_KEY=your_sendgrid_key
+MONGODB_PASSWORD=change_me_in_production
+EOF
+
+# 2. Build and start containers
+docker-compose up -d
+
+# 3. Verify deployment
+curl http://localhost/health  # Frontend health
+curl http://localhost:3001/health  # Backend health
+
+# 4. View logs
+docker-compose logs -f backend
+docker-compose logs -f frontend
+```
+
+### Cloud Deployment (AWS, Heroku, DigitalOcean)
+
+#### AWS Elastic Beanstalk
+
+```bash
+# 1. Install EB CLI
+pip install awsebcli --upgrade --user
+
+# 2. Initialize
+eb init -p docker meengle-app
+
+# 3. Deploy
+eb create meengle-prod
+eb open
+```
+
+#### Heroku
+
+```bash
+# 1. Login
+heroku login
+
+# 2. Create app
+heroku create meengle-app
+heroku addons:create mongolab:sandbox
+heroku config:set JWT_SECRET=your_secret
+
+# 3. Deploy
+git push heroku main
+```
+
+#### DigitalOcean App Platform
+
+1. Push code to GitHub
+2. Connect GitHub repo to DigitalOcean
+3. Configure build command: `npm run build`
+4. Configure run command: `npm start`
+
+### Continuous Deployment (CI/CD)
+
+#### GitHub Actions
+
+```yaml
+# .github/workflows/deploy.yml
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Build Docker image
+        run: docker build -t meengle:latest .
+      
+      - name: Push to registry
+        run: |
+          echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+          docker push meengle:latest
+      
+      - name: Deploy
+        run: |
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
+            'cd /app && docker-compose pull && docker-compose up -d'
+```
+
+### Environment Variables
+
+Production environment variables needed:
+
+```bash
+# Backend
+NODE_ENV=production
+PORT=3001
+MONGODB_URI=mongodb+srv://user:password@cluster.mongodb.net/meengle
+JWT_SECRET=very-long-random-secret-key
+JWT_EXPIRE=7d
+
+# Stripe
+STRIPE_KEY=sk_live_xxxxx
+STRIPE_WEBHOOK_SECRET=whsec_xxxxx
+
+# Email
+SENDGRID_API_KEY=SG.xxxxx
+SENDGRID_FROM_EMAIL=noreply@meengle.com
+
+# Frontend
+VITE_API_URL=https://api.meengle.com
+VITE_SOCKET_URL=https://socket.meengle.com
+```
+
+### Database
+
+#### MongoDB Atlas Setup
+
+```bash
+# 1. Go to https://www.mongodb.com/cloud/atlas
+# 2. Create cluster
+# 3. Create database user
+# 4. Whitelist IP addresses
+# 5. Get connection string
+# 6. Update MONGODB_URI in .env
+```
+
+### SSL/HTTPS Certificate
+
+#### Let's Encrypt with Certbot
+
+```bash
+# Install
+sudo apt-get install certbot python3-certbot-nginx
+
+# Generate certificate
+sudo certbot certonly --nginx -d meengle.com -d www.meengle.com
+
+# Auto-renew
+sudo systemctl enable certbot.timer
+sudo systemctl start certbot.timer
+```
+
+### Performance Optimization
+
+1. **Enable CDN** - CloudFlare for static assets
+2. **Enable Caching** - Redis for session/cache
+3. **Database Indexing** - Create indexes on frequently queried fields
+4. **Load Balancing** - Use AWS ELB or Nginx upstream
+5. **Monitoring** - Set up CloudWatch/DataDog alerts
+
+### Monitoring & Logging
+
+```bash
+# View real-time logs
+docker-compose logs -f
+
+# Access backend shell
+docker exec -it meengle-backend bash
+
+# Database backup
+docker exec meengle-mongodb mongodump --out /backup
+```
+
+### Scaling
+
+#### Horizontal Scaling
+
+```bash
+# Docker Swarm
+docker swarm init
+docker service create --name backend --replicas 3 meengle:latest
+
+# Kubernetes
+kubectl scale deployment backend --replicas=3
+```
+
+#### Vertical Scaling
+
+- Increase container resources (CPU/Memory)
+- Upgrade database tier
+- Increase Nginx worker processes
+
+### Security Checklist
+
+- [ ] Change default passwords
+- [ ] Enable SSL/HTTPS
+- [ ] Configure firewalls
+- [ ] Set up DDoS protection
+- [ ] Enable rate limiting
+- [ ] Configure CORS properly
+- [ ] Use environment variables for secrets
+- [ ] Regular backups enabled
+- [ ] Monitoring & alerting configured
+- [ ] Logs aggregation setup
+
+### Post-Deployment
+
+1. **Verify endpoints**
+   ```bash
+   curl https://api.meengle.com/health
+   curl https://meengle.com/health
+   ```
+
+2. **Test key features**
+   - User signup/login
+   - Real-time chat
+   - Image uploads
+   - Payments
+
+3. **Monitor performance**
+   - Check error rates
+   - Monitor latency
+   - Track server resources
+
+### Rollback
+
+```bash
+# Docker rollback to previous version
+docker-compose down
+git revert HEAD~1
+docker-compose build --no-cache
+docker-compose up -d
+```
+
+### Support
+
+- Check logs: `docker-compose logs`
+- SSH to server: `ssh user@host`
+- Database shell: `mongo mongodb://...`
+- Backend shell: `docker exec -it backend bash`
+
+---
+
+**Deployment Status: READY FOR PRODUCTION** ✅

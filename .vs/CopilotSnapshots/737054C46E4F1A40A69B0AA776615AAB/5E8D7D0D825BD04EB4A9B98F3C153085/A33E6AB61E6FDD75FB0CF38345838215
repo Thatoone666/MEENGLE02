@@ -1,0 +1,134 @@
+﻿const mongoose = require('mongoose');
+
+const userSchema = new mongoose.Schema({
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    name: { type: String },
+    age: { type: Number },
+    gender: { type: String },
+    preferences: {
+        gender: { type: String },
+        ageRange: {
+            min: { type: Number },
+            max: { type: Number }
+        }
+    },
+    images: [String],
+    bio: { type: String },
+    subscriptionTier: { type: String, enum: ['free', 'spark', 'sparkplus', 'flame', 'wildfire'], default: 'free' },
+    subscriptionExpires: { type: Date },
+    genderPreference: { type: String, enum: ['Male', 'Female', 'Non-binary', 'Other', 'Any'], default: 'Any' },
+    ageRange: {
+        min: { type: Number, default: 18 },
+        max: { type: Number, default: 99 }
+    },
+    location: {
+        type: { type: String, enum: ['Point'], default: 'Point' },
+        coordinates: { type: [Number], index: '2dsphere' }
+    },
+    interests: [String],
+    isLitTonight: { type: Boolean, default: false },
+    isLitConstant: { type: Boolean, default: false },
+    isInMasquerade: { type: Boolean, default: false },
+    masqueradeAlias: { type: String },
+    
+    // TIER 1: Core profile attributes (NEW)
+    height: { 
+        type: Number,
+        description: 'User height in centimeters'
+    },
+    
+    religion: { 
+        type: String, 
+        enum: ['Christian', 'Muslim', 'Jewish', 'Hindu', 'Buddhist', 'Atheist', 'Agnostic', 'Spiritual', 'Other', 'Prefer not to say'],
+        default: 'Prefer not to say'
+    },
+    
+    bodyType: {
+        type: String,
+        enum: ['Slim', 'Athletic', 'Average', 'Curvy', 'Muscular', 'Prefer not to say'],
+        default: 'Prefer not to say'
+    },
+    
+    educationLevel: {
+        type: String,
+        enum: ['High School', 'Some College', 'Bachelor', 'Master', 'PhD', 'Trade School', 'Other', 'Prefer not to say'],
+        default: 'Prefer not to say'
+    },
+    
+    relationshipGoal: {
+        type: String,
+        enum: ['Casual Dating', 'Serious Relationship', 'Just Dates', 'Friends First', 'Open to Anything', 'Prefer not to say'],
+        default: 'Open to Anything'
+    },
+    
+    smoking: {
+        type: String,
+        enum: ['Never', 'Socially', 'Regularly', 'Prefer not to say'],
+        default: 'Prefer not to say'
+    },
+    
+    drinking: {
+        type: String,
+        enum: ['Never', 'Rarely', 'Sometimes', 'Often', 'Prefer not to say'],
+        default: 'Prefer not to say'
+    },
+    
+    // TIER 1: User filter preferences (NEW)
+    filterPreferences: {
+        heightRange: { 
+            min: { type: Number, default: 140 },
+            max: { type: Number, default: 220 }
+        },
+        religions: [String],
+        bodyTypes: [String],
+        educationLevels: [String],
+        relationshipGoals: [String],
+        maxDistance: { type: Number, default: 50 },
+        smoking: [String],
+        drinking: [String],
+        ageRange: {
+            min: { type: Number, default: 18 },
+            max: { type: Number, default: 99 }
+        }
+    },
+
+    likes: [{
+        user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        context: { type: String, enum: ['regular', 'lit-tonight', 'lit-constant'], default: 'regular' }
+    }],
+    matches: [{
+        user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        context: { type: String, enum: ['regular', 'lit-tonight', 'lit-constant'], default: 'regular' }
+    }],
+    blocked: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    twoTruthsAndALie: {
+        truth1: { type: String, trim: true, maxlength: 150 },
+        truth2: { type: String, trim: true, maxlength: 150 },
+        lie: { type: String, trim: true, maxlength: 150 }
+    },
+    prompts: [{
+        promptText: { type: String },
+        responseUrl: { type: String },
+        responseType: { type: String, enum: ['audio', 'video'] }
+    }],
+    checkInStreak: { type: Number, default: 0 },
+    badges: [{ type: String }],
+    isDiamondVerified: { type: Boolean, default: false },
+    profileTheme: { type: String, default: 'default' },
+    lastBoosted: { type: Date },
+    profileViews: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    wingman: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    wingmanRequests: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }],
+    passwordResetToken: String,
+    passwordResetExpires: Date,
+    createdAt: { type: Date, default: Date.now }
+});
+
+module.exports = mongoose.model('User', userSchema);

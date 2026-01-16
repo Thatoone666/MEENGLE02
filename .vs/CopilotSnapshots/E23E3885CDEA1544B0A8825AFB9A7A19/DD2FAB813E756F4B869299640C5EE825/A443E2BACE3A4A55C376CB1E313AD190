@@ -1,0 +1,15 @@
+﻿{
+  "name": "meengle-frontend",
+  "version": "5.2.0",
+  "private": true,
+  "scripts": {
+    "build": "esbuild assets/js/*.js --outdir=dist/assets/js --bundle --minify --sourcemap & npm run copy:all",
+    "copy:all": "node scripts/copy-files.js",
+    "start": "echo 'Open http://localhost:3000 with a local server'",
+    "watch": "esbuild assets/js/*.js --outdir=dist/assets/js --bundle --sourcemap --watch",
+    "clean": "rmdir /S /Q dist"
+  },
+  "devDependencies": {
+    "esbuild": "^0.19.0"
+  }
+}

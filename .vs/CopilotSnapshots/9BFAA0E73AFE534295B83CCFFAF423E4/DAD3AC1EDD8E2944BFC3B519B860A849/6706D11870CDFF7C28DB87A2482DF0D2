@@ -1,0 +1,303 @@
+﻿import express from 'express';
+import mongoose from 'mongoose';
+import crypto from 'crypto';
+import { verifyToken } from './auth.js';
+
+const router = express.Router();
+
+const subscriptionSchema = new mongoose.Schema({
+  userId: mongoose.Schema.Types.ObjectId,
+  tier: { type: String, enum: ['free', 'premium', 'gold', 'platinum'], default: 'free' },
+  status: { type: String, enum: ['active', 'cancelled', 'expired'], default: 'active' },
+  startDate: { type: Date, default: Date.now },
+  renewalDate: Date,
+  billingCycle: { type: String, enum: ['monthly', 'annual'], default: 'monthly' },
+  amount: Number,
+  paymentMethod: String,
+  autoRenew: { type: Boolean, default: true },
+  cancellationDate: Date,
+  cancellationReason: String
+});
+
+const subscriptionSchema2 = new mongoose.Schema({
+  userId: mongoose.Schema.Types.ObjectId,
+  paymentId: String,
+  amount: Number,
+  currency: { type: String, default: 'ZAR' },
+  method: { type: String, enum: ['stripe', 'payfast', 'yoco', 'ozow', 'snapscan', 'paypal'] },
+  status: { type: String, enum: ['pending', 'completed', 'failed', 'refunded'], default: 'pending' },
+  transactionId: String,
+  externalReference: String,
+  createdAt: { type: Date, default: Date.now },
+  completedAt: Date,
+  refundedAt: Date,
+  metadata: mongoose.Schema.Types.Mixed
+});
+
+let Subscription, Invoice;
+try {
+  Subscription = mongoose.model('Subscription', subscriptionSchema);
+} catch {
+  Subscription = mongoose.model('Subscription');
+}
+
+try {
+  Invoice = mongoose.model('Invoice', subscriptionSchema2);
+} catch {
+  Invoice = mongoose.model('Invoice');
+}
+
+const TIER_PRICES = {
+  free: { monthly: 0, annual: 0 },
+  premium: { monthly: 99, annual: 990 },
+  gold: { monthly: 199, annual: 1990 },
+  platinum: { monthly: 299, annual: 2990 }
+};
+
+router.post('/subscribe', verifyToken, async (req, res) => {
+  try {
+    const { tier, billingCycle = 'monthly', paymentMethodId } = req.body;
+
+    if (!TIER_PRICES[tier]) {
+      return res.status(400).json({ error: 'Invalid tier' });
+    }
+
+    const userId = new mongoose.Types.ObjectId(req.userId);
+    const existing = await Subscription.findOne({ userId, status: 'active' });
+
+    if (existing && existing.tier === tier) {
+      return res.status(400).json({ error: 'Already subscribed to this tier' });
+    }
+
+    if (existing) {
+      await Subscription.updateOne(
+        { _id: existing._id },
+        { status: 'cancelled', cancellationDate: new Date() }
+      );
+    }
+
+    const amount = TIER_PRICES[tier][billingCycle];
+    const renewalDate = new Date();
+    if (billingCycle === 'monthly') {
+      renewalDate.setMonth(renewalDate.getMonth() + 1);
+    } else {
+      renewalDate.setFullYear(renewalDate.getFullYear() + 1);
+    }
+
+    const subscription = new Subscription({
+      userId,
+      tier,
+      status: 'active',
+      billingCycle,
+      amount,
+      renewalDate,
+      paymentMethod: paymentMethodId
+    });
+
+    await subscription.save();
+
+    const invoice = new Invoice({
+      userId,
+      paymentId: subscription._id,
+      amount,
+      currency: 'ZAR',
+      method: paymentMethodId || 'stripe',
+      status: 'completed',
+      transactionId: `sub_${subscription._id}_${Date.now()}`,
+      completedAt: new Date(),
+      metadata: {
+        tier,
+        billingCycle,
+        subscriptionId: subscription._id,
+        type: 'subscription'
+      }
+    });
+
+    await invoice.save();
+
+    res.json({
+      success: true,
+      subscription: {
+        id: subscription._id,
+        tier: subscription.tier,
+        status: subscription.status,
+        amount: subscription.amount,
+        billingCycle: subscription.billingCycle,
+        renewalDate: subscription.renewalDate
+      },
+      invoice: {
+        id: invoice._id,
+        transactionId: invoice.transactionId
+      }
+    });
+  } catch (error) {
+    console.error('Subscribe error:', error);
+    res.status(500).json({ error: 'Subscription failed' });
+  }
+});
+
+router.get('/current', verifyToken, async (req, res) => {
+  try {
+    const userId = new mongoose.Types.ObjectId(req.userId);
+    const subscription = await Subscription.findOne({ userId, status: 'active' }).lean();
+
+    res.json(subscription || { tier: 'free', status: 'inactive' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch subscription' });
+  }
+});
+
+router.post('/cancel', verifyToken, async (req, res) => {
+  try {
+    const { reason } = req.body;
+    const userId = new mongoose.Types.ObjectId(req.userId);
+
+    const subscription = await Subscription.findOne({ userId, status: 'active' });
+
+    if (!subscription) {
+      return res.status(404).json({ error: 'No active subscription' });
+    }
+
+    await Subscription.updateOne(
+      { _id: subscription._id },
+      {
+        status: 'cancelled',
+        cancellationDate: new Date(),
+        cancellationReason: reason
+      }
+    );
+
+    res.json({ success: true, message: 'Subscription cancelled' });
+  } catch (error) {
+    console.error('Cancel error:', error);
+    res.status(500).json({ error: 'Cancellation failed' });
+  }
+});
+
+router.post('/upgrade', verifyToken, async (req, res) => {
+  try {
+    const { newTier } = req.body;
+    const userId = new mongoose.Types.ObjectId(req.userId);
+
+    if (!TIER_PRICES[newTier]) {
+      return res.status(400).json({ error: 'Invalid tier' });
+    }
+
+    const subscription = await Subscription.findOne({ userId, status: 'active' });
+
+    if (!subscription) {
+      return res.status(404).json({ error: 'No active subscription' });
+    }
+
+    const oldPrice = TIER_PRICES[subscription.tier][subscription.billingCycle];
+    const newPrice = TIER_PRICES[newTier][subscription.billingCycle];
+
+    if (newPrice <= oldPrice) {
+      return res.status(400).json({ error: 'Can only upgrade to higher tier' });
+    }
+
+    await Subscription.updateOne(
+      { _id: subscription._id },
+      { tier: newTier, amount: newPrice }
+    );
+
+    res.json({
+      success: true,
+      proratedAmount: newPrice - oldPrice,
+      message: 'Subscription upgraded'
+    });
+  } catch (error) {
+    console.error('Upgrade error:', error);
+    res.status(500).json({ error: 'Upgrade failed' });
+  }
+});
+
+router.post('/downgrade', verifyToken, async (req, res) => {
+  try {
+    const { newTier } = req.body;
+    const userId = new mongoose.Types.ObjectId(req.userId);
+
+    if (!TIER_PRICES[newTier]) {
+      return res.status(400).json({ error: 'Invalid tier' });
+    }
+
+    const subscription = await Subscription.findOne({ userId, status: 'active' });
+
+    if (!subscription) {
+      return res.status(404).json({ error: 'No active subscription' });
+    }
+
+    await Subscription.updateOne(
+      { _id: subscription._id },
+      { tier: newTier, amount: TIER_PRICES[newTier][subscription.billingCycle] }
+    );
+
+    res.json({ success: true, message: 'Subscription downgraded (effective next renewal)' });
+  } catch (error) {
+    console.error('Downgrade error:', error);
+    res.status(500).json({ error: 'Downgrade failed' });
+  }
+});
+
+router.get('/invoices', verifyToken, async (req, res) => {
+  try {
+    const userId = new mongoose.Types.ObjectId(req.userId);
+    const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+    const skip = parseInt(req.query.skip) || 0;
+
+    const invoices = await Invoice.find({ userId, status: 'completed' })
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .skip(skip)
+      .lean();
+
+    const total = await Invoice.countDocuments({ userId, status: 'completed' });
+
+    res.json({ invoices, total, limit, skip });
+  } catch (error) {
+    console.error('Invoices error:', error);
+    res.status(500).json({ error: 'Failed to fetch invoices' });
+  }
+});
+
+router.post('/refund', verifyToken, async (req, res) => {
+  try {
+    const { invoiceId, reason } = req.body;
+    const userId = new mongoose.Types.ObjectId(req.userId);
+
+    if (!mongoose.Types.ObjectId.isValid(invoiceId)) {
+      return res.status(400).json({ error: 'Invalid invoice ID' });
+    }
+
+    const invoice = await Invoice.findById(invoiceId);
+
+    if (!invoice || invoice.userId.toString() !== userId.toString()) {
+      return res.status(404).json({ error: 'Invoice not found' });
+    }
+
+    if (invoice.status !== 'completed') {
+      return res.status(400).json({ error: 'Can only refund completed payments' });
+    }
+
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    if (invoice.completedAt < thirtyDaysAgo) {
+      return res.status(400).json({ error: 'Refund window expired (30 days)' });
+    }
+
+    await Invoice.updateOne(
+      { _id: invoiceId },
+      {
+        status: 'refunded',
+        refundedAt: new Date(),
+        metadata: { ...invoice.metadata, refundReason: reason }
+      }
+    );
+
+    res.json({ success: true, refundAmount: invoice.amount });
+  } catch (error) {
+    console.error('Refund error:', error);
+    res.status(500).json({ error: 'Refund failed' });
+  }
+});
+
+export default router;

@@ -1,0 +1,172 @@
+﻿import express from 'express';
+import mongoose from 'mongoose';
+import { verifyToken } from './auth.js';
+
+const router = express.Router();
+
+// Match schema
+const matchSchema = new mongoose.Schema({
+  userId: String,
+  targetUserId: String,
+  action: { type: String, enum: ['like', 'pass'] },
+  timestamp: { type: Date, default: Date.now }
+});
+
+// Mutual match schema
+const mutualMatchSchema = new mongoose.Schema({
+  userId1: String,
+  userId2: String,
+  matchedAt: { type: Date, default: Date.now }
+});
+
+let UserMatch, MutualMatch, User;
+
+try {
+  UserMatch = mongoose.model('UserMatch', matchSchema);
+} catch {
+  UserMatch = mongoose.model('UserMatch');
+}
+
+try {
+  MutualMatch = mongoose.model('MutualMatch', mutualMatchSchema);
+} catch {
+  MutualMatch = mongoose.model('MutualMatch');
+}
+
+try {
+  User = mongoose.model('User');
+} catch {
+  console.error('User model not found');
+}
+
+// Get potential matches
+router.get('/potential', verifyToken, async (req, res) => {
+  try {
+    const currentUser = await User.findById(req.userId);
+    if (!currentUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Get already acted on users
+    const acted = await UserMatch.find({ userId: req.userId }).select('targetUserId');
+    const actedIds = acted.map(m => m.targetUserId);
+
+    // Get mutual matches
+    const mutual = await MutualMatch.find({
+      $or: [{ userId1: req.userId }, { userId2: req.userId }]
+    });
+    const mutualIds = mutual.map(m => 
+      m.userId1 === req.userId ? m.userId2 : m.userId1
+    );
+
+    // Find potential matches
+    const potentialMatches = await User.find({
+      _id: { 
+        $nin: [req.userId, ...actedIds.map(id => mongoose.Types.ObjectId.isValid(id) ? id : null).filter(Boolean), ...mutualIds] 
+      },
+      gender: currentUser.gender === 'male' ? 'female' : 'male'
+    })
+      .select('-password')
+      .limit(10)
+      .lean();
+
+    res.json(potentialMatches);
+  } catch (error) {
+    console.error('Potential matches error:', error);
+    res.status(500).json({ error: 'Failed to fetch matches' });
+  }
+});
+
+// Like a user
+router.post('/like', verifyToken, async (req, res) => {
+  try {
+    const { targetUserId } = req.body;
+
+    if (!targetUserId) {
+      return res.status(400).json({ error: 'targetUserId required' });
+    }
+
+    // Save the like
+    await UserMatch.create({
+      userId: req.userId,
+      targetUserId,
+      action: 'like'
+    });
+
+    // Check if target also liked current user
+    const targetLike = await UserMatch.findOne({
+      userId: targetUserId,
+      targetUserId: req.userId,
+      action: 'like'
+    });
+
+    if (targetLike) {
+      // Create mutual match
+      await MutualMatch.create({
+        userId1: req.userId,
+        userId2: targetUserId
+      });
+
+      return res.json({
+        success: true,
+        mutualMatch: true,
+        message: 'It\'s a match!'
+      });
+    }
+
+    res.json({
+      success: true,
+      mutualMatch: false,
+      message: 'Like recorded'
+    });
+  } catch (error) {
+    console.error('Like error:', error);
+    res.status(500).json({ error: 'Failed to record like' });
+  }
+});
+
+// Pass on a user
+router.post('/pass', verifyToken, async (req, res) => {
+  try {
+    const { targetUserId } = req.body;
+
+    if (!targetUserId) {
+      return res.status(400).json({ error: 'targetUserId required' });
+    }
+
+    await UserMatch.create({
+      userId: req.userId,
+      targetUserId,
+      action: 'pass'
+    });
+
+    res.json({ success: true, message: 'Pass recorded' });
+  } catch (error) {
+    console.error('Pass error:', error);
+    res.status(500).json({ error: 'Failed to record pass' });
+  }
+});
+
+// Get matches (mutual matches)
+router.get('/matches', verifyToken, async (req, res) => {
+  try {
+    const matches = await MutualMatch.find({
+      $or: [{ userId1: req.userId }, { userId2: req.userId }]
+    });
+
+    const matchIds = matches.map(m => 
+      m.userId1 === req.userId ? m.userId2 : m.userId1
+    );
+
+    const matchedUsers = await User.find({ 
+      _id: { $in: matchIds } 
+    }).select('-password').lean();
+
+    res.json(matchedUsers);
+  } catch (error) {
+    console.error('Get matches error:', error);
+    res.status(500).json({ error: 'Failed to fetch matches' });
+  }
+});
+
+export default router;

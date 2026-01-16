@@ -1,0 +1,147 @@
+﻿@echo off
+REM Meengle Web App Build Script for Windows
+REM This script builds the web app for deployment and APK generation
+
+setlocal enabledelayedexpansion
+
+echo ======================================
+echo MEENGLE WEB APP BUILD SCRIPT
+echo ======================================
+echo.
+
+REM Check if Node.js is installed
+where node >nul 2>nul
+if errorlevel 1 (
+    echo [ERROR] Node.js is not installed. Please install it first.
+    exit /b 1
+)
+
+echo Node.js version:
+node --version
+echo.
+
+REM Check if npm is installed
+where npm >nul 2>nul
+if errorlevel 1 (
+    echo [ERROR] npm is not installed. Please install it first.
+    exit /b 1
+)
+
+echo npm version:
+npm --version
+echo.
+
+REM Install dependencies
+echo [*] Installing dependencies...
+cd frontend
+call npm install
+if errorlevel 1 (
+    echo [ERROR] Failed to install dependencies
+    exit /b 1
+)
+cd ..
+echo [OK] Dependencies installed
+echo.
+
+REM Build frontend assets
+echo [*] Building frontend assets...
+cd frontend
+call npm run build
+if errorlevel 1 (
+    echo [ERROR] Build failed
+    exit /b 1
+)
+cd ..
+echo [OK] Frontend assets built
+echo.
+
+REM Create dist directory structure
+echo [*] Creating distribution structure...
+if not exist "dist" mkdir dist
+if not exist "dist\assets" mkdir dist\assets
+if not exist "dist\assets\css" mkdir dist\assets\css
+if not exist "dist\assets\js" mkdir dist\assets\js
+if not exist "dist\assets\icons" mkdir dist\assets\icons
+if not exist "dist\assets\images" mkdir dist\assets\images
+if not exist "dist\pages" mkdir dist\pages
+
+REM Copy HTML files
+echo [*] Copying HTML files...
+copy frontend\index.html dist\ >nul
+for %%f in (frontend\pages\*.html) do copy "%%f" dist\pages\ >nul
+copy frontend\manifest.json dist\ >nul
+copy frontend\service-worker.js dist\ >nul
+
+REM Copy assets
+echo [*] Copying CSS files...
+xcopy /E /I /Y frontend\assets\css\* dist\assets\css\ >nul
+
+echo [*] Copying JavaScript files...
+xcopy /E /I /Y frontend\assets\js\* dist\assets\js\ >nul
+
+REM Copy images if they exist
+if exist "frontend\assets\images" (
+    echo [*] Copying images...
+    xcopy /E /I /Y frontend\assets\images\* dist\assets\images\ >nul
+)
+
+REM Copy icons if they exist
+if exist "frontend\assets\icons" (
+    echo [*] Copying icons...
+    xcopy /E /I /Y frontend\assets\icons\* dist\assets\icons\ >nul
+)
+
+echo [OK] Distribution files copied
+echo.
+
+REM Validate build
+echo [*] Validating build...
+if exist "dist\index.html" (
+    if exist "dist\manifest.json" (
+        if exist "dist\service-worker.js" (
+            echo [OK] Build validation passed
+        ) else (
+            echo [ERROR] service-worker.js not found
+            exit /b 1
+        )
+    ) else (
+        echo [ERROR] manifest.json not found
+        exit /b 1
+    )
+) else (
+    echo [ERROR] index.html not found
+    exit /b 1
+)
+
+echo.
+echo ======================================
+echo [OK] BUILD COMPLETE
+echo ======================================
+echo.
+
+echo Distribution folder: dist\
+echo Ready for:
+echo   - Web deployment (copy dist\ to server)
+echo   - Capacitor/APK build (use dist as webDir)
+echo   - Mobile app build
+echo.
+
+REM Optional: Display build size
+for /f "tokens=*" %%A in ('dir /s /b dist | find /v /c ""') do set filecount=%%A
+echo Build contains %filecount% files
+echo.
+
+echo Next steps:
+echo 1. For Capacitor APK build:
+echo    npx cap sync
+echo    npx cap build android
+echo.
+echo 2. For web deployment:
+echo    Upload 'dist\' folder to your server
+echo.
+echo 3. For testing:
+echo    npm install -g http-server
+echo    http-server dist\
+echo.
+
+pause

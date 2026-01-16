@@ -1,0 +1,71 @@
+﻿const mongoose = require('mongoose');
+
+const userSchema = new mongoose.Schema({
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    name: { type: String },
+    age: { type: Number },
+    gender: { type: String },
+    preferences: {
+        gender: { type: String },
+        ageRange: {
+            min: { type: Number },
+            max: { type: Number }
+        }
+    },
+    images: [String],
+    bio: { type: String },
+    subscriptionTier: { type: String, enum: ['free', 'premium', 'diamond'], default: 'free' },
+    subscriptionExpires: { type: Date },
+    genderPreference: { type: String, enum: ['Male', 'Female', 'Non-binary', 'Other', 'Any'], default: 'Any' },
+    ageRange: {
+        min: { type: Number, default: 18 },
+        max: { type: Number, default: 99 }
+    },
+    location: {
+        type: { type: String, enum: ['Point'], default: 'Point' },
+        coordinates: { type: [Number], index: '2dsphere' }
+    },
+    interests: [String],
+    isLitTonight: { type: Boolean, default: false },
+    isLitConstant: { type: Boolean, default: false },
+    isInMasquerade: { type: Boolean, default: false },
+    masqueradeAlias: { type: String },
+    likes: [{
+        user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        context: { type: String, enum: ['regular', 'lit-tonight', 'lit-constant'], default: 'regular' }
+    }],
+    matches: [{
+        user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        context: { type: String, enum: ['regular', 'lit-tonight', 'lit-constant'], default: 'regular' }
+    }],
+    blocked: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    twoTruthsAndALie: {
+        truth1: { type: String, trim: true, maxlength: 150 },
+        truth2: { type: String, trim: true, maxlength: 150 },
+        lie: { type: String, trim: true, maxlength: 150 }
+    },
+    prompts: [{
+        promptText: { type: String },
+        responseUrl: { type: String },
+        responseType: { type: String, enum: ['audio', 'video'] }
+    }],
+    checkInStreak: { type: Number, default: 0 },
+    badges: [{ type: String }],
+    isDiamondVerified: { type: Boolean, default: false },
+    profileTheme: { type: String, default: 'default' },
+    lastBoosted: { type: Date },
+    profileViews: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    wingman: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    wingmanRequests: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }],
+    passwordResetToken: String,
+    passwordResetExpires: Date
+});
+
+module.exports = mongoose.model('User', userSchema);

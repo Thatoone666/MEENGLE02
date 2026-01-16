@@ -1,0 +1,49 @@
+﻿import express from 'express';
+import { verifyToken } from './auth.js';
+import mongoose from 'mongoose';
+
+const router = express.Router();
+
+const mediaSchema = new mongoose.Schema({
+  userId: String,
+  filename: String,
+  url: String,
+  type: String,
+  size: Number,
+  uploadedAt: { type: Date, default: Date.now }
+});
+
+let Media;
+try {
+  Media = mongoose.model('Media', mediaSchema);
+} catch {
+  Media = mongoose.model('Media');
+}
+
+router.post('/upload', verifyToken, async (req, res) => {
+  try {
+    const { filename, url, type, size } = req.body;
+    const media = new Media({
+      userId: req.userId,
+      filename,
+      url,
+      type,
+      size
+    });
+    await media.save();
+    res.json({ success: true, media });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to upload media' });
+  }
+});
+
+router.get('/my-files', verifyToken, async (req, res) => {
+  try {
+    const media = await Media.find({ userId: req.userId });
+    res.json(media);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch files' });
+  }
+});
+
+export default router;

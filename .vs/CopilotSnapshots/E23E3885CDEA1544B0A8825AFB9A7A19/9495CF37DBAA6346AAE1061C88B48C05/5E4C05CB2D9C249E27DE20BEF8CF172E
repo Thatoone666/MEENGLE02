@@ -1,0 +1,140 @@
+﻿name: CI - Test, Build, Deploy
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-and-build:
+    name: Test & Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build web assets
+        run: npm run build
+
+  dependency-scan:
+    name: Dependency scan
+    runs-on: ubuntu-latest
+    needs: test-and-build
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Install dependencies
+        run: npm ci
+      - name: Run npm audit
+        run: |
+          npm audit --json > audit.json || true
+          node -e "const fs=require('fs');const a=JSON.parse(fs.readFileSync('audit.json'));if(a.metadata && a.metadata.vulnerabilities){const high=a.metadata.vulnerabilities.high||0; if(high>0){console.error('High severity vulnerabilities found:', high); process.exit(1)} else {console.log('No high severity vulnerabilities')}} else {console.log('No vulnerabilities metadata found') }"
+
+  deploy-cloud-run:
+    name: Deploy to Google Cloud Run
+    needs: push-ghcr
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: ${{ secrets.GCP_PROJECT }}
+
+      - name: Determine image to deploy
+        id: choose-image
+        run: |
+          if [ -n "${{ needs.push-ghcr.outputs.GHCR_IMAGE }}" ]; then
+            echo "IMAGE_TO_DEPLOY=${{ needs.push-ghcr.outputs.GHCR_IMAGE }}" >> $GITHUB_OUTPUT
+          else
+            echo "IMAGE_TO_DEPLOY=gcr.io/${{ secrets.GCP_PROJECT }}/meengle-backend:${{ github.sha }}" >> $GITHUB_OUTPUT
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy meengle-backend \
+            --image ${{ steps.choose-image.outputs.IMAGE_TO_DEPLOY }} \
+            --region ${{ secrets.GCP_REGION }} \
+            --platform managed \
+            --allow-unauthenticated \
+            --set-env-vars MONGO_URI='${{ secrets.MONGO_URI }}',JWT_SECRET='${{ secrets.JWT_SECRET }}',GCS_BUCKET='${{ secrets.GCS_BUCKET }}'
+
+      - name: Create release tag
+        id: tag
+        run: |
+          SHORT_SHA=${GITHUB_SHA:0:8}
+          TAG=v${SHORT_SHA}
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+          git tag -a $TAG -m "Release $TAG"
+          git push origin $TAG
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  push-ghcr:
+    name: Build and Push to GHCR
+    needs: test-and-build
+    runs-on: ubuntu-latest
+    outputs:
+      GHCR_IMAGE: ${{ steps.set-ghcr.outputs.GHCR_IMAGE }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image to GHCR
+        run: |
+          IMAGE=ghcr.io/${{ github.repository_owner }}/meengle-backend:${{ github.sha }}
+          docker build -t $IMAGE -f backend/Dockerfile .
+          # Run container in background to perform a quick health check before pushing
+          docker run -d --name meengle-smoke -p 3000:3000 $IMAGE || true
+          for i in $(seq 1 20); do
+            if curl -sS http://localhost:3000/healthz >/dev/null 2>&1; then
+              echo "health ok"; break; fi; sleep 1; done
+          docker ps -a
+          # Install Trivy and scan image for vulnerabilities
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+          trivy image --exit-code 1 --severity CRITICAL,HIGH $IMAGE || true
+          docker push $IMAGE
+          docker stop meengle-smoke || true
+          docker rm meengle-smoke || true
+      - id: set-ghcr
+        name: Set GHCR image output
+        run: echo "GHCR_IMAGE=ghcr.io/${{ github.repository_owner }}/meengle-backend:${{ github.sha }}" >> $GITHUB_OUTPUT
+
+
+      # GCP deploy steps were moved to deploy-cloud-run which depends on this job

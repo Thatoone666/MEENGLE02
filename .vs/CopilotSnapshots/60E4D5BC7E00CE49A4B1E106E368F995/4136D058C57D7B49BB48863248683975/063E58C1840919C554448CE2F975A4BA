@@ -1,0 +1,749 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Meengle</title>
+  <link rel="stylesheet" href="/assets/css/main.css">
+  <style>
+    .dashboard-container {
+      display: flex;
+      height: 100vh;
+      background: #fff;
+    }
+
+    .sidebar {
+      width: 250px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid #ddd;
+    }
+
+    .sidebar-header {
+      margin-bottom: 30px;
+      text-align: center;
+    }
+
+    .sidebar-header h2 {
+      margin: 0;
+      font-size: 24px;
+      color: white;
+    }
+
+    .sidebar-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex: 1;
+    }
+
+    .sidebar-nav button {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: none;
+      padding: 12px 15px;
+      border-radius: 6px;
+      cursor: pointer;
+      text-align: left;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.3s;
+    }
+
+    .sidebar-nav button:hover,
+    .sidebar-nav button.active {
+      background: rgba(255, 255, 255, 0.3);
+      transform: translateX(5px);
+    }
+
+    .sidebar-footer {
+      display: flex;
+      gap: 10px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .sidebar-footer button {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .header {
+      background: white;
+      border-bottom: 1px solid #eee;
+      padding: 15px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .search-bar {
+      display: flex;
+      gap: 10px;
+      flex: 1;
+    }
+
+    .search-bar input {
+      padding: 8px 15px;
+      border: 1px solid #ddd;
+      border-radius: 20px;
+      flex: 1;
+      max-width: 300px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .notification-icon,
+    .profile-icon {
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 30px;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Discover Tab */
+    .card-stack {
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .profile-card {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+      cursor: grab;
+    }
+
+    .profile-card:active {
+      cursor: grabbing;
+    }
+
+    .profile-image {
+      width: 100%;
+      height: 400px;
+      background: #f0f0f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 100px;
+      overflow: hidden;
+    }
+
+    .profile-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .profile-info {
+      padding: 20px;
+    }
+
+    .profile-name {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .profile-meta {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+
+    .profile-bio {
+      color: #555;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 10px;
+      padding: 20px;
+      border-top: 1px solid #eee;
+    }
+
+    .card-actions button {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .btn-pass {
+      background: #f0f0f0;
+      color: #333;
+    }
+
+    .btn-pass:hover {
+      background: #e0e0e0;
+    }
+
+    .btn-like {
+      background: #ff4458;
+      color: white;
+    }
+
+    .btn-like:hover {
+      background: #e63946;
+      transform: scale(1.05);
+    }
+
+    /* Matches Grid */
+    .matches-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 20px;
+      max-width: 1200px;
+    }
+
+    .match-card {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      cursor: pointer;
+      transition: transform 0.3s;
+    }
+
+    .match-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    }
+
+    .match-avatar {
+      width: 100%;
+      height: 250px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 80px;
+    }
+
+    .match-name {
+      padding: 15px;
+      font-weight: 600;
+      font-size: 16px;
+    }
+
+    /* Messages */
+    .messages-container {
+      display: flex;
+      gap: 20px;
+      max-width: 1200px;
+      height: 600px;
+    }
+
+    .message-list {
+      flex: 0 0 250px;
+      border: 1px solid #eee;
+      border-radius: 12px;
+      overflow-y: auto;
+    }
+
+    .message-item {
+      padding: 15px;
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .message-item:hover {
+      background: #f9f9f9;
+    }
+
+    .message-item.active {
+      background: #f0f0f0;
+    }
+
+    .message-name {
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 3px;
+    }
+
+    .message-preview {
+      font-size: 12px;
+      color: #999;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .chat-window {
+      flex: 1;
+      border: 1px solid #eee;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chat-header {
+      padding: 15px;
+      border-bottom: 1px solid #eee;
+      font-weight: 600;
+    }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .message {
+      padding: 10px 15px;
+      border-radius: 10px;
+      max-width: 70%;
+      word-wrap: break-word;
+    }
+
+    .message.sent {
+      align-self: flex-end;
+      background: #667eea;
+      color: white;
+    }
+
+    .message.received {
+      align-self: flex-start;
+      background: #f0f0f0;
+      color: #333;
+    }
+
+    .chat-input {
+      padding: 15px;
+      border-top: 1px solid #eee;
+      display: flex;
+      gap: 10px;
+    }
+
+    .chat-input input {
+      flex: 1;
+      padding: 10px 15px;
+      border: 1px solid #ddd;
+      border-radius: 20px;
+      font-size: 14px;
+    }
+
+    .chat-input button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    /* Empty States */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #999;
+    }
+
+    .empty-state-icon {
+      font-size: 60px;
+      margin-bottom: 20px;
+    }
+
+    .empty-state h3 {
+      color: #666;
+      margin-bottom: 10px;
+    }
+
+    @media (max-width: 768px) {
+      .dashboard-container {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        width: 100%;
+        flex-direction: row;
+        height: auto;
+      }
+
+      .sidebar-nav {
+        flex-direction: row;
+        flex: 1;
+      }
+
+      .matches-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      }
+
+      .messages-container {
+        flex-direction: column;
+        height: auto;
+      }
+
+      .message-list {
+        flex: none;
+        height: 200px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard-container">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>?? Meengle</h2>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button class="nav-btn active" data-tab="discover">
+          ?? Discover
+        </button>
+        <button class="nav-btn" data-tab="matches">
+          ?? Matches
+        </button>
+        <button class="nav-btn" data-tab="messages">
+          ?? Messages
+        </button>
+        <button class="nav-btn" data-tab="profile">
+          ?? Profile
+        </button>
+        <button class="nav-btn" data-tab="settings">
+          ?? Settings
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button onclick="upgradeProfile()">? Upgrade</button>
+        <button onclick="logout()">?? Logout</button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Header -->
+      <header class="header">
+        <div class="header-left">
+          <div class="search-bar">
+            <input type="text" placeholder="Search...">
+          </div>
+        </div>
+        <div class="header-right">
+          <span class="notification-icon" onclick="showNotifications()">??</span>
+          <span class="profile-icon" onclick="showProfile()">??</span>
+        </div>
+      </header>
+
+      <!-- Content Area -->
+      <div class="content">
+        
+        <!-- DISCOVER TAB -->
+        <div id="discover" class="tab-content active">
+          <h1>Discover</h1>
+          <div class="card-stack" id="card-stack">
+            <!-- Profile cards will be loaded here -->
+          </div>
+        </div>
+
+        <!-- MATCHES TAB -->
+        <div id="matches" class="tab-content">
+          <h1>Your Matches</h1>
+          <div class="matches-grid" id="matches-grid">
+            <!-- Matches will be loaded here -->
+          </div>
+        </div>
+
+        <!-- MESSAGES TAB -->
+        <div id="messages" class="tab-content">
+          <h1>Messages</h1>
+          <div class="messages-container">
+            <div class="message-list" id="message-list">
+              <!-- Conversation list will be loaded here -->
+            </div>
+            <div class="chat-window">
+              <div class="chat-header" id="chat-header">Select a conversation</div>
+              <div class="chat-messages" id="chat-messages">
+                <div class="empty-state">
+                  <div class="empty-state-icon">??</div>
+                  <h3>No conversation selected</h3>
+                  <p>Select a conversation from the list to start chatting</p>
+                </div>
+              </div>
+              <div class="chat-input">
+                <input type="text" id="message-input" placeholder="Type a message...">
+                <button onclick="sendMessage()">Send</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PROFILE TAB -->
+        <div id="profile" class="tab-content">
+          <h1>Your Profile</h1>
+          <div style="max-width: 600px;">
+            <div style="background: white; padding: 30px; border-radius: 12px;">
+              <div style="width: 120px; height: 120px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; font-size: 60px;">
+                ??
+              </div>
+              <div id="profile-content">
+                <!-- Profile info loaded here -->
+              </div>
+              <button class="btn btn-primary" style="width: 100%; margin-top: 20px;" onclick="editProfile()">
+                ?? Edit Profile
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- SETTINGS TAB -->
+        <div id="settings" class="tab-content">
+          <h1>Settings</h1>
+          <div style="max-width: 600px;">
+            <div style="background: white; padding: 30px; border-radius: 12px;">
+              <h3>Preferences</h3>
+              <label style="display: block; margin-bottom: 15px;">
+                <input type="checkbox" checked> Push Notifications
+              </label>
+              <label style="display: block; margin-bottom: 15px;">
+                <input type="checkbox" checked> Email Updates
+              </label>
+              <label style="display: block; margin-bottom: 15px;">
+                <input type="checkbox"> Show Online Status
+              </label>
+              
+              <h3 style="margin-top: 30px;">Account</h3>
+              <button class="btn btn-secondary" style="width: 100%; margin-bottom: 10px;">Change Password</button>
+              <button class="btn btn-secondary" style="width: 100%; margin-bottom: 10px;">Delete Account</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <script src="/assets/js/utils.js"></script>
+  <script src="/assets/js/api-client.js"></script>
+  <script src="/assets/js/realtime-client.js"></script>
+  <script src="/assets/js/store.js"></script>
+  <script src="/assets/js/auth-guard.js"></script>
+  <script src="/assets/js/modal.js"></script>
+  <script src="/assets/js/notifications.js"></script>
+
+  <script>
+    // Tab navigation
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        
+        e.target.classList.add('active');
+        const tabId = e.target.dataset.tab;
+        document.getElementById(tabId).classList.add('active');
+        
+        // Load tab content
+        loadTabContent(tabId);
+      });
+    });
+
+    // Load profile card
+    async function loadProfileCard() {
+      try {
+        const matches = await window.apiClient.getPotentialMatches();
+        const stack = document.getElementById('card-stack');
+        stack.innerHTML = '';
+        
+        if (matches && matches.length > 0) {
+          const user = matches[0];
+          const card = document.createElement('div');
+          card.className = 'profile-card';
+          card.innerHTML = `
+            <div class="profile-image">
+              ${user.avatar ? `<img src="${user.avatar}" alt="${user.name}">` : '??'}
+            </div>
+            <div class="profile-info">
+              <div class="profile-name">${user.name}, ${user.age || 'N/A'}</div>
+              <div class="profile-meta">${user.location || 'Unknown location'}</div>
+              <div class="profile-bio">${user.bio || 'No bio yet'}</div>
+            </div>
+            <div class="card-actions">
+              <button class="btn-pass" onclick="passUser('${user.id}')">Pass ?</button>
+              <button class="btn-like" onclick="likeUser('${user.id}')">Like ??</button>
+            </div>
+          `;
+          stack.appendChild(card);
+        } else {
+          stack.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-icon">??</div>
+              <h3>You're all caught up!</h3>
+              <p>Check back later for more profiles</p>
+            </div>
+          `;
+        }
+      } catch (error) {
+        console.error('Failed to load profiles:', error);
+      }
+    }
+
+    // Load matches
+    async function loadMatches() {
+      try {
+        const matches = await window.apiClient.getMatches();
+        const grid = document.getElementById('matches-grid');
+        grid.innerHTML = '';
+        
+        if (matches && matches.length > 0) {
+          matches.forEach(match => {
+            const card = document.createElement('div');
+            card.className = 'match-card';
+            card.innerHTML = `
+              <div class="match-avatar">
+                ${match.avatar ? `<img src="${match.avatar}" style="width:100%; height:100%; object-fit:cover;">` : '??'}
+              </div>
+              <div class="match-name">${match.name}</div>
+            `;
+            card.onclick = () => openChat(match.id);
+            grid.appendChild(card);
+          });
+        } else {
+          grid.innerHTML = `
+            <div class="empty-state" style="grid-column: 1/-1;">
+              <div class="empty-state-icon">??</div>
+              <h3>No matches yet</h3>
+              <p>Keep swiping to find your match!</p>
+            </div>
+          `;
+        }
+      } catch (error) {
+        console.error('Failed to load matches:', error);
+      }
+    }
+
+    // Load tab content
+    function loadTabContent(tabId) {
+      if (tabId === 'discover') loadProfileCard();
+      if (tabId === 'matches') loadMatches();
+    }
+
+    // Actions
+    async function likeUser(userId) {
+      try {
+        await window.apiClient.likeUser(userId);
+        window.Toast?.success('You liked this profile!');
+        loadProfileCard();
+      } catch (error) {
+        window.Toast?.error('Failed to like profile');
+      }
+    }
+
+    async function passUser(userId) {
+      try {
+        await window.apiClient.passUser(userId);
+        loadProfileCard();
+      } catch (error) {
+        window.Toast?.error('Failed to pass profile');
+      }
+    }
+
+    function openChat(userId) {
+      // Open chat with user
+      console.log('Opening chat with:', userId);
+    }
+
+    function editProfile() {
+      window.location.href = '/pages/profile.html';
+    }
+
+    function upgradeProfile() {
+      window.Toast?.info('Coming soon!');
+    }
+
+    function showNotifications() {
+      window.Toast?.info('You have 0 new notifications');
+    }
+
+    function showProfile() {
+      alert('Profile settings');
+    }
+
+    function logout() {
+      if (confirm('Are you sure you want to logout?')) {
+        window.location.href = '/pages/login.html';
+      }
+    }
+
+    function sendMessage() {
+      const input = document.getElementById('message-input');
+      if (input.value.trim()) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'message sent';
+        msgDiv.textContent = input.value;
+        document.getElementById('chat-messages').appendChild(msgDiv);
+        input.value = '';
+      }
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      loadProfileCard();
+      
+      // Check auth
+      if (!window.AuthGuard?.isAuthenticated?.()) {
+        window.location.href = '/pages/login.html';
+      }
+    });
+
+    // Allow Enter key to send messages
+    document.getElementById('message-input')?.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') sendMessage();
+    });
+  </script>
+</body>
+</html>

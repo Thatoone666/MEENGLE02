@@ -1,0 +1,429 @@
+﻿import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/spotlight_provider.dart';
+import '../widgets/cards/spotlight_tier_card.dart';
+import '../animations/premium_animations.dart';
+
+class SpotlightScreen extends StatefulWidget {
+  const SpotlightScreen({Key? key}) : super(key: key);
+
+  @override
+  State<SpotlightScreen> createState() => _SpotlightScreenState();
+}
+
+class _SpotlightScreenState extends State<SpotlightScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _contentController;
+
+  @override
+  void initState() {
+    super.initState();
+    _contentController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<SpotlightProvider>().loadTiers();
+      _contentController.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _contentController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0F0F0F),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF1A1A1A),
+        title: const Text(
+          'Spotlight',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        centerTitle: true,
+        elevation: 0,
+      ),
+      body: Consumer<SpotlightProvider>(
+        builder: (context, provider, child) {
+          if (provider.isLoading) {
+            return const Center(
+              child: PremiumLoadingIndicator(
+                color: Color(0xFFD4AF37),
+              ),
+            );
+          }
+
+          return FadeTransition(
+            opacity: _contentController,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, 0.1),
+                end: Offset.zero,
+              ).animate(
+                CurvedAnimation(
+                  parent: _contentController,
+                  curve: Curves.easeOut,
+                ),
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    if (provider.activeSpotlight != null)
+                      ScaleTransition(
+                        scale: Tween<double>(begin: 0.8, end: 1)
+                            .animate(
+                          CurvedAnimation(
+                            parent: _contentController,
+                            curve: const Interval(0.0, 0.3, curve: Curves.elasticOut),
+                          ),
+                        ),
+                        child: Container(
+                          margin: const EdgeInsets.all(20),
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade900,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.green.shade700, width: 2),
+                            boxShadow: PremiumAnimations.premiumGlow(
+                              color: Colors.green.shade700,
+                              intensity: 0.5,
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      boxShadow: PremiumAnimations.premiumGlow(
+                                        color: Colors.yellow.shade600,
+                                        intensity: 0.5,
+                                      ),
+                                    ),
+                                    child: Icon(
+                                      Icons.star,
+                                      color: Colors.yellow.shade600,
+                                      size: 24,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  const Text(
+                                    'Active Spotlight',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: -0.3,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Your profile is getting extra visibility',
+                                style: TextStyle(
+                                  color: Colors.grey.shade300,
+                                  height: 1.5,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(6),
+                                child: LinearProgressIndicator(
+                                  value: 0.6,
+                                  backgroundColor: Colors.grey.shade800,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.amber.shade700,
+                                  ),
+                                  minHeight: 6,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 16,
+                      ),
+                      child: FadeTransition(
+                        opacity: Tween<double>(begin: 0, end: 1)
+                            .animate(
+                          CurvedAnimation(
+                            parent: _contentController,
+                            curve: const Interval(
+                              0.2,
+                              0.5,
+                              curve: Curves.easeOut,
+                            ),
+                          ),
+                        ),
+                        child: Text(
+                          'Available Boosts',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    for (int i = 0; i < provider.tiers.length; i++)
+                      FadeTransition(
+                        opacity: Tween<double>(begin: 0, end: 1)
+                            .animate(
+                          CurvedAnimation(
+                            parent: _contentController,
+                            curve: Interval(
+                              (0.3 + (i * 0.12)).clamp(0.0, 0.9),
+                              (0.3 + ((i + 1) * 0.12)).clamp(0.0, 1.0),
+                              curve: Curves.easeOut,
+                            ),
+                          ),
+                        ),
+                        child: ScaleTransition(
+                          scale: Tween<double>(begin: 0.8, end: 1)
+                              .animate(
+                            CurvedAnimation(
+                              parent: _contentController,
+                              curve: Interval(
+                                (0.3 + (i * 0.12)).clamp(0.0, 0.9),
+                                (0.3 + ((i + 1) * 0.12)).clamp(0.0, 1.0),
+                                curve: Curves.elasticOut,
+                              ),
+                            ),
+                          ),
+                          child: SpotlightTierCard(
+                            tier: provider.tiers[i],
+                            isActive: provider.activeSpotlight?.tier ==
+                                provider.tiers[i].name,
+                            onPurchase: () =>
+                                _purchaseSpotlight(context, provider.tiers[i]),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _purchaseSpotlight(BuildContext context, dynamic tier) {
+    showDialog(
+      context: context,
+      builder: (context) => ScaleTransition(
+        scale: Tween<double>(begin: 0.8, end: 1).animate(
+          CurvedAnimation(
+            parent: ModalRoute.of(context)?.animation ??
+                AlwaysStoppedAnimation(1),
+            curve: Curves.easeOut,
+          ),
+        ),
+        child: AlertDialog(
+          backgroundColor: const Color(0xFF1A1A1A),
+          title: const Text(
+            'Confirm Purchase',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          content: Text(
+            'Purchase ${tier.name} boost for \$${tier.price}?',
+            style: const TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            GlowingButton(
+              glowColor: Colors.amber.shade700,
+              onPressed: () {
+                context
+                    .read<SpotlightProvider>()
+                    .purchaseSpotlight(tier.name);
+                Navigator.pop(context);
+              },
+              child: const Text('Confirm'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class PremiumLoadingIndicator extends StatefulWidget {
+  final Color color;
+  final double size;
+
+  const PremiumLoadingIndicator({
+    this.color = const Color(0xFFFF6B9A),
+    this.size = 50,
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  State<PremiumLoadingIndicator> createState() =>
+      _PremiumLoadingIndicatorState();
+}
+
+class _PremiumLoadingIndicatorState extends State<PremiumLoadingIndicator>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _rotationController;
+  late AnimationController _pulseController;
+
+  @override
+  void initState() {
+    super.initState();
+    _rotationController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    )..repeat();
+
+    _pulseController = AnimationController(
+      duration: const Duration(seconds: 1),
+      vsync: this,
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _rotationController.dispose();
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: Tween<double>(begin: 0.8, end: 1.0).animate(
+        CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+      ),
+      child: RotationTransition(
+        turns: _rotationController,
+        child: Container(
+          width: widget.size,
+          height: widget.size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: PremiumAnimations.premiumGlow(
+              color: widget.color,
+              intensity: 0.7 + (_pulseController.value * 0.3),
+            ),
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: widget.size,
+                height: widget.size,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: widget.color.withAlpha(100),
+                    width: 2,
+                  ),
+                ),
+              ),
+              Container(
+                width: widget.size * 0.6,
+                height: widget.size * 0.6,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: widget.color.withAlpha(51),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class GlowingButton extends StatefulWidget {
+  final VoidCallback onPressed;
+  final Widget child;
+  final Color glowColor;
+
+  const GlowingButton({
+    required this.onPressed,
+    required this.child,
+    this.glowColor = const Color(0xFFFF6B9A),
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  State<GlowingButton> createState() => _GlowingButtonState();
+}
+
+class _GlowingButtonState extends State<GlowingButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _glowController;
+
+  @override
+  void initState() {
+    super.initState();
+    _glowController = AnimationController(
+      duration: PremiumAnimations.macroDuration,
+      vsync: this,
+    );
+  }
+
+  @override
+  void dispose() {
+    _glowController.dispose();
+    super.dispose();
+  }
+
+  void _onPressed() {
+    _glowController.forward().then((_) {
+      _glowController.reverse();
+    });
+    widget.onPressed();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: Tween<double>(begin: 1, end: 0.95).animate(
+        CurvedAnimation(parent: _glowController, curve: Curves.easeIn),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: PremiumAnimations.premiumGlow(
+            color: widget.glowColor,
+            intensity: 0.5 + (_glowController.value * 0.5),
+          ),
+        ),
+        child: ElevatedButton(
+          onPressed: _onPressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: widget.glowColor,
+            foregroundColor: Colors.black,
+            elevation: 8,
+          ),
+          child: widget.child,
+        ),
+      ),
+    );
+  }
+}

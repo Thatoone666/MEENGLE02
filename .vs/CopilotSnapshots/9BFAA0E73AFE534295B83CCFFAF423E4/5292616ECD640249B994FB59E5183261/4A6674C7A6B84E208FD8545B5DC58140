@@ -1,0 +1,35 @@
+﻿const request = require('supertest');
+const { expect } = require('chai');
+const helpers = require('./test-helpers');
+const User = require('../models/User');
+
+describe('Upload API', function() {
+  let app;
+  let token;
+  before(async function() {
+    this.timeout(10000);
+    const h = await helpers.start();
+    app = h.app;
+    // create and login user to get token
+    const user = new User({ email: 'upload@example.com', password: 'x' });
+    const bcrypt = require('bcryptjs');
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash('uploadpass', salt);
+    await user.save();
+    const res = await request(app).post('/api/login').send({ email: 'upload@example.com', password: 'uploadpass' });
+    token = res.body.token;
+  });
+  after(async function() {
+    this.timeout(10000);
+    await helpers.stop();
+  });
+
+  it('should upload a small image file', async function() {
+    const res = await request(app)
+      .post('/api/upload')
+      .set('Authorization', `Bearer ${token}`)
+      .attach('file', Buffer.from([0xff, 0xd8, 0xff]), 'test.jpg')
+      .expect(200);
+    expect(res.body).to.have.property('url');
+  });
+});

@@ -1,0 +1,271 @@
+﻿import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/discovery_provider.dart';
+
+class DiscoveryScreen extends StatefulWidget {
+  const DiscoveryScreen({super.key});
+
+  @override
+  State<DiscoveryScreen> createState() => _DiscoveryScreenState();
+}
+
+class _DiscoveryScreenState extends State<DiscoveryScreen> with TickerProviderStateMixin {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      if (mounted) {
+        final provider = context.read<DiscoveryProvider>();
+        provider.loadCandidates();
+        provider.getLikes();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0F0F0F),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF1A1A1A),
+        title: const Text('DISCOVER', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
+        centerTitle: true,
+        elevation: 0,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Consumer<DiscoveryProvider>(
+              builder: (context, provider, _) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.red, width: 1),
+                  ),
+                  child: Center(
+                    child: Row(
+                      children: [
+                        Icon(Icons.favorite, color: Colors.red, size: 14),
+                        const SizedBox(width: 4),
+                        Text('${provider.likeCount}', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+      body: Consumer<DiscoveryProvider>(
+        builder: (context, provider, _) {
+          if (provider.isLoading) {
+            return Center(child: CircularProgressIndicator(color: Colors.amber.shade700));
+          }
+
+          if (provider.candidates.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.people_outline, size: 64, color: Colors.amber.shade700),
+                  const SizedBox(height: 16),
+                  const Text('No more profiles', style: TextStyle(color: Colors.white70, fontSize: 16)),
+                  const SizedBox(height: 8),
+                  const Text('Check back soon!', style: TextStyle(color: Colors.white30, fontSize: 12)),
+                ],
+              ),
+            );
+          }
+
+          final candidate = provider.currentCandidate;
+          if (candidate == null) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('No more profiles', style: TextStyle(color: Colors.white, fontSize: 16)),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => provider.loadCandidates(),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.amber.shade700),
+                    child: const Text('Refresh', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Profile Card
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1A1A1A),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.amber.shade700, width: 2),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Header with name and age
+                        Container(
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[900],
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(14),
+                              topRight: Radius.circular(14),
+                            ),
+                          ),
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text('${candidate.name}, ${candidate.age}', style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                                      const SizedBox(height: 4),
+                                      Text('${candidate.distance}km away', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                                    ],
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: Colors.amber.shade700,
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text('${candidate.matchScore}% Match', style: const TextStyle(color: Colors.black, fontSize: 11, fontWeight: FontWeight.bold)),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('About', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 8),
+                              Text(candidate.bio, style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.5)),
+                              const SizedBox(height: 16),
+                              const Text('Why we matched', style: TextStyle(color: Colors.amber, fontSize: 12, fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 8),
+                              ...candidate.matchReasons.map((reason) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 6),
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.check_circle, color: Colors.amber.shade700, size: 14),
+                                      const SizedBox(width: 8),
+                                      Text(reason, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                                    ],
+                                  ),
+                                );
+                              }),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Action Buttons
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      // Pass Button
+                      GestureDetector(
+                        onTap: () => provider.pass(candidate.id),
+                        child: Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.grey[800],
+                            border: Border.all(color: Colors.white30, width: 2),
+                          ),
+                          child: const Icon(Icons.close, color: Colors.white, size: 28),
+                        ),
+                      ),
+
+                      // Super Like Button
+                      GestureDetector(
+                        onTap: () => provider.like(candidate.id),
+                        child: Container(
+                          width: 70,
+                          height: 70,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.blue[900],
+                            border: Border.all(color: Colors.blue, width: 2),
+                          ),
+                          child: const Icon(Icons.favorite, color: Colors.blue, size: 32),
+                        ),
+                      ),
+
+                      // Like Button
+                      GestureDetector(
+                        onTap: () => provider.like(candidate.id),
+                        child: Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.red[900],
+                            border: Border.all(color: Colors.red, width: 2),
+                          ),
+                          child: const Icon(Icons.favorite, color: Colors.red, size: 28),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Progress
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1A1A1A),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.white10, width: 1),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('1 / ${provider.candidates.length}', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: LinearProgressIndicator(
+                              value: provider.candidates.isNotEmpty ? 1 / provider.candidates.length : 0,
+                              backgroundColor: Colors.grey[800],
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.amber.shade700),
+                              minHeight: 4,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}

@@ -1,0 +1,72 @@
+﻿const express = require('express');
+const router = express.Router();
+const auth = require('../middleware/auth');
+const { Moment } = require('../models/featureModels');
+
+// Get active moments for user
+router.get('/', auth, async (req, res) => {
+  try {
+    const now = new Date();
+    
+    // Get active moments directed to this user, not expired
+    const moments = await Moment.find({
+      toUserId: req.user.id,
+      status: 'active',
+      expiresAt: { $gt: now },
+    }).sort({ createdAt: -1 });
+
+    res.json({ success: true, moments, count: moments.length });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Accept a moment
+router.post('/accept', auth, async (req, res) => {
+  try {
+    const { momentId } = req.body;
+    if (!momentId) {
+      return res.status(400).json({ success: false, error: 'momentId required' });
+    }
+
+    const moment = await Moment.findOneAndUpdate(
+      { id: momentId, toUserId: req.user.id },
+      { status: 'accepted', updatedAt: new Date() },
+      { new: true }
+    );
+
+    if (!moment) {
+      return res.status(404).json({ success: false, error: 'Moment not found' });
+    }
+
+    res.json({ success: true, moment });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Extend moment by 6 hours
+router.post('/:id/extend', auth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const moment = await Moment.findOne({ id });
+    if (!moment) {
+      return res.status(404).json({ success: false, error: 'Moment not found' });
+    }
+
+    if (moment.extensions >= moment.maxExtensions) {
+      return res.status(400).json({ success: false, error: 'Maximum extensions reached' });
+    }
+
+    moment.expiresAt = new Date(moment.expiresAt.getTime() + 6 * 60 * 60 * 1000);
+    moment.extensions += 1;
+    await moment.save();
+
+    res.json({ success: true, moment });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+module.exports = router;

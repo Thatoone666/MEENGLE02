@@ -1,0 +1,177 @@
+﻿#!/usr/bin/env node
+
+/**
+ * MEENGLE - LOCAL DEVELOPMENT SERVER
+ * Serves the frontend and proxies API requests to backend
+ */
+
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+const url = require('url');
+
+const PORT = process.env.PORT || 3000;
+const FRONTEND_DIR = path.join(__dirname, 'frontend');
+const API_URL = process.env.API_URL || 'http://localhost:3001';
+
+// MIME types
+const MIME_TYPES = {
+  '.html': 'text/html',
+  '.css': 'text/css',
+  '.js': 'application/javascript',
+  '.json': 'application/json',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2'
+};
+
+// Create server
+const server = http.createServer(async (req, res) => {
+  const parsedUrl = url.parse(req.url, true);
+  let pathname = parsedUrl.pathname;
+
+  console.log(`${req.method} ${pathname}`);
+
+  try {
+    // API proxy
+    if (pathname.startsWith('/api/')) {
+      return proxyToBackend(req, res, pathname);
+    }
+
+    // Static files
+    if (pathname === '/') {
+      pathname = '/index.html';
+    }
+
+    let filePath = path.join(FRONTEND_DIR, pathname);
+
+    // Security: prevent directory traversal
+    if (!filePath.startsWith(FRONTEND_DIR)) {
+      return send404(res);
+    }
+
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      // Try index.html for directories or missing files (SPA routing)
+      const indexPath = path.join(filePath, 'index.html');
+      if (fs.existsSync(indexPath)) {
+        filePath = indexPath;
+      } else if (pathname.endsWith('.html')) {
+        return send404(res);
+      } else {
+        // For SPA, return index.html to let client-side routing handle it
+        filePath = path.join(FRONTEND_DIR, 'index.html');
+      }
+    }
+
+    // Serve file
+    const stat = fs.statSync(filePath);
+    if (stat.isDirectory()) {
+      filePath = path.join(filePath, 'index.html');
+    }
+
+    const ext = path.extname(filePath).toLowerCase();
+    const mimeType = MIME_TYPES[ext] || 'application/octet-stream';
+
+    res.writeHead(200, { 'Content-Type': mimeType });
+    fs.createReadStream(filePath).pipe(res);
+  } catch (error) {
+    console.error('Server error:', error);
+    send500(res);
+  }
+});
+
+// Proxy to backend
+function proxyToBackend(req, res, pathname) {
+  const backendUrl = new URL(pathname, API_URL);
+  
+  // Forward headers
+  const headers = { ...req.headers };
+  delete headers['host'];
+
+  const backendReq = http.request(
+    backendUrl,
+    {
+      method: req.method,
+      headers
+    },
+    (backendRes) => {
+      res.writeHead(backendRes.statusCode, backendRes.headers);
+      backendRes.pipe(res);
+    }
+  );
+
+  backendReq.on('error', (error) => {
+    console.error('Backend error:', error);
+    send500(res);
+  });
+
+  req.pipe(backendReq);
+}
+
+function send404(res) {
+  res.writeHead(404, { 'Content-Type': 'text/html' });
+  res.end(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>404 - Not Found</title>
+      <style>
+        body { font-family: sans-serif; text-align: center; padding: 50px; }
+        h1 { color: #667eea; }
+      </style>
+    </head>
+    <body>
+      <h1>404 - Page Not Found</h1>
+      <p>The page you're looking for doesn't exist.</p>
+    </body>
+    </html>
+  `);
+}
+
+function send500(res) {
+  res.writeHead(500, { 'Content-Type': 'text/html' });
+  res.end(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>500 - Server Error</title>
+      <style>
+        body { font-family: sans-serif; text-align: center; padding: 50px; }
+        h1 { color: #dc3545; }
+      </style>
+    </head>
+    <body>
+      <h1>500 - Server Error</h1>
+      <p>Something went wrong on the server.</p>
+    </body>
+    </html>
+  `);
+}
+
+// Start server
+server.listen(PORT, () => {
+  console.log(`
+╔════════════════════════════════════════════════════════════════╗
+║                                                                ║
+║             🎉 MEENGLE - LOCAL DEVELOPMENT SERVER 🎉           ║
+║                                                                ║
+║                   Frontend Running on:                        ║
+║                   http://localhost:${PORT}                     ║
+║                                                                ║
+║              Make sure backend is running on:                 ║
+║                   http://localhost:3001                       ║
+║                                                                ║
+╚════════════════════════════════════════════════════════════════╝
+  `);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('Server shutting down...');
+  server.close();
+});

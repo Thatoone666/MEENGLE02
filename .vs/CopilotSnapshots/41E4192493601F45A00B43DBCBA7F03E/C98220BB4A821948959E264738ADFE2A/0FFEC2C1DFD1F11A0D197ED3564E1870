@@ -1,0 +1,418 @@
+﻿const express = require('express');
+const router = express.Router();
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const axios = require('axios');
+const { authenticateToken } = require('../middleware/auth');
+
+// Payment method handlers
+const paymentMethods = {
+  stripe: require('./payment/stripe'),
+  yoco: require('./payment/yoco'),
+  ozow: require('./payment/ozow'),
+  snapscan: require('./payment/snapscan'),
+  capitec: require('./payment/capitec'),
+  luno: require('./payment/luno'),
+  paypal: require('./payment/paypal'),
+};
+
+// ===== STRIPE ROUTES =====
+router.post('/stripe/intent', authenticateToken, async (req, res) => {
+  try {
+    const { amount, currency, tierId } = req.body;
+
+    const intent = await stripe.paymentIntents.create({
+      amount,
+      currency,
+      metadata: {
+        tierId,
+        userId: req.user.id,
+      },
+    });
+
+    res.json({
+      clientSecret: intent.client_secret,
+      id: intent.id,
+    });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+router.post('/stripe/subscribe', authenticateToken, async (req, res) => {
+  try {
+    const { tierId, billingCycle, amount } = req.body;
+    const priceId = getPriceIdForTier(tierId, billingCycle);
+
+    const subscription = await stripe.subscriptions.create({
+      customer: req.user.stripeCustomerId,
+      items: [{ price: priceId }],
+      metadata: {
+        tierId,
+        userId: req.user.id,
+      },
+    });
+
+    res.json({
+      subscriptionId: subscription.id,
+      status: subscription.status,
+    });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+router.post('/stripe/customer', authenticateToken, async (req, res) => {
+  try {
+    const { email, userId } = req.body;
+
+    const customer = await stripe.customers.create({
+      email,
+      metadata: { userId },
+    });
+
+    res.json({
+      customerId: customer.id,
+      email: customer.email,
+    });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// ===== YOCO ROUTES =====
+router.post('/yoco/charge', authenticateToken, async (req, res) => {
+  try {
+    const { amount, tierId, token, email } = req.body;
+
+    const result = await paymentMethods.yoco.createCharge({
+      amount,
+      tierId,
+      token,
+      email,
+    });
+
+    if (result.success) {
+      res.json({
+        id: result.transactionId,
+        status: 'success',
+      });
+    } else {
+      res.status(400).json({ error: result.error });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/yoco/subscription', authenticateToken, async (req, res) => {
+  try {
+    const { paymentMethodId, amount, tierId } = req.body;
+
+    const result = await paymentMethods.yoco.createSubscription({
+      paymentMethodId,
+      amount,
+      tierId,
+    });
+
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ===== OZOW ROUTES =====
+router.post('/ozow/request', authenticateToken, async (req, res) => {
+  try {
+    const { amount, tierId, email, bankId } = req.body;
+
+    const result = await paymentMethods.ozow.createPaymentRequest({
+      amount,
+      tierId,
+      email,
+      bankId,
+    });
+
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/ozow/banks', async (req, res) => {
+  try {
+    const banks = await paymentMethods.ozow.getSupportedBanks();
+    res.json({ banks });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/ozow/status/:requestId', async (req, res) => {
+  try {
+    const status = await paymentMethods.ozow.getPaymentStatus(req.params.requestId);
+    res.json(status);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/ozow/recurring', authenticateToken, async (req, res) => {
+  try {
+    const { amount, tierId, email, bankId, frequency } = req.body;
+
+    const result = await paymentMethods.ozow.createRecurringPayment({
+      amount,
+      tierId,
+      email,
+      bankId,
+      frequency,
+    });
+
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ===== SNAPSCAN ROUTES =====
+router.post('/snapscan/qr', authenticateToken, async (req, res) => {
+  try {
+    const { amount, tierId, phoneNumber } = req.body;
+
+    const result = await paymentMethods.snapscan.createQRPayment({
+      amount,
+      tierId,
+      phoneNumber,
+    });
+
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/snapscan/status/:transactionId', async (req, res) => {
+  try {
+    const status = await paymentMethods.snapscan.getTransactionStatus(
+      req.params.transactionId
+    );
+    res.json(status);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ===== CAPITEC ROUTES =====
+router.post('/capitec/pay', authenticateToken, async (req, res) => {
+  try {
+    const { amount, tierId } = req.body;
+
+    const result = await paymentMethods.capitec.createPayment({
+      amount,
+      tierId,
+    });
+
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ===== LUNO ROUTES =====
+router.post('/luno/invoice', authenticateToken, async (req, res) => {
+  try {
+    const { amountInZar, tierId, email } = req.body;
+
+    const result = await paymentMethods.luno.createBitcoinInvoice({
+      amountInZar,
+      tierId,
+      email,
+    });
+
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/luno/rate', async (req, res) => {
+  try {
+    const rate = await paymentMethods.luno.getExchangeRate();
+    res.json(rate);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/luno/invoice/:invoiceId', async (req, res) => {
+  try {
+    const status = await paymentMethods.luno.getInvoiceStatus(req.params.invoiceId);
+    res.json(status);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ===== GENERAL PAYMENT ROUTES =====
+router.get('/methods', async (req, res) => {
+  try {
+    const { country } = req.query;
+
+    const methods = getPaymentMethodsForCountry(country);
+    res.json({ methods });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/exchange-rate', async (req, res) => {
+  try {
+    const { from, to } = req.query;
+
+    // Get exchange rate from API
+    const rate = await getExchangeRate(from, to);
+    res.json({ from, to, rate });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/verify/:transactionId', async (req, res) => {
+  try {
+    const { method } = req.query;
+    const { transactionId } = req.params;
+
+    let status;
+    switch (method) {
+      case 'stripe':
+        status = await paymentMethods.stripe.verifyPayment(transactionId);
+        break;
+      case 'yoco':
+        status = await paymentMethods.yoco.verifyPayment(transactionId);
+        break;
+      case 'ozow':
+        status = await paymentMethods.ozow.verifyPayment(transactionId);
+        break;
+      case 'snapscan':
+        status = await paymentMethods.snapscan.verifyPayment(transactionId);
+        break;
+      case 'luno':
+        status = await paymentMethods.luno.verifyPayment(transactionId);
+        break;
+      default:
+        return res.status(400).json({ error: 'Invalid payment method' });
+    }
+
+    res.json(status);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ===== WEBHOOK HANDLERS =====
+router.post('/webhook/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
+  try {
+    const sig = req.headers['stripe-signature'];
+    const event = stripe.webhooks.constructEvent(
+      req.body,
+      sig,
+      process.env.STRIPE_WEBHOOK_SECRET
+    );
+
+    switch (event.type) {
+      case 'payment_intent.succeeded':
+        await handlePaymentSuccess(event.data.object);
+        break;
+      case 'payment_intent.payment_failed':
+        await handlePaymentFailed(event.data.object);
+        break;
+      case 'customer.subscription.created':
+        await handleSubscriptionCreated(event.data.object);
+        break;
+      case 'customer.subscription.deleted':
+        await handleSubscriptionCancelled(event.data.object);
+        break;
+    }
+
+    res.json({ received: true });
+  } catch (error) {
+    console.error('Webhook error:', error);
+    res.status(400).send(`Webhook Error: ${error.message}`);
+  }
+});
+
+router.post('/webhook/ozow', async (req, res) => {
+  try {
+    const { requestId, status } = req.body;
+    await handleOzowWebhook({ requestId, status });
+    res.json({ received: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ===== HELPER FUNCTIONS =====
+function getPriceIdForTier(tierId, billingCycle) {
+  const priceMap = {
+    'spark-monthly': process.env.STRIPE_SPARK_MONTHLY,
+    'spark-annual': process.env.STRIPE_SPARK_ANNUAL,
+    'flame-monthly': process.env.STRIPE_FLAME_MONTHLY,
+    'flame-annual': process.env.STRIPE_FLAME_ANNUAL,
+    'wildfire-monthly': process.env.STRIPE_WILDFIRE_MONTHLY,
+    'wildfire-annual': process.env.STRIPE_WILDFIRE_ANNUAL,
+  };
+
+  return priceMap[`${tierId}-${billingCycle}`];
+}
+
+function getPaymentMethodsForCountry(country) {
+  if (country === 'ZA') {
+    return [
+      { name: 'Yoco', icon: '💳', types: ['card', 'eft'] },
+      { name: 'Ozow', icon: '🏦', types: ['banking'] },
+      { name: 'SnapScan', icon: '📱', types: ['instant_eft'] },
+      { name: 'Capitec', icon: '🔐', types: ['app_transfer'] },
+      { name: 'Takealot', icon: '🛒', types: ['checkout'] },
+      { name: 'Luno', icon: '₿', types: ['crypto'] },
+    ];
+  }
+
+  return [
+    { name: 'Card', icon: '💳', types: ['card'] },
+    { name: 'PayPal', icon: '🅿️', types: ['paypal'] },
+    { name: 'Bitcoin', icon: '₿', types: ['crypto'] },
+  ];
+}
+
+async function getExchangeRate(from, to) {
+  // Implementation depends on exchange rate API
+  // For now, return dummy data
+  return 1.0;
+}
+
+async function handlePaymentSuccess(intent) {
+  // Update subscription in database
+  console.log('Payment succeeded:', intent.id);
+}
+
+async function handlePaymentFailed(intent) {
+  // Log failed payment
+  console.log('Payment failed:', intent.id);
+}
+
+async function handleSubscriptionCreated(subscription) {
+  // Update user subscription
+  console.log('Subscription created:', subscription.id);
+}
+
+async function handleSubscriptionCancelled(subscription) {
+  // Update user subscription status
+  console.log('Subscription cancelled:', subscription.id);
+}
+
+async function handleOzowWebhook(data) {
+  // Process Ozow webhook
+  console.log('Ozow webhook:', data);
+}
+
+module.exports = router;

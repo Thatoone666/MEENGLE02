@@ -1,0 +1,439 @@
+﻿/**
+ * Advanced Filters Component
+ * Comprehensive filtering options for matches
+ */
+
+import React, { useState, useEffect } from 'react';
+import advancedFiltersService from '../services/advancedFiltersService';
+import ProtectedButton from './ProtectedButton';
+import './AdvancedFilters.css';
+
+const AdvancedFilters = ({ onFiltersApplied, onClose }) => {
+  const [filters, setFilters] = useState(
+    advancedFiltersService.getDefaultFilters()
+  );
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [savedSuccessfully, setSavedSuccessfully] = useState(false);
+  const filterOptions = advancedFiltersService.getFilterOptions();
+
+  useEffect(() => {
+    loadFilters();
+  }, []);
+
+  const loadFilters = async () => {
+    try {
+      setLoading(true);
+      const userId = localStorage.getItem('userId');
+      const savedFilters = await advancedFiltersService.getSavedFilters(
+        userId
+      );
+      setFilters(savedFilters);
+    } catch (error) {
+      console.error('Error loading filters:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRangeChange = (field, type, value) => {
+    setFilters((prev) => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        [type]: parseInt(value),
+      },
+    }));
+  };
+
+  const handleSingleChange = (field, value) => {
+    setFilters((prev) => ({
+      ...prev,
+      [field]: parseInt(value) || value,
+    }));
+  };
+
+  const handleMultiSelect = (field, value) => {
+    setFilters((prev) => {
+      const current = prev[field] || [];
+      if (current.includes(value)) {
+        return {
+          ...prev,
+          [field]: current.filter((item) => item !== value),
+        };
+      } else {
+        return {
+          ...prev,
+          [field]: [...current, value],
+        };
+      }
+    });
+  };
+
+  const handleApplyFilters = async () => {
+    try {
+      setSaving(true);
+      const userId = localStorage.getItem('userId');
+      await advancedFiltersService.saveFilters(userId, filters);
+      setSavedSuccessfully(true);
+
+      setTimeout(() => {
+        setSavedSuccessfully(false);
+        if (onFiltersApplied) {
+          onFiltersApplied(filters);
+        }
+      }, 1500);
+    } catch (error) {
+      console.error('Error applying filters:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleResetFilters = () => {
+    setFilters(advancedFiltersService.resetFilters());
+  };
+
+  if (loading) {
+    return <div className="filters-loading">Loading filters...</div>;
+  }
+
+  return (
+    <div className="advanced-filters-container">
+      {/* Header */}
+      <div className="filters-header">
+        <h2>🔍 Advanced Filters</h2>
+        <button className="filters-close" onClick={onClose}>
+          ✕
+        </button>
+      </div>
+
+      {/* Success Message */}
+      {savedSuccessfully && (
+        <div className="filters-success">✓ Filters saved successfully!</div>
+      )}
+
+      {/* Filters Content */}
+      <div className="filters-content">
+        {/* Age Range */}
+        <section className="filter-section">
+          <h3 className="filter-title">Age Range</h3>
+          <div className="filter-inputs">
+            <div className="input-group">
+              <label>From</label>
+              <input
+                type="number"
+                min={filterOptions.ageRange.min}
+                max={filterOptions.ageRange.max}
+                value={filters.ageRange.min}
+                onChange={(e) =>
+                  handleRangeChange('ageRange', 'min', e.target.value)
+                }
+              />
+            </div>
+            <div className="range-separator">—</div>
+            <div className="input-group">
+              <label>To</label>
+              <input
+                type="number"
+                min={filterOptions.ageRange.min}
+                max={filterOptions.ageRange.max}
+                value={filters.ageRange.max}
+                onChange={(e) =>
+                  handleRangeChange('ageRange', 'max', e.target.value)
+                }
+              />
+            </div>
+          </div>
+          <div className="range-display">
+            {filters.ageRange.min} - {filters.ageRange.max} years
+          </div>
+        </section>
+
+        {/* Distance */}
+        <section className="filter-section">
+          <h3 className="filter-title">Distance</h3>
+          <div className="slider-container">
+            <input
+              type="range"
+              min={filterOptions.distance.min}
+              max={filterOptions.distance.max}
+              value={filters.distance}
+              onChange={(e) => handleSingleChange('distance', e.target.value)}
+              className="slider"
+            />
+            <div className="slider-value">
+              {filters.distance} {filterOptions.distance.unit}
+            </div>
+          </div>
+        </section>
+
+        {/* Height */}
+        <section className="filter-section">
+          <h3 className="filter-title">Height</h3>
+          <div className="filter-inputs">
+            <div className="input-group">
+              <label>From</label>
+              <input
+                type="number"
+                min={filterOptions.height.min}
+                max={filterOptions.height.max}
+                value={filters.height.min}
+                onChange={(e) =>
+                  handleRangeChange('height', 'min', e.target.value)
+                }
+              />
+            </div>
+            <div className="range-separator">—</div>
+            <div className="input-group">
+              <label>To</label>
+              <input
+                type="number"
+                min={filterOptions.height.min}
+                max={filterOptions.height.max}
+                value={filters.height.max}
+                onChange={(e) =>
+                  handleRangeChange('height', 'max', e.target.value)
+                }
+              />
+            </div>
+          </div>
+          <div className="range-display">
+            {filters.height.min} - {filters.height.max} cm
+          </div>
+        </section>
+
+        {/* Ethnicity */}
+        <section className="filter-section">
+          <h3 className="filter-title">Ethnicity</h3>
+          <div className="checkbox-group">
+            {filterOptions.ethnicity.map((option) => (
+              <label key={option} className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={filters.ethnicity.includes(option)}
+                  onChange={() => handleMultiSelect('ethnicity', option)}
+                />
+                <span>{option}</span>
+              </label>
+            ))}
+          </div>
+        </section>
+
+        {/* Religion */}
+        <section className="filter-section">
+          <h3 className="filter-title">Religion</h3>
+          <div className="checkbox-group">
+            {filterOptions.religion.map((option) => (
+              <label key={option} className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={filters.religion.includes(option)}
+                  onChange={() => handleMultiSelect('religion', option)}
+                />
+                <span>{option}</span>
+              </label>
+            ))}
+          </div>
+        </section>
+
+        {/* Body Type */}
+        <section className="filter-section">
+          <h3 className="filter-title">Body Type</h3>
+          <div className="checkbox-group">
+            {filterOptions.bodyType.map((option) => (
+              <label key={option} className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={filters.bodyType.includes(option)}
+                  onChange={() => handleMultiSelect('bodyType', option)}
+                />
+                <span>{option}</span>
+              </label>
+            ))}
+          </div>
+        </section>
+
+        {/* Education Level */}
+        <section className="filter-section">
+          <h3 className="filter-title">Education Level</h3>
+          <div className="checkbox-group">
+            {filterOptions.educationLevel.map((option) => (
+              <label key={option} className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={filters.educationLevel.includes(option)}
+                  onChange={() => handleMultiSelect('educationLevel', option)}
+                />
+                <span>{option}</span>
+              </label>
+            ))}
+          </div>
+        </section>
+
+        {/* Relationship Goal */}
+        <section className="filter-section">
+          <h3 className="filter-title">Relationship Goal</h3>
+          <div className="checkbox-group">
+            {filterOptions.relationshipGoal.map((option) => (
+              <label key={option} className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={filters.relationshipGoal.includes(option)}
+                  onChange={() => handleMultiSelect('relationshipGoal', option)}
+                />
+                <span>{option}</span>
+              </label>
+            ))}
+          </div>
+        </section>
+
+        {/* Smoking */}
+        <section className="filter-section">
+          <h3 className="filter-title">Smoking</h3>
+          <div className="checkbox-group">
+            {filterOptions.smoking.map((option) => (
+              <label key={option} className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={filters.smoking.includes(option)}
+                  onChange={() => handleMultiSelect('smoking', option)}
+                />
+                <span>{option}</span>
+              </label>
+            ))}
+          </div>
+        </section>
+
+        {/* Drinking */}
+        <section className="filter-section">
+          <h3 className="filter-title">Drinking</h3>
+          <div className="checkbox-group">
+            {filterOptions.drinking.map((option) => (
+              <label key={option} className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={filters.drinking.includes(option)}
+                  onChange={() => handleMultiSelect('drinking', option)}
+                />
+                <span>{option}</span>
+              </label>
+            ))}
+          </div>
+        </section>
+
+        {/* Interests */}
+        <section className="filter-section">
+          <h3 className="filter-title">Interests</h3>
+          <div className="tag-group">
+            {filterOptions.interests.map((interest) => (
+              <button
+                key={interest}
+                className={`tag ${filters.interests.includes(interest) ? 'active' : ''}`}
+                onClick={() => handleMultiSelect('interests', interest)}
+              >
+                {interest}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* Online Status */}
+        <section className="filter-section">
+          <h3 className="filter-title">Online Status</h3>
+          <div className="select-group">
+            <select
+              value={filters.onlineStatus}
+              onChange={(e) =>
+                handleSingleChange('onlineStatus', e.target.value)
+              }
+            >
+              {['Online now', 'Active today', 'Active this week', 'Any'].map(
+                (option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                )
+              )}
+            </select>
+          </div>
+        </section>
+
+        {/* Verification */}
+        <section className="filter-section">
+          <h3 className="filter-title">Verification</h3>
+          <div className="select-group">
+            <select
+              value={filters.verification}
+              onChange={(e) =>
+                handleSingleChange('verification', e.target.value)
+              }
+            >
+              {['Verified only', 'Any'].map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
+        </section>
+
+        {/* Has Photos */}
+        <section className="filter-section">
+          <h3 className="filter-title">Photos</h3>
+          <div className="select-group">
+            <select
+              value={filters.hasPhotos}
+              onChange={(e) => handleSingleChange('hasPhotos', e.target.value)}
+            >
+              {['Photos only', 'Any'].map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
+        </section>
+
+        {/* Liked You */}
+        <section className="filter-section">
+          <h3 className="filter-title">Liked Me</h3>
+          <div className="select-group">
+            <select
+              value={filters.likedYou}
+              onChange={(e) => handleSingleChange('likedYou', e.target.value)}
+            >
+              {['Liked me', 'Any'].map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
+        </section>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="filters-actions">
+        <ProtectedButton
+          feature="advancedFilters"
+          onClick={handleApplyFilters}
+          className="apply-filters-btn"
+          variant="primary"
+          disabled={saving}
+        >
+          {saving ? 'Saving...' : 'Apply Filters'}
+        </ProtectedButton>
+        <button
+          className="reset-filters-btn"
+          onClick={handleResetFilters}
+          disabled={saving}
+        >
+          Reset to Default
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default AdvancedFilters;

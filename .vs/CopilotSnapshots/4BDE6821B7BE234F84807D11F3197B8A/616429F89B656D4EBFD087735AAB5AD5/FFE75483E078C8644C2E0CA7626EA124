@@ -1,0 +1,110 @@
+﻿@echo off
+REM Download and Install Java 21 LTS for Windows
+REM This script will download and install Java 21 from Oracle
+
+echo.
+echo ============================================================
+echo   MEENGLE - Java 21 LTS Download & Installation Script
+echo ============================================================
+echo.
+
+REM Check if Java is already installed
+java -version >nul 2>&1
+if errorlevel 1 (
+    echo Java not detected in PATH
+) else (
+    echo Current Java version:
+    java -version
+    echo.
+)
+
+REM Download Java 21 LTS from Adoptium (faster than Oracle)
+REM Using Eclipse Temurin (formerly AdoptOpenJDK)
+
+echo Downloading Java 21 LTS from Eclipse Temurin...
+echo.
+
+REM Create temp directory
+if not exist "%temp%\java_install" mkdir "%temp%\java_install"
+
+REM Windows x64 URL for Java 21 LTS
+set JAVA_URL=https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.1+12/OpenJDK21U-jdk_x64_windows_hotspot_21.0.1_12.msi
+
+echo URL: %JAVA_URL%
+echo.
+echo Downloading... (this may take 2-3 minutes)
+echo.
+
+REM Download using PowerShell (more reliable)
+powershell -Command "^
+  [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; ^
+  $ProgressPreference = 'SilentlyContinue'; ^
+  Invoke-WebRequest -Uri '%JAVA_URL%' -OutFile '%temp%\java_install\java21.msi'; ^
+  Write-Host 'Download complete!'
+"
+
+if exist "%temp%\java_install\java21.msi" (
+    echo.
+    echo ============================================================
+    echo   Java 21 LTS downloaded successfully!
+    echo ============================================================
+    echo.
+    echo Installing Java 21 LTS...
+    echo.
+    
+    REM Install Java 21
+    msiexec.exe /i "%temp%\java_install\java21.msi" /quiet /norestart
+    
+    echo.
+    echo Installation started. Please wait...
+    echo This may take 2-3 minutes.
+    echo.
+    
+    REM Wait for installation
+    timeout /t 10
+    
+    REM Verify installation
+    echo.
+    echo Verifying Java 21 installation...
+    echo.
+    
+    java -version
+    
+    if errorlevel 0 (
+        echo.
+        echo ============================================================
+        echo   ✅ Java 21 LTS installed successfully!
+        echo ============================================================
+        echo.
+        echo You can now build the APK:
+        echo   npx cap build android
+        echo.
+        echo Or set JAVA_HOME and run:
+        echo   $env:JAVA_HOME="C:\Program Files\Eclipse Adoptium\jdk-21.0.1+12"
+        echo   npx cap build android
+        echo.
+    ) else (
+        echo.
+        echo ❌ Installation verification failed
+        echo.
+    )
+    
+    REM Cleanup
+    del "%temp%\java_install\java21.msi"
+    rmdir "%temp%\java_install"
+    
+) else (
+    echo.
+    echo ============================================================
+    echo   ❌ Download failed!
+    echo ============================================================
+    echo.
+    echo Please download Java 21 LTS manually from:
+    echo   https://adoptium.net/temurin/releases/?version=21
+    echo.
+    echo Or from Oracle:
+    echo   https://www.oracle.com/java/technologies/javase/jdk21-archive-downloads.html
+    echo.
+)
+
+pause
